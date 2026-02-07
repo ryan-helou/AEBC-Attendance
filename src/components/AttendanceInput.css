@@ -1,0 +1,23 @@
+.attendance-input-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.attendance-input-wrapper.flash .attendance-input {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.attendance-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1.125rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.attendance-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
