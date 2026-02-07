@@ -1,0 +1,8 @@
+{
+  "name": "AEBC Attendance",
+  "short_name": "AEBC",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb"
+}
