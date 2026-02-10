@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import DataPanel from './DataPanel';
 
 export default function AuthGate() {
   const { isAuthenticated } = useAuth();
@@ -8,5 +9,10 @@ export default function AuthGate() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <DataPanel />
+    </>
+  );
 }

@@ -8,11 +8,10 @@ create table meetings (
   display_order integer not null default 0
 );
 
--- Pre-seed the 3 meetings
+-- Pre-seed the 2 meetings
 insert into meetings (name, display_order) values
   ('English Sunday Service', 1),
-  ('Arabic Sunday Service', 2),
-  ('Shabibeh Service', 3);
+  ('Shabibeh Service', 2);
 
 -- 2. People table
 create table people (

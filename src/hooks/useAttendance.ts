@@ -2,24 +2,19 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { AttendanceEntry } from '../types';
 
-function getTodayDate() {
-  return new Date().toISOString().split('T')[0];
-}
-
-export function useAttendance(meetingId: string) {
+export function useAttendance(meetingId: string, date: string) {
   const [entries, setEntries] = useState<AttendanceEntry[]>([]);
   const [markedPersonIds, setMarkedPersonIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const meetingIdRef = useRef(meetingId);
   meetingIdRef.current = meetingId;
 
-  const fetchTodayAttendance = useCallback(async () => {
-    const today = getTodayDate();
+  const fetchAttendance = useCallback(async () => {
     const { data } = await supabase
       .from('attendance_records')
       .select('*, person:people(*)')
       .eq('meeting_id', meetingId)
-      .eq('date', today)
+      .eq('date', date)
       .order('marked_at', { ascending: false });
 
     if (data) {
@@ -36,17 +31,16 @@ export function useAttendance(meetingId: string) {
     }
 
     setLoading(false);
-  }, [meetingId]);
+  }, [meetingId, date]);
 
   useEffect(() => {
-    fetchTodayAttendance();
-  }, [fetchTodayAttendance]);
+    fetchAttendance();
+  }, [fetchAttendance]);
 
   // Real-time subscription
   useEffect(() => {
-    const today = getTodayDate();
     const channel = supabase
-      .channel(`attendance-${meetingId}`)
+      .channel(`attendance-${meetingId}-${date}`)
       .on(
         'postgres_changes',
         {
@@ -59,11 +53,10 @@ export function useAttendance(meetingId: string) {
           const record = payload.new as Record<string, unknown> | undefined;
           const oldRecord = payload.old as Record<string, unknown> | undefined;
 
-          if (record && (record.date as string) !== today) return;
-          if (payload.eventType === 'DELETE' && oldRecord && (oldRecord.date as string) !== today) return;
+          if (record && (record.date as string) !== date) return;
+          if (payload.eventType === 'DELETE' && oldRecord && (oldRecord.date as string) !== date) return;
 
-          // Refetch to get joined person data
-          fetchTodayAttendance();
+          fetchAttendance();
         }
       )
       .subscribe();
@@ -71,17 +64,16 @@ export function useAttendance(meetingId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [meetingId, fetchTodayAttendance]);
+  }, [meetingId, date, fetchAttendance]);
 
   const markAttendance = useCallback(
     async (personId: string, person: AttendanceEntry['person']): Promise<boolean> => {
-      // Optimistic update
       const tempId = `temp-${Date.now()}`;
       const tempEntry: AttendanceEntry = {
         id: tempId,
         meeting_id: meetingId,
         person_id: personId,
-        date: getTodayDate(),
+        date,
         marked_at: new Date().toISOString(),
         person,
       };
@@ -94,16 +86,14 @@ export function useAttendance(meetingId: string) {
         .insert({
           meeting_id: meetingId,
           person_id: personId,
-          date: getTodayDate(),
+          date,
         })
         .select('*, person:people(*)')
         .single();
 
       if (error) {
-        // Duplicate constraint or other error -- rollback optimistic update
         if (error.code === '23505') {
-          // Already marked, just refetch
-          fetchTodayAttendance();
+          fetchAttendance();
           return false;
         }
         setEntries(prev => prev.filter(e => e.id !== tempId));
@@ -115,7 +105,6 @@ export function useAttendance(meetingId: string) {
         return false;
       }
 
-      // Replace temp entry with real one
       if (data) {
         const real: AttendanceEntry = {
           id: (data as Record<string, unknown>).id as string,
@@ -130,7 +119,7 @@ export function useAttendance(meetingId: string) {
 
       return true;
     },
-    [meetingId, fetchTodayAttendance]
+    [meetingId, date, fetchAttendance]
   );
 
   const removeAttendance = useCallback(
@@ -151,11 +140,10 @@ export function useAttendance(meetingId: string) {
         .eq('id', recordId);
 
       if (error) {
-        // Rollback
-        fetchTodayAttendance();
+        fetchAttendance();
       }
     },
-    [entries, fetchTodayAttendance]
+    [entries, fetchAttendance]
   );
 
   return { entries, markedPersonIds, loading, markAttendance, removeAttendance };

@@ -30,6 +30,7 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
+        <img src="/logo.png" alt="AEBC Logo" className="login-logo" />
         <h1>AEBC Attendance</h1>
         <p>Enter the access key to continue</p>
         {error && <div className="login-error">{error}</div>}
