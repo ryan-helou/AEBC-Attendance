@@ -67,23 +67,33 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
-      <div className="landing-header">
-        <div>
-          <h1>AEBC Attendance</h1>
-          <p className="landing-date">{formatDisplayDate()}</p>
+      <header className="landing-header">
+        <div className="landing-header-inner">
+          <img src="/logo.png" alt="AEBC" className="landing-logo" />
+          <div className="landing-header-center">
+            <h1>AEBC Attendance</h1>
+            <p className="landing-date">{formatDisplayDate()}</p>
+          </div>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
+      </header>
+
+      <div className="landing-body">
+        <div className="landing-meetings">
+          {meetings.map(meeting => (
+            <MeetingCard
+              key={meeting.id}
+              meeting={meeting}
+              count={counts[meeting.id] || 0}
+            />
+          ))}
+        </div>
+
+        <button className="landing-history-btn" onClick={() => navigate('/history')}>
+          Attendance History
         </button>
-      </div>
-      <div className="landing-meetings">
-        {meetings.map(meeting => (
-          <MeetingCard
-            key={meeting.id}
-            meeting={meeting}
-            count={counts[meeting.id] || 0}
-          />
-        ))}
       </div>
     </div>
   );

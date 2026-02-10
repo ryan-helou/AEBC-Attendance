@@ -6,7 +6,7 @@
 .attendance-input-wrapper.flash .attendance-input {
   border-color: var(--color-success);
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .attendance-input {
@@ -14,10 +14,12 @@
   padding: 0.875rem 1rem;
   font-size: 1.125rem;
   border: 2px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .attendance-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }

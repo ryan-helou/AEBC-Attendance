@@ -7,13 +7,17 @@ interface MeetingCardProps {
   count: number;
 }
 
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
 export default function MeetingCard({ meeting, count }: MeetingCardProps) {
   const navigate = useNavigate();
 
   return (
     <button
       className="meeting-card"
-      onClick={() => navigate(`/attendance/${meeting.id}`)}
+      onClick={() => navigate(`/attendance/${meeting.id}/${getTodayDate()}`)}
     >
       <span className="meeting-card-name">{meeting.name}</span>
       <span className="meeting-card-count">

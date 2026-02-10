@@ -1,43 +1,98 @@
 .landing-page {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .landing-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 0 1rem;
+  position: relative;
+}
+
+.landing-header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  padding: 0.5rem 1rem;
+}
+
+.landing-header-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.landing-logo {
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .landing-header h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 2.5rem;
   font-weight: 700;
+  color: #ffffff;
 }
 
 .landing-date {
   font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.logout-btn {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.35em 0.75em;
+  border-radius: var(--radius);
+}
+
+.logout-btn:hover {
+  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.landing-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
 }
 
 .landing-meetings {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.logout-btn {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  padding: 0.25em 0.5em;
+.landing-history-btn {
+  display: block;
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1em 1em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: var(--radius);
 }
 
-.logout-btn:hover {
-  color: var(--color-danger);
-  background: none;
+.landing-history-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
 }

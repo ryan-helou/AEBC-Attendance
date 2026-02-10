@@ -1,0 +1,26 @@
+.data-fab {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  z-index: 100;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0.55em 1.25em;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  cursor: pointer;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.data-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+}
+
+.data-fab:active {
+  transform: translateY(0);
+}
