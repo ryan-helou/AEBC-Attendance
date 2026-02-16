@@ -41,8 +41,15 @@
   margin: 0;
 }
 
-.logout-btn {
+.landing-header-actions {
   justify-self: end;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.theme-toggle-btn,
+.logout-btn {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.5);
   background: none;
@@ -51,6 +58,7 @@
   border-radius: var(--radius);
 }
 
+.theme-toggle-btn:hover,
 .logout-btn:hover {
   color: rgba(255, 255, 255, 0.85);
   border-color: rgba(255, 255, 255, 0.3);
@@ -124,4 +132,42 @@
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+}
+
+@media (max-width: 600px) {
+  .landing-header-inner {
+    grid-template-columns: 12% 1fr auto;
+    padding: 0.4rem 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .landing-header h1 {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+  }
+
+  .landing-date {
+    font-size: 0.75rem;
+  }
+
+  .landing-body {
+    padding: 1rem 0.75rem 0;
+  }
+
+  .landing-meetings {
+    gap: 0.75rem;
+  }
+
+  .landing-history-btn {
+    margin-top: 1.25rem;
+    padding: 0.85em 1em;
+    font-size: 0.9rem;
+  }
+
+  .landing-verse-container {
+    padding: 1rem 1rem 2rem;
+  }
+
+  .verse-text {
+    font-size: 0.9375rem;
+  }
 }

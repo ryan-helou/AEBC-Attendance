@@ -128,3 +128,19 @@
     display: none;
   }
 }
+
+@media (max-width: 600px) {
+  .attendance-table {
+    font-size: 0.8125rem;
+  }
+
+  .attendance-table th,
+  .attendance-table td {
+    padding: 0.5rem;
+  }
+
+  .col-time {
+    font-size: 0.7rem;
+    width: 4.5rem;
+  }
+}

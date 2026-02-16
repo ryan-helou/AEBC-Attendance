@@ -1,14 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { getTodayDate } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import './MeetingCard.css';
 
 interface MeetingCardProps {
   meeting: Meeting;
   count: number;
-}
-
-function getTodayDate() {
-  return new Date().toISOString().split('T')[0];
 }
 
 export default function MeetingCard({ meeting, count }: MeetingCardProps) {

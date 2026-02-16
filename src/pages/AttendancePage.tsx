@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
+import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
 import type { Meeting, Person } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import AttendanceTable from '../components/AttendanceTable';
@@ -10,39 +11,6 @@ import AddPersonModal from '../components/AddPersonModal';
 import Spinner from '../components/Spinner';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import './AttendancePage.css';
-
-function parseDate(dateStr: string) {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function toDateStr(d: Date) {
-  return d.toISOString().split('T')[0];
-}
-
-function formatDate(dateStr: string) {
-  const d = parseDate(dateStr);
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-// Returns the required day of week (0=Sun, 6=Sat) based on meeting name, or null if unrestricted
-function getMeetingDay(name: string): number | null {
-  const lower = name.toLowerCase();
-  if (lower.includes('sunday')) return 0;
-  if (lower.includes('saturday') || lower.includes('shabibeh')) return 6;
-  return null;
-}
-
-function shiftDate(dateStr: string, days: number) {
-  const d = parseDate(dateStr);
-  d.setDate(d.getDate() + days);
-  return toDateStr(d);
-}
 
 export default function AttendancePage() {
   const { meetingId, date } = useParams<{ meetingId: string; date: string }>();
@@ -129,6 +97,13 @@ export default function AttendancePage() {
     navigate(`/attendance/${meetingId}/${shiftDate(date!, direction * step)}`, { replace: true });
   }
 
+  const todayDate = snapToValidDate(getTodayDate(), meetingDay);
+  const isToday = date === todayDate;
+
+  function goToday() {
+    navigate(`/attendance/${meetingId}/${todayDate}`, { replace: true });
+  }
+
   if (peopleLoading || attendanceLoading || !meeting) return <Spinner />;
 
   return (
@@ -149,6 +124,9 @@ export default function AttendancePage() {
             value={date}
             onChange={handleDateChange}
           />
+          {!isToday && (
+            <button className="today-btn" onClick={goToday}>Today</button>
+          )}
           <button className="date-nav-btn" onClick={() => goWeek(1)}>&rsaquo;</button>
         </div>
       </div>

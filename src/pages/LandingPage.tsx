@@ -1,25 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getTodayDate, formatDate } from '../lib/dateUtils';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 import type { Meeting } from '../types';
 import MeetingCard from '../components/MeetingCard';
 import Spinner from '../components/Spinner';
 import verses from '../data/verses';
 import './LandingPage.css';
-
-function getTodayDate() {
-  return new Date().toISOString().split('T')[0];
-}
-
-function formatDisplayDate() {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
 
 export default function LandingPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -28,6 +17,7 @@ export default function LandingPage() {
   const [verseIndex, setVerseIndex] = useState(() => Math.floor(Math.random() * verses.length));
   const [verseFading, setVerseFading] = useState(false);
   const { logout } = useAuth();
+  const { dark, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,11 +76,16 @@ export default function LandingPage() {
           <img src="/logo.png" alt="AEBC" className="landing-logo" />
           <div className="landing-header-center">
             <h1>AEBC Attendance</h1>
-            <p className="landing-date">{formatDisplayDate()}</p>
+            <p className="landing-date">{formatDate(getTodayDate())}</p>
           </div>
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
+          <div className="landing-header-actions">
+            <button className="theme-toggle-btn" onClick={toggleTheme}>
+              {dark ? 'Light' : 'Dark'}
+            </button>
+            <button className="logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
