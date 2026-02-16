@@ -5,6 +5,7 @@ import LandingPage from './pages/LandingPage'
 import AttendancePage from './pages/AttendancePage'
 import DataPage from './pages/DataPage'
 import HistoryPage from './pages/HistoryPage'
+import PersonProfilePage from './pages/PersonProfilePage'
 import './App.css'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route path="/attendance/:meetingId/:date" element={<AttendancePage />} />
         <Route path="/data" element={<DataPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/person/:personId" element={<PersonProfilePage />} />
       </Route>
     </Routes>
   )

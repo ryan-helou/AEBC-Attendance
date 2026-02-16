@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { AttendanceEntry } from '../types';
 import './AttendanceTable.css';
 
@@ -15,6 +16,7 @@ function formatTime(isoString: string) {
 }
 
 export default function AttendanceTable({ entries, onRemove }: AttendanceTableProps) {
+  const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -45,7 +47,11 @@ export default function AttendanceTable({ entries, onRemove }: AttendanceTablePr
                 className={isNew ? 'new-row' : ''}
               >
                 <td className="col-num">{entries.length - i}</td>
-                <td className="col-name">{entry.person.full_name}</td>
+                <td className="col-name">
+                  <span className="name-tap" onClick={() => navigate(`/person/${entry.person_id}`)}>
+                    {entry.person.full_name}
+                  </span>
+                </td>
                 <td className="col-time">{formatTime(entry.marked_at)}</td>
                 <td className="col-action">
                   <button

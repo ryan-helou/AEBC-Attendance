@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Person } from '../types';
 import Spinner from '../components/Spinner';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useEscapeBack } from '../hooks/useEscapeBack';
 import './DataPage.css';
 
 export default function DataPage() {
   const navigate = useNavigate();
+  useEscapeBack();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -17,6 +20,7 @@ export default function DataPage() {
   const [importing, setImporting] = useState(false);
   const [importStatus, setImportStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -126,6 +130,10 @@ export default function DataPage() {
     setImporting(false);
   }
 
+  const filtered = search.trim()
+    ? people.filter(p => p.full_name.toLowerCase().includes(search.toLowerCase()))
+    : people;
+
   if (loading) return <Spinner />;
 
   return (
@@ -138,6 +146,21 @@ export default function DataPage() {
         <button className="import-toggle-btn" onClick={() => setShowImport(v => !v)}>
           {showImport ? 'Cancel' : 'Import'}
         </button>
+      </div>
+
+      <div className="data-search-wrapper">
+        <input
+          className="data-search"
+          type="text"
+          placeholder="Search by name..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button className="data-search-clear" onClick={() => setSearch('')}>
+            &times;
+          </button>
+        )}
       </div>
 
       {showImport && (
@@ -172,7 +195,7 @@ export default function DataPage() {
             </tr>
           </thead>
           <tbody>
-            {people.map((person, i) => (
+            {filtered.map((person, i) => (
               <tr key={person.id}>
                 <td className="col-num">{i + 1}</td>
 
@@ -217,7 +240,11 @@ export default function DataPage() {
                   </>
                 ) : (
                   <>
-                    <td>{person.full_name}</td>
+                    <td>
+                      <span className="person-link" onClick={() => navigate(`/person/${person.id}`)}>
+                        {person.full_name}
+                      </span>
+                    </td>
                     <td className="data-secondary">{person.phone || '—'}</td>
                     <td className="data-secondary">{person.notes || '—'}</td>
                     <td className="col-action">
@@ -237,19 +264,11 @@ export default function DataPage() {
       </div>
 
       {deleteId && (
-        <div className="confirm-overlay" onClick={() => setDeleteId(null)}>
-          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <p>Are you sure you want to delete this person?</p>
-            <div className="confirm-actions">
-              <button className="confirm-cancel" onClick={() => setDeleteId(null)}>
-                Cancel
-              </button>
-              <button className="confirm-delete" onClick={confirmDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          message="Are you sure you want to delete this person?"
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteId(null)}
+        />
       )}
     </div>
   );
