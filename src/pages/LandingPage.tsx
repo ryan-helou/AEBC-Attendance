@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { Meeting } from '../types';
 import MeetingCard from '../components/MeetingCard';
 import Spinner from '../components/Spinner';
+import verses from '../data/verses';
 import './LandingPage.css';
 
 function getTodayDate() {
@@ -24,8 +25,21 @@ export default function LandingPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [verseIndex, setVerseIndex] = useState(() => Math.floor(Math.random() * verses.length));
+  const [verseFading, setVerseFading] = useState(false);
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVerseFading(true);
+      setTimeout(() => {
+        setVerseIndex(prev => (prev + 1) % verses.length);
+        setVerseFading(false);
+      }, 400);
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -94,6 +108,13 @@ export default function LandingPage() {
         <button className="landing-history-btn" onClick={() => navigate('/history')}>
           Attendance History
         </button>
+      </div>
+
+      <div className="landing-verse-container">
+        <div className={`landing-verse ${verseFading ? 'verse-fade-out' : 'verse-fade-in'}`}>
+          <p className="verse-text">{verses[verseIndex].text}</p>
+          <p className="verse-ref">{verses[verseIndex].ref}</p>
+        </div>
       </div>
     </div>
   );

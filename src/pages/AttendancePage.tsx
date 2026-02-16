@@ -8,6 +8,7 @@ import AttendanceInput from '../components/AttendanceInput';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
 import Spinner from '../components/Spinner';
+import { useEscapeBack } from '../hooks/useEscapeBack';
 import './AttendancePage.css';
 
 function parseDate(dateStr: string) {
@@ -46,6 +47,7 @@ function shiftDate(dateStr: string, days: number) {
 export default function AttendancePage() {
   const { meetingId, date } = useParams<{ meetingId: string; date: string }>();
   const navigate = useNavigate();
+  useEscapeBack();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
 
@@ -56,6 +58,9 @@ export default function AttendancePage() {
     loading: attendanceLoading,
     markAttendance,
     removeAttendance,
+    pendingUndo,
+    undoRemove,
+    dismissUndo,
   } = useAttendance(meetingId!, date!);
 
   useEffect(() => {
@@ -167,6 +172,14 @@ export default function AttendancePage() {
           onSave={handleSaveNewPerson}
           onCancel={() => setAddModalName(null)}
         />
+      )}
+
+      {pendingUndo && (
+        <div className="undo-toast">
+          <span>Removed <strong>{pendingUndo.person.full_name}</strong></span>
+          <button className="undo-btn" onClick={undoRemove}>Undo</button>
+          <button className="undo-dismiss" onClick={dismissUndo}>&times;</button>
+        </div>
       )}
     </div>
   );

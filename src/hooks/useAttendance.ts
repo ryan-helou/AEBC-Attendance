@@ -122,18 +122,13 @@ export function useAttendance(meetingId: string, date: string) {
     [meetingId, date, fetchAttendance]
   );
 
-  const removeAttendance = useCallback(
-    async (recordId: string) => {
-      const entry = entries.find(e => e.id === recordId);
-      setEntries(prev => prev.filter(e => e.id !== recordId));
-      if (entry) {
-        setMarkedPersonIds(prev => {
-          const next = new Set(prev);
-          next.delete(entry.person_id);
-          return next;
-        });
-      }
+  const [pendingUndo, setPendingUndo] = useState<{
+    entry: AttendanceEntry;
+    timeoutId: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
+  const commitRemove = useCallback(
+    async (recordId: string) => {
       const { error } = await supabase
         .from('attendance_records')
         .delete()
@@ -142,9 +137,57 @@ export function useAttendance(meetingId: string, date: string) {
       if (error) {
         fetchAttendance();
       }
+      setPendingUndo(null);
     },
-    [entries, fetchAttendance]
+    [fetchAttendance]
   );
 
-  return { entries, markedPersonIds, loading, markAttendance, removeAttendance };
+  const removeAttendance = useCallback(
+    (recordId: string) => {
+      // If there's already a pending undo, commit it immediately
+      if (pendingUndo) {
+        clearTimeout(pendingUndo.timeoutId);
+        commitRemove(pendingUndo.entry.id);
+      }
+
+      const entry = entries.find(e => e.id === recordId);
+      setEntries(prev => prev.filter(e => e.id !== recordId));
+      if (entry) {
+        setMarkedPersonIds(prev => {
+          const next = new Set(prev);
+          next.delete(entry.person_id);
+          return next;
+        });
+
+        const timeoutId = setTimeout(() => {
+          commitRemove(recordId);
+        }, 4000);
+
+        setPendingUndo({ entry, timeoutId });
+      }
+    },
+    [entries, pendingUndo, commitRemove]
+  );
+
+  const undoRemove = useCallback(() => {
+    if (!pendingUndo) return;
+    clearTimeout(pendingUndo.timeoutId);
+    const { entry } = pendingUndo;
+    setEntries(prev => {
+      const restored = [...prev, entry].sort(
+        (a, b) => new Date(b.marked_at).getTime() - new Date(a.marked_at).getTime()
+      );
+      return restored;
+    });
+    setMarkedPersonIds(prev => new Set(prev).add(entry.person_id));
+    setPendingUndo(null);
+  }, [pendingUndo]);
+
+  const dismissUndo = useCallback(() => {
+    if (!pendingUndo) return;
+    clearTimeout(pendingUndo.timeoutId);
+    commitRemove(pendingUndo.entry.id);
+  }, [pendingUndo, commitRemove]);
+
+  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
 }

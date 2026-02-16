@@ -68,6 +68,10 @@
   font-weight: 500;
 }
 
+.name-tap {
+  cursor: pointer;
+}
+
 .col-time {
   width: 5.5rem;
   color: var(--color-text-secondary);
