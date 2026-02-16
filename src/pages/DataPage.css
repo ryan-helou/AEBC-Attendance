@@ -290,3 +290,22 @@
   text-decoration: underline;
 }
 
+@media (max-width: 600px) {
+  .data-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .import-section {
+    padding: 1rem;
+  }
+
+  .data-table {
+    font-size: 0.8125rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.4rem 0.5rem;
+  }
+}
+

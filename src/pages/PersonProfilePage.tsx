@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { getMeetingDay } from '../lib/dateUtils';
 import type { Person, Meeting } from '../types';
 import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -17,6 +18,7 @@ interface MeetingStat {
   meeting: Meeting;
   timesAttended: number;
   longestStreak: number;
+  currentStreak: number;
   attendanceRate: number;
 }
 
@@ -25,13 +27,6 @@ interface HistoryRow {
   meeting_id: string;
   date: string;
   meetingName: string;
-}
-
-function getMeetingDay(name: string): number | null {
-  const lower = name.toLowerCase();
-  if (lower.includes('sunday')) return 0;
-  if (lower.includes('saturday') || lower.includes('shabibeh')) return 6;
-  return null;
 }
 
 function computeLongestStreak(dates: string[]): number {
@@ -51,6 +46,31 @@ function computeLongestStreak(dates: string[]): number {
     }
   }
   return longest;
+}
+
+function computeCurrentStreak(dates: string[], meetingDay: number | null): number {
+  if (dates.length === 0 || meetingDay === null) return 0;
+  const sorted = [...dates].sort().reverse(); // most recent first
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Check if the most recent attendance is within the last 2 weeks
+  const lastDate = new Date(sorted[0] + 'T00:00:00');
+  const daysSinceLast = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysSinceLast > 14) return 0; // streak is broken
+
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1] + 'T00:00:00');
+    const curr = new Date(sorted[i] + 'T00:00:00');
+    const diff = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 7) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
 }
 
 function countOccurrencesSince(earliest: string, meetingDay: number | null): number {
@@ -132,17 +152,18 @@ export default function PersonProfilePage() {
         const dates = meetingRecords.map(r => r.date);
         const timesAttended = dates.length;
         const longestStreak = computeLongestStreak(dates);
+        const day = getMeetingDay(meeting.name);
+        const currentStreak = computeCurrentStreak(dates, day);
 
         let attendanceRate = 0;
         if (earliestDate) {
-          const day = getMeetingDay(meeting.name);
           const totalOccurrences = countOccurrencesSince(earliestDate, day);
           if (totalOccurrences > 0) {
             attendanceRate = Math.round((timesAttended / totalOccurrences) * 100);
           }
         }
 
-        stats.push({ meeting, timesAttended, longestStreak, attendanceRate });
+        stats.push({ meeting, timesAttended, longestStreak, currentStreak, attendanceRate });
       }
       setMeetingStats(stats);
       setLoading(false);
@@ -220,6 +241,11 @@ export default function PersonProfilePage() {
             <div className="profile-stat-item">
               <span className="profile-stat-value">{stat.longestStreak}</span>
               <span className="profile-stat-label">Best Streak</span>
+            </div>
+            <div className="profile-stat-divider" />
+            <div className="profile-stat-item">
+              <span className={`profile-stat-value${stat.currentStreak >= 2 ? ' profile-streak-active' : ''}`}>{stat.currentStreak}</span>
+              <span className="profile-stat-label">Current</span>
             </div>
             <div className="profile-stat-divider" />
             <div className="profile-stat-item">

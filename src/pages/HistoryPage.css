@@ -1,5 +1,5 @@
 .history-page {
-  max-width: 700px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
@@ -31,6 +31,29 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
+  flex: 1;
+}
+
+.export-btn {
+  font-size: 0.8rem;
+  padding: 0.4em 0.9em;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  font-weight: 600;
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+
+.export-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .history-section {
@@ -245,4 +268,195 @@
   color: var(--color-primary);
   padding-top: 0.75rem !important;
   border-bottom: none !important;
+}
+
+/* Dashboard */
+.dashboard-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-chart-wrapper {
+  margin: 0 -0.5rem;
+}
+
+/* 2x2 grid for panels below the chart */
+.history-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.history-grid .history-section {
+  margin-bottom: 0;
+}
+
+/* Leaderboard */
+.leaderboard-section {
+  min-width: 0;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table thead th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.leaderboard-table tbody tr {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.leaderboard-table tbody tr:hover {
+  background: var(--color-primary-light);
+}
+
+.leaderboard-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.875rem;
+}
+
+.leaderboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lb-col-rank {
+  width: 3rem;
+  text-align: center !important;
+}
+
+.lb-rank-num {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.lb-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lb-medal-1 {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);
+}
+
+.lb-medal-2 {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  box-shadow: 0 1px 4px rgba(100, 116, 139, 0.3);
+}
+
+.lb-medal-3 {
+  background: linear-gradient(135deg, #d97756, #b45f3f);
+  box-shadow: 0 1px 4px rgba(180, 95, 63, 0.3);
+}
+
+.lb-col-name {
+  font-weight: 500;
+}
+
+.lb-col-bar {
+  width: 30%;
+}
+
+.lb-bar-bg {
+  height: 6px;
+  background: var(--color-bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.lb-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.lb-top-1 .lb-bar-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.lb-top-2 .lb-bar-fill {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
+
+.lb-top-3 .lb-bar-fill {
+  background: linear-gradient(90deg, #d97756, #e8a98a);
+}
+
+.lb-col-count {
+  width: 4rem;
+  text-align: center !important;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 600px) {
+  .history-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .history-section {
+    padding: 1rem;
+  }
+
+  .history-controls {
+    flex-direction: column;
+  }
+
+  .history-controls select,
+  .history-controls input[type="date"] {
+    width: 100%;
+  }
+
+  .history-search-btn {
+    width: 100%;
+  }
+
+  .history-table {
+    font-size: 0.8125rem;
+  }
+
+  .history-table th,
+  .history-table td {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-wrapper {
+    margin: 0 -1rem;
+  }
+
+  .leaderboard-table td {
+    padding: 0.5rem;
+  }
+
+  .lb-col-bar {
+    display: none;
+  }
 }
