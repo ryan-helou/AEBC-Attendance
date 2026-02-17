@@ -5,17 +5,20 @@ interface AddPersonModalProps {
   initialName: string;
   onSave: (name: string, phone?: string, notes?: string) => Promise<void>;
   onCancel: () => void;
+  isDuplicate?: (name: string) => boolean;
 }
 
-export default function AddPersonModal({ initialName, onSave, onCancel }: AddPersonModalProps) {
+export default function AddPersonModal({ initialName, onSave, onCancel, isDuplicate }: AddPersonModalProps) {
   const [name, setName] = useState(initialName);
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const duplicate = isDuplicate ? isDuplicate(name) : false;
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || duplicate) return;
     setSaving(true);
     await onSave(name, phone, notes);
     setSaving(false);
@@ -38,6 +41,9 @@ export default function AddPersonModal({ initialName, onSave, onCancel }: AddPer
             autoFocus
             required
           />
+          {duplicate && (
+            <span className="modal-duplicate-warning">This person already exists</span>
+          )}
         </label>
         <label>
           Phone
@@ -61,7 +67,7 @@ export default function AddPersonModal({ initialName, onSave, onCancel }: AddPer
           <button type="button" onClick={onCancel} className="modal-cancel">
             Cancel
           </button>
-          <button type="submit" disabled={saving || !name.trim()} className="modal-save">
+          <button type="submit" disabled={saving || !name.trim() || duplicate} className="modal-save">
             {saving ? 'Saving...' : 'Save & Mark Present'}
           </button>
         </div>

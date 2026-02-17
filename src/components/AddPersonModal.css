@@ -42,6 +42,14 @@
   border-radius: var(--radius);
 }
 
+.modal-duplicate-warning {
+  display: block;
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 0.35rem;
+}
+
 .modal-actions {
   display: flex;
   gap: 0.5rem;

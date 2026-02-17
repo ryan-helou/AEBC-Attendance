@@ -28,18 +28,28 @@ export function usePeople() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const peopleRef = useRef<Person[]>([]);
+  const attendanceCountsRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('people')
-        .select('*')
-        .order('full_name');
+      const [{ data: peopleData }, { data: countData }] = await Promise.all([
+        supabase.from('people').select('*').order('full_name'),
+        supabase.from('attendance_records').select('person_id'),
+      ]);
 
-      if (data) {
-        setPeople(data);
-        peopleRef.current = data;
+      if (peopleData) {
+        setPeople(peopleData);
+        peopleRef.current = peopleData;
       }
+
+      if (countData) {
+        const counts = new Map<string, number>();
+        for (const row of countData) {
+          counts.set(row.person_id, (counts.get(row.person_id) || 0) + 1);
+        }
+        attendanceCountsRef.current = counts;
+      }
+
       setLoading(false);
     }
 
@@ -69,6 +79,10 @@ export function usePeople() {
           return a.alreadyMarked ? 1 : -1;
         }
         if (b.score !== a.score) return b.score - a.score;
+        // Tiebreaker: higher attendance count first
+        const aCount = attendanceCountsRef.current.get(a.person.id) || 0;
+        const bCount = attendanceCountsRef.current.get(b.person.id) || 0;
+        if (bCount !== aCount) return bCount - aCount;
         return a.person.full_name.localeCompare(b.person.full_name);
       });
 
@@ -80,8 +94,15 @@ export function usePeople() {
     []
   );
 
+  const isDuplicate = useCallback((name: string): boolean => {
+    const normalized = name.trim().toLowerCase();
+    return peopleRef.current.some(p => p.full_name.toLowerCase() === normalized);
+  }, []);
+
   const addPerson = useCallback(
     async (fullName: string, phone?: string, notes?: string): Promise<Person | null> => {
+      if (isDuplicate(fullName)) return null;
+
       const { data, error } = await supabase
         .from('people')
         .insert({
@@ -104,8 +125,8 @@ export function usePeople() {
 
       return data;
     },
-    []
+    [isDuplicate]
   );
 
-  return { people, loading, searchPeople, addPerson };
+  return { people, loading, searchPeople, addPerson, isDuplicate };
 }
