@@ -19,7 +19,7 @@ export default function AttendancePage() {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
 
-  const { searchPeople, addPerson, loading: peopleLoading } = usePeople();
+  const { searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
     entries,
     markedPersonIds,
@@ -149,6 +149,7 @@ export default function AttendancePage() {
           initialName={addModalName}
           onSave={handleSaveNewPerson}
           onCancel={() => setAddModalName(null)}
+          isDuplicate={isDuplicate}
         />
       )}
 
