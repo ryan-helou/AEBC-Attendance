@@ -17,7 +17,6 @@ insert into meetings (name, display_order) values
 create table people (
   id uuid default gen_random_uuid() primary key,
   full_name text not null,
-  phone text,
   notes text,
   created_at timestamptz default now()
 );
@@ -36,7 +35,20 @@ create table attendance_records (
 
 create index idx_attendance_meeting_date on attendance_records (meeting_id, date);
 
--- 4. App config (key/value store for access key)
+-- 4. Meeting notes (one short note per service date)
+create table meeting_notes (
+  id uuid default gen_random_uuid() primary key,
+  meeting_id uuid not null references meetings(id) on delete cascade,
+  date date not null,
+  note text not null default '',
+  created_at timestamptz default now(),
+  constraint unique_meeting_note unique (meeting_id, date)
+);
+
+create policy "Allow all on meeting_notes" on meeting_notes for all using (true) with check (true);
+alter table meeting_notes enable row level security;
+
+-- 5. App config (key/value store for access key)
 create table app_config (
   key text primary key,
   value text not null

@@ -44,15 +44,55 @@
   padding: 1.25rem 1rem;
 }
 
-/* Ryan's breathing pulse header */
+/* Ryan's animated gradient header — shifts through dark→vivid→light of the chosen colour */
 .profile-themed .profile-header {
-  animation: ryanPulse 4s ease-in-out infinite;
+  background: linear-gradient(
+    -45deg,
+    var(--ryan-accent-dark),
+    var(--ryan-accent),
+    var(--ryan-accent-light),
+    var(--ryan-accent),
+    var(--ryan-accent-hover),
+    var(--ryan-accent-dark)
+  );
+  background-size: 400% 400%;
+  animation: ryanGradient 10s ease infinite;
 }
 
-@keyframes ryanPulse {
-  0%, 100% { filter: brightness(1) saturate(1); }
-  50%       { filter: brightness(1.25) saturate(1.3); }
+@keyframes ryanGradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
+
+/* Colour wheel */
+.ryan-color-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.ryan-color-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.ryan-color-btn:hover {
+  transform: scale(1.15);
+  border-color: #fff;
+}
+
 
 .profile-crown {
   margin-right: 0.35rem;
@@ -70,6 +110,18 @@
   border-radius: var(--radius-lg);
   color: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.profile-themed .profile-total-card {
+  background: linear-gradient(135deg, var(--ryan-accent), var(--ryan-accent-hover));
+}
+
+.profile-themed .profile-stat-value {
+  color: var(--ryan-accent);
+}
+
+.profile-themed .profile-streak-active {
+  color: #f59e0b !important;
 }
 
 .profile-total-number {

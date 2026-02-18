@@ -56,6 +56,8 @@ interface ComparePoint {
   [meetingName: string]: string | number;
 }
 
+type Timeframe = '4w' | '12w' | '6m' | '1y' | 'all';
+
 const LINE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function HistoryPage() {
@@ -86,10 +88,81 @@ export default function HistoryPage() {
   const [compareData, setCompareData] = useState<ComparePoint[]>([]);
   const [topAttendees, setTopAttendees] = useState<TopAttendee[]>([]);
   const [maxCount, setMaxCount] = useState(1);
-  const [topTimeframe, setTopTimeframe] = useState<'4w' | '12w' | '6m' | '1y' | 'all'>('12w');
+  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('12w');
+  const [compareTimeframe, setCompareTimeframe] = useState<Timeframe>('12w');
+  const [topTimeframe, setTopTimeframe] = useState<Timeframe>('12w');
+  const [chartLoading, setChartLoading] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
 
-  async function loadTopAttendees(timeframe: '4w' | '12w' | '6m' | '1y' | 'all') {
+  function timeframeCutoff(tf: Timeframe): string | null {
+    if (tf === 'all') return null;
+    const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
+    return shiftDate(getTodayDate(), -daysMap[tf]);
+  }
+
+  async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
+    setChartLoading(true);
+    let query = supabase.from('attendance_records').select('meeting_id, date');
+    const cutoff = timeframeCutoff(tf);
+    if (cutoff) query = query.gte('date', cutoff);
+    const { data } = await query;
+    if (data) {
+      const records = data as Array<{ meeting_id: string; date: string }>;
+      function weekOf(dateStr: string): string {
+        const d = new Date(dateStr + 'T00:00:00');
+        const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        d.setDate(d.getDate() - daysBack);
+        return d.toISOString().slice(0, 10);
+      }
+      const weekCounts = new Map<string, Map<string, number>>();
+      for (const r of records) {
+        const week = weekOf(r.date);
+        if (!weekCounts.has(week)) weekCounts.set(week, new Map());
+        const mc = weekCounts.get(week)!;
+        mc.set(r.meeting_id, (mc.get(r.meeting_id) || 0) + 1);
+      }
+      const allWeeks = Array.from(weekCounts.keys()).sort();
+      const points: WeekPoint[] = allWeeks.map(week => {
+        const sat = new Date(week + 'T00:00:00');
+        sat.setDate(sat.getDate() + 5);
+        const sun = new Date(week + 'T00:00:00');
+        sun.setDate(sun.getDate() + 6);
+        const satLabel = sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const label = sat.getMonth() === sun.getMonth()
+          ? `${satLabel}–${sun.getDate()}`
+          : `${satLabel}–${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        const point: WeekPoint = { date: week, label };
+        const mc = weekCounts.get(week)!;
+        for (const m of meetingsList) point[m.name] = mc.get(m.id) || 0;
+        return point;
+      });
+      setChartData(points);
+    }
+    setChartLoading(false);
+  }
+
+  async function loadCompareData(tf: Timeframe, meetingsList: Meeting[]) {
+    setCompareLoading(true);
+    let query = supabase.from('attendance_records').select('meeting_id');
+    const cutoff = timeframeCutoff(tf);
+    if (cutoff) query = query.gte('date', cutoff);
+    const { data } = await query;
+    if (data) {
+      const records = data as Array<{ meeting_id: string }>;
+      const totals = new Map<string, number>();
+      for (const r of records) totals.set(r.meeting_id, (totals.get(r.meeting_id) || 0) + 1);
+      setCompareData(meetingsList.map(m => ({ label: m.name, Attendance: totals.get(m.id) || 0 })));
+    }
+    setCompareLoading(false);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (meetings.length > 0) loadChartData(chartTimeframe, meetings); }, [chartTimeframe]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (meetings.length > 0) loadCompareData(compareTimeframe, meetings); }, [compareTimeframe]);
+
+  async function loadTopAttendees(timeframe: Timeframe) {
     setTopLoading(true);
     const today = getTodayDate();
     let query = supabase
@@ -119,23 +192,15 @@ export default function HistoryPage() {
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]);
+  useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     async function load() {
       const today = getTodayDate();
-      const weekStart = shiftDate(today, -12 * 7);
 
-      const [meetingsRes, dashRecordsRes] = await Promise.all([
-        supabase.from('meetings').select('*').order('display_order'),
-        supabase
-          .from('attendance_records')
-          .select('meeting_id, date, person_id, person:people(full_name)')
-          .gte('date', weekStart),
-      ]);
+      const meetingsRes = await supabase.from('meetings').select('*').order('display_order');
 
       const data = meetingsRes.data;
-      const dashRecords = (dashRecordsRes.data ?? []) as Array<Record<string, unknown>>;
 
       if (data) {
         setMeetings(data);
@@ -146,54 +211,8 @@ export default function HistoryPage() {
           setSelectedDate(snapToValidDate(today, day));
         }
 
-        // Build chart data — group by week (Mon–Sun) so Sat+Sun services share one X point
-        function weekOf(dateStr: string): string {
-          const d = new Date(dateStr + 'T00:00:00');
-          const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1; // days since Monday
-          d.setDate(d.getDate() - daysBack);
-          return d.toISOString().slice(0, 10);
-        }
-
-        const weekCounts = new Map<string, Map<string, number>>();
-        for (const r of dashRecords) {
-          const week = weekOf(r.date as string);
-          const mid = r.meeting_id as string;
-          if (!weekCounts.has(week)) weekCounts.set(week, new Map());
-          const mc = weekCounts.get(week)!;
-          mc.set(mid, (mc.get(mid) || 0) + 1);
-        }
-
-        const allWeeks = Array.from(weekCounts.keys()).sort();
-        const points: WeekPoint[] = allWeeks.map(week => {
-          // Label as "Feb 14–15" (Saturday–Sunday of that week)
-          const sat = new Date(week + 'T00:00:00');
-          sat.setDate(sat.getDate() + 5);
-          const sun = new Date(week + 'T00:00:00');
-          sun.setDate(sun.getDate() + 6);
-          const satLabel = sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const label = sat.getMonth() === sun.getMonth()
-            ? `${satLabel}–${sun.getDate()}`
-            : `${satLabel}–${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-          const point: WeekPoint = { date: week, label };
-          const mc = weekCounts.get(week)!;
-          for (const meeting of data) {
-            point[meeting.name] = mc.get(meeting.id) || 0;
-          }
-          return point;
-        });
-        setChartData(points);
-
-        // Build comparison data (total per meeting)
-        const meetingTotals = new Map<string, number>();
-        for (const r of dashRecords) {
-          const mid = r.meeting_id as string;
-          meetingTotals.set(mid, (meetingTotals.get(mid) || 0) + 1);
-        }
-        const comparePoints: ComparePoint[] = data.map(m => ({
-          label: m.name,
-          Attendance: meetingTotals.get(m.id) || 0,
-        }));
-        setCompareData(comparePoints);
+        loadChartData(chartTimeframe, data);
+        loadCompareData(compareTimeframe, data);
       }
       setLoading(false);
     }
@@ -373,9 +392,24 @@ export default function HistoryPage() {
       <div className="history-body">
       {/* Attendance Over Time — full width */}
       <section className="history-section">
-        <h2>Attendance Over Time <span className="dashboard-subtitle">(last 12 weeks)</span></h2>
-        {chartData.length === 0 ? (
-          <p className="history-empty">No attendance data in the last 12 weeks.</p>
+        <div className="section-header-row">
+          <h2>Attendance Over Time</h2>
+          <div className="timeframe-pills">
+            {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+              <button
+                key={tf}
+                className={`timeframe-pill${chartTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                onClick={() => setChartTimeframe(tf)}
+              >
+                {tf === 'all' ? 'All' : tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        {chartLoading ? (
+          <p className="history-empty">Loading...</p>
+        ) : chartData.length === 0 ? (
+          <p className="history-empty">No attendance data for this period.</p>
         ) : (
           <div className="dashboard-chart-wrapper">
             <ResponsiveContainer width="100%" height={240}>
@@ -433,8 +467,23 @@ export default function HistoryPage() {
       <div className="history-grid">
         {/* Ministry Comparison */}
         <section className="history-section">
-          <h2>Ministry Comparison <span className="dashboard-subtitle">(last 12 weeks)</span></h2>
-          {compareData.length === 0 ? (
+          <div className="section-header-row">
+            <h2>Ministry Comparison</h2>
+            <div className="timeframe-pills">
+              {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+                <button
+                  key={tf}
+                  className={`timeframe-pill${compareTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                  onClick={() => setCompareTimeframe(tf)}
+                >
+                  {tf === 'all' ? 'All' : tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          {compareLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : compareData.length === 0 ? (
             <p className="history-empty">No attendance data yet.</p>
           ) : (
             <div className="dashboard-chart-wrapper">
@@ -494,6 +543,7 @@ export default function HistoryPage() {
           ) : topAttendees.length === 0 ? (
             <p className="history-empty">No attendance data yet.</p>
           ) : (
+            <div className="leaderboard-scroll">
             <table className="leaderboard-table">
               <thead>
                 <tr>
@@ -533,6 +583,7 @@ export default function HistoryPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
 

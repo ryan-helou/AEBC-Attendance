@@ -18,6 +18,7 @@ export default function AttendancePage() {
   useEscapeBack();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
+  const [note, setNote] = useState('');
 
   const { searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
@@ -43,6 +44,32 @@ export default function AttendancePage() {
     }
     load();
   }, [meetingId]);
+
+  useEffect(() => {
+    async function loadNote() {
+      setNote('');
+      const { data } = await supabase
+        .from('meeting_notes')
+        .select('note')
+        .eq('meeting_id', meetingId!)
+        .eq('date', date!)
+        .maybeSingle();
+      setNote(data?.note ?? '');
+    }
+    loadNote();
+  }, [meetingId, date]);
+
+  async function saveNote() {
+    const trimmed = note.trim();
+    if (!trimmed) {
+      await supabase.from('meeting_notes').delete().eq('meeting_id', meetingId!).eq('date', date!);
+    } else {
+      await supabase.from('meeting_notes').upsert(
+        { meeting_id: meetingId, date, note: trimmed },
+        { onConflict: 'meeting_id,date' }
+      );
+    }
+  }
 
   const meetingDay = meeting ? getMeetingDay(meeting.name) : null;
 
@@ -72,8 +99,8 @@ export default function AttendancePage() {
   }, []);
 
   const handleSaveNewPerson = useCallback(
-    async (name: string, phone?: string, notes?: string) => {
-      const person = await addPerson(name, phone, notes);
+    async (name: string, notes?: string) => {
+      const person = await addPerson(name, notes);
       if (person) {
         await markAttendance(person.id, person);
       }
@@ -142,6 +169,15 @@ export default function AttendancePage() {
         <div className="attendance-count">{entries.length} present</div>
 
         <AttendanceTable entries={entries} onRemove={removeAttendance} />
+
+        <textarea
+          className="service-notes-input"
+          placeholder="Service notes…"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          onBlur={saveNote}
+          rows={2}
+        />
       </div>
 
       {addModalName !== null && (

@@ -13,7 +13,7 @@ export default function DataPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ full_name: '', phone: '', notes: '' });
+  const [editValues, setEditValues] = useState({ full_name: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
@@ -39,7 +39,6 @@ export default function DataPage() {
     setEditingId(person.id);
     setEditValues({
       full_name: person.full_name,
-      phone: person.phone || '',
       notes: person.notes || '',
     });
   }
@@ -63,7 +62,6 @@ export default function DataPage() {
       .from('people')
       .update({
         full_name: editValues.full_name.trim(),
-        phone: editValues.phone.trim() || null,
         notes: editValues.notes.trim() || null,
       })
       .eq('id', id);
@@ -76,7 +74,6 @@ export default function DataPage() {
               ? {
                   ...p,
                   full_name: editValues.full_name.trim(),
-                  phone: editValues.phone.trim() || null,
                   notes: editValues.notes.trim() || null,
                 }
               : p
@@ -197,7 +194,6 @@ export default function DataPage() {
             <tr>
               <th>#</th>
               <th>Name</th>
-              <th>Phone</th>
               <th>Notes</th>
               <th className="col-action"></th>
             </tr>
@@ -215,14 +211,6 @@ export default function DataPage() {
                         value={editValues.full_name}
                         onChange={e => setEditValues(v => ({ ...v, full_name: e.target.value }))}
                         autoFocus
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="data-edit-input"
-                        value={editValues.phone}
-                        onChange={e => setEditValues(v => ({ ...v, phone: e.target.value }))}
-                        placeholder="Phone"
                       />
                     </td>
                     <td>
@@ -253,7 +241,6 @@ export default function DataPage() {
                         {person.full_name}
                       </span>
                     </td>
-                    <td className="data-secondary">{person.phone || '—'}</td>
                     <td className="data-secondary">{person.notes || '—'}</td>
                     <td className="col-action">
                       <button className="data-edit-btn" onClick={() => startEdit(person)}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay } from '../lib/dateUtils';
@@ -7,6 +7,20 @@ import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import './PersonProfilePage.css';
+
+function hexDarken(hex: string, factor = 0.82): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return '#' + [r, g, b].map(c => Math.max(0, Math.round(c * factor)).toString(16).padStart(2, '0')).join('');
+}
+
+function hexLighten(hex: string, factor = 0.35): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return '#' + [r, g, b].map(c => Math.min(255, Math.round(c + (255 - c) * factor)).toString(16).padStart(2, '0')).join('');
+}
 
 interface AttendanceRow {
   id: string;
@@ -101,6 +115,10 @@ export default function PersonProfilePage() {
   const [totalAttendances, setTotalAttendances] = useState(0);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const [customColor, setCustomColor] = useState<string>(
+    () => localStorage.getItem('ryan-custom-hex') ?? '#7c3aed'
+  );
 
   useEffect(() => {
     if (!personId) return;
@@ -191,6 +209,12 @@ export default function PersonProfilePage() {
 
   const isRyan = person?.full_name === 'Ryan Helou';
 
+  function handleColorChange(hex: string) {
+    setCustomColor(hex);
+    localStorage.setItem('ryan-custom-hex', hex);
+  }
+
+
   if (loading) return <Spinner />;
   if (!person) {
     return (
@@ -204,13 +228,40 @@ export default function PersonProfilePage() {
   }
 
   return (
-    <div className={`profile-page ${isRyan ? 'profile-themed' : ''}`}>
+    <div
+      className={`profile-page ${isRyan ? 'profile-themed' : ''}`}
+      style={isRyan ? {
+        '--ryan-accent':       customColor,
+        '--ryan-accent-hover': hexDarken(customColor),
+        '--ryan-accent-dark':  hexDarken(customColor, 0.55),
+        '--ryan-accent-light': hexLighten(customColor, 0.4),
+      } as React.CSSProperties : undefined}
+    >
       <div className="profile-header">
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}
           {person.full_name}
         </h1>
+        {isRyan && (
+          <div className="ryan-color-picker">
+            <button
+              className="ryan-color-btn"
+              style={{ background: customColor }}
+              onClick={() => colorInputRef.current?.click()}
+              title="Pick accent colour"
+            >
+              🎨
+            </button>
+            <input
+              ref={colorInputRef}
+              type="color"
+              value={customColor}
+              onChange={e => handleColorChange(e.target.value)}
+              style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="profile-body">
