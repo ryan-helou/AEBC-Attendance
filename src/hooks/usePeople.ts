@@ -64,7 +64,7 @@ export function usePeople() {
       if (!query.trim()) return [];
 
       const q = query.trim();
-      const results: { person: Person; score: number; alreadyMarked: boolean }[] = [];
+      const results: { person: Person; score: number; alreadyMarked: boolean; notesMatch: boolean }[] = [];
 
       for (const person of peopleRef.current) {
         const score = scorePerson(person, q);
