@@ -186,7 +186,10 @@ export default function DataPage() {
   }
 
   const filtered = search.trim()
-    ? people.filter(p => p.full_name.toLowerCase().includes(search.toLowerCase()))
+    ? people.filter(p =>
+        p.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        (p.notes ?? '').toLowerCase().includes(search.toLowerCase())
+      )
     : people;
 
   if (loading) return <Spinner />;
