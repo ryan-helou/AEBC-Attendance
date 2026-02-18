@@ -36,6 +36,24 @@ interface MeetingStat {
   attendanceRate: number;
 }
 
+interface StreakBadge {
+  emoji: string;
+  label: string;
+  minWeeks: number;
+}
+
+const STREAK_BADGES: StreakBadge[] = [
+  { emoji: '👑', label: 'Legend',    minWeeks: 52 },
+  { emoji: '🏆', label: 'Champion',  minWeeks: 20 },
+  { emoji: '💎', label: 'Devoted',   minWeeks: 10 },
+  { emoji: '⚡', label: 'Consistent', minWeeks: 5 },
+  { emoji: '🔥', label: 'On Fire',   minWeeks: 2 },
+];
+
+function getStreakBadge(streak: number): StreakBadge | null {
+  return STREAK_BADGES.find(b => streak >= b.minWeeks) ?? null;
+}
+
 interface HistoryRow {
   id: string;
   meeting_id: string;
@@ -123,6 +141,9 @@ export default function PersonProfilePage() {
   const [customColor, setCustomColor] = useState<string>(
     () => localStorage.getItem('ryan-custom-hex') ?? '#7c3aed'
   );
+  const [showColorPanel, setShowColorPanel] = useState(false);
+
+  const GREY_SWATCHES = ['#ffffff', '#e2e8f0', '#94a3b8', '#64748b', '#334155', '#0f172a'];
 
   useEffect(() => {
     if (!personId) return;
@@ -246,6 +267,7 @@ export default function PersonProfilePage() {
   return (
     <div
       className={`profile-page ${isRyan ? 'profile-themed' : ''}`}
+      onMouseDown={() => setShowColorPanel(false)}
       style={isRyan ? {
         '--ryan-accent':       customColor,
         '--ryan-accent-hover': hexDarken(customColor),
@@ -264,18 +286,43 @@ export default function PersonProfilePage() {
             <button
               className="ryan-color-btn"
               style={{ background: customColor }}
-              onClick={() => colorInputRef.current?.click()}
+              onClick={() => setShowColorPanel(v => !v)}
               title="Pick accent colour"
             >
               🎨
             </button>
-            <input
-              ref={colorInputRef}
-              type="color"
-              value={customColor}
-              onChange={e => handleColorChange(e.target.value)}
-              style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
-            />
+            {showColorPanel && (
+              <div className="ryan-color-panel" onMouseDown={e => e.stopPropagation()}>
+                <div className="ryan-color-panel-inner">
+                  <div className="ryan-grey-swatches">
+                    {GREY_SWATCHES.map(hex => (
+                      <button
+                        key={hex}
+                        className={`ryan-swatch${customColor === hex ? ' ryan-swatch-active' : ''}`}
+                        style={{ background: hex }}
+                        onClick={() => { handleColorChange(hex); setShowColorPanel(false); }}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    className="ryan-color-wheel-btn"
+                    style={{ background: customColor }}
+                    onClick={() => colorInputRef.current?.click()}
+                    title="Open colour wheel"
+                  >
+                    🎨
+                  </button>
+                </div>
+                <input
+                  ref={colorInputRef}
+                  type="color"
+                  value={customColor}
+                  onChange={e => handleColorChange(e.target.value)}
+                  onBlur={() => setShowColorPanel(false)}
+                  style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -295,9 +342,18 @@ export default function PersonProfilePage() {
         rows={2}
       />
 
-      {meetingStats.map(stat => (
+      {meetingStats.map(stat => {
+        const badge = getStreakBadge(stat.longestStreak);
+        return (
         <div className="profile-meeting-card" key={stat.meeting.id}>
-          <span className="profile-meeting-name">{stat.meeting.name}</span>
+          <div className="profile-meeting-header">
+            <span className="profile-meeting-name">{stat.meeting.name}</span>
+            {badge && (
+              <span className="profile-streak-badge" title={`${badge.label} — ${stat.longestStreak}-week best streak`}>
+                {badge.emoji} {badge.label}
+              </span>
+            )}
+          </div>
           <div className="profile-stat-row">
             <div className="profile-stat-item">
               <span className="profile-stat-value">{stat.timesAttended}</span>
@@ -320,7 +376,8 @@ export default function PersonProfilePage() {
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
 
       <section className="profile-section">
         <h2>History</h2>
