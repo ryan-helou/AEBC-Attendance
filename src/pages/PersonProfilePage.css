@@ -76,14 +76,15 @@
   background: linear-gradient(
     -45deg,
     var(--ryan-accent-dark),
+    var(--ryan-accent-dark),
     var(--ryan-accent),
     var(--ryan-accent-light),
+    var(--ryan-accent-light),
     var(--ryan-accent),
-    var(--ryan-accent-hover),
     var(--ryan-accent-dark)
   );
-  background-size: 400% 400%;
-  animation: ryanGradient 10s ease infinite;
+  background-size: 600% 600%;
+  animation: ryanGradient 4s ease infinite;
 }
 
 @keyframes ryanGradient {
