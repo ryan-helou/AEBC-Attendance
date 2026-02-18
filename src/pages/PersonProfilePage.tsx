@@ -118,6 +118,7 @@ export default function PersonProfilePage() {
   const [totalAttendances, setTotalAttendances] = useState(0);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
+  const [notes, setNotes] = useState('');
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [customColor, setCustomColor] = useState<string>(
     () => localStorage.getItem('ryan-custom-hex') ?? '#7c3aed'
@@ -149,6 +150,7 @@ export default function PersonProfilePage() {
       const earliestDate = (earliestRes.data?.[0] as { date: string } | undefined)?.date;
 
       setPerson(personData);
+      setNotes(personData?.notes ?? '');
       setTotalAttendances(records.length);
 
       // Build meeting map for names
@@ -210,6 +212,15 @@ export default function PersonProfilePage() {
         .filter(s => s.timesAttended > 0)
     );
     await supabase.from('attendance_records').delete().eq('id', id);
+  }
+
+  async function saveNotes() {
+    const trimmed = notes.trim();
+    await supabase
+      .from('people')
+      .update({ notes: trimmed || null })
+      .eq('id', personId!);
+    setPerson(prev => prev ? { ...prev, notes: trimmed || null } : prev);
   }
 
   const isRyan = person?.full_name === 'Ryan Helou';
@@ -274,6 +285,15 @@ export default function PersonProfilePage() {
         <span className="profile-total-number">{totalAttendances}</span>
         <span className="profile-total-label">Total Attendances</span>
       </div>
+
+      <textarea
+        className="profile-notes-input"
+        placeholder="Notes…"
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        onBlur={saveNotes}
+        rows={2}
+      />
 
       {meetingStats.map(stat => (
         <div className="profile-meeting-card" key={stat.meeting.id}>
