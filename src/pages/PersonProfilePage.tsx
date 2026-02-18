@@ -87,18 +87,21 @@ function computeCurrentStreak(dates: string[], meetingDay: number | null): numbe
   return streak;
 }
 
-function countOccurrencesSince(earliest: string, meetingDay: number | null): number {
+function countOccurrencesSince(earliest: string, meetingDay: number | null, latest: string): number {
   if (meetingDay === null) return 0;
   const start = new Date(earliest + 'T00:00:00');
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  // Use whichever is later: today or the latest attendance date (handles future-dated records)
+  const latestDate = new Date(latest + 'T00:00:00');
+  const end = latestDate > today ? latestDate : today;
   let count = 0;
   const d = new Date(start);
   // Snap to the first matching day on or after start
   while (d.getDay() !== meetingDay) {
     d.setDate(d.getDate() + 1);
   }
-  while (d <= today) {
+  while (d <= end) {
     count++;
     d.setDate(d.getDate() + 7);
   }
@@ -172,10 +175,11 @@ export default function PersonProfilePage() {
         const longestStreak = computeLongestStreak(dates);
         const day = getMeetingDay(meeting.name);
         const currentStreak = computeCurrentStreak(dates, day);
+        const latestMeetingDate = [...dates].sort().at(-1)!;
 
         let attendanceRate = 0;
         if (earliestDate) {
-          const totalOccurrences = countOccurrencesSince(earliestDate, day);
+          const totalOccurrences = countOccurrencesSince(earliestDate, day, latestMeetingDate);
           if (totalOccurrences > 0) {
             attendanceRate = Math.round((timesAttended / totalOccurrences) * 100);
           }
