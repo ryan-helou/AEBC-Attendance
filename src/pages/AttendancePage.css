@@ -5,7 +5,7 @@
 }
 
 .attendance-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;

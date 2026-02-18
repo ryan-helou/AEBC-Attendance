@@ -11,6 +11,15 @@ interface AttendanceInputProps {
   onAddNew: (name: string) => void;
 }
 
+interface CrossItem {
+  id: number;
+  left: number;
+  size: number;
+  delay: number;
+  duration: number;
+  wobble: number;
+}
+
 export default function AttendanceInput({
   searchPeople,
   markedPersonIds,
@@ -22,7 +31,23 @@ export default function AttendanceInput({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [crosses, setCrosses] = useState<CrossItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const crossTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function triggerCrossShower() {
+    if (crossTimerRef.current) clearTimeout(crossTimerRef.current);
+    const newCrosses: CrossItem[] = Array.from({ length: 80 }, (_, i) => ({
+      id: i,
+      left: 5 + Math.random() * 90,
+      size: 1.4 + Math.random() * 2.8,
+      delay: Math.random() * 2,
+      duration: 3.5 + Math.random() * 2,
+      wobble: (Math.random() - 0.5) * 60,
+    }));
+    setCrosses(newCrosses);
+    crossTimerRef.current = setTimeout(() => setCrosses([]), 7000);
+  }
 
   const updateResults = useCallback(
     (q: string) => {
@@ -35,6 +60,13 @@ export default function AttendanceInput({
   );
 
   function handleChange(value: string) {
+    if (value.toLowerCase() === 'amen') {
+      triggerCrossShower();
+      setQuery('');
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
     setQuery(value);
     updateResults(value);
   }
@@ -88,31 +120,52 @@ export default function AttendanceInput({
   }
 
   return (
-    <div className={'attendance-input-wrapper' + (flash ? ' flash' : '')}>
-      <input
-        ref={inputRef}
-        type="text"
-        className="attendance-input"
-        placeholder="Type a name..."
-        value={query}
-        onChange={e => handleChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onFocus={() => {
-          if (query.trim()) updateResults(query);
-        }}
-        onBlur={() => setShowDropdown(false)}
-        autoFocus
-        autoComplete="off"
-      />
-      {showDropdown && (
-        <SuggestionList
-          results={results}
-          highlightedIndex={highlightedIndex}
-          onSelect={selectPerson}
-          query={query}
-          onAddNew={handleAddNew}
-        />
+    <>
+      {crosses.length > 0 && (
+        <div className="cross-shower-overlay" aria-hidden="true">
+          {crosses.map(c => (
+            <span
+              key={c.id}
+              className="cross-item"
+              style={{
+                left: `${c.left}%`,
+                fontSize: `${c.size}rem`,
+                animationDelay: `${c.delay}s`,
+                animationDuration: `${c.duration}s`,
+                '--wobble': `${c.wobble}px`,
+              } as React.CSSProperties}
+            >
+              ✝
+            </span>
+          ))}
+        </div>
       )}
-    </div>
+      <div className={'attendance-input-wrapper' + (flash ? ' flash' : '')}>
+        <input
+          ref={inputRef}
+          type="text"
+          className="attendance-input"
+          placeholder="Type a name..."
+          value={query}
+          onChange={e => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (query.trim()) updateResults(query);
+          }}
+          onBlur={() => setShowDropdown(false)}
+          autoFocus
+          autoComplete="off"
+        />
+        {showDropdown && (
+          <SuggestionList
+            results={results}
+            highlightedIndex={highlightedIndex}
+            onSelect={selectPerson}
+            query={query}
+            onAddNew={handleAddNew}
+          />
+        )}
+      </div>
+    </>
   );
 }
