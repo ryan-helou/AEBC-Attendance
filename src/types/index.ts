@@ -7,7 +7,6 @@ export interface Meeting {
 export interface Person {
   id: string;
   full_name: string;
-  phone: string | null;
   notes: string | null;
   created_at: string;
 }

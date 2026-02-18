@@ -100,14 +100,13 @@ export function usePeople() {
   }, []);
 
   const addPerson = useCallback(
-    async (fullName: string, phone?: string, notes?: string): Promise<Person | null> => {
+    async (fullName: string, notes?: string): Promise<Person | null> => {
       if (isDuplicate(fullName)) return null;
 
       const { data, error } = await supabase
         .from('people')
         .insert({
           full_name: fullName.trim(),
-          phone: phone?.trim() || null,
           notes: notes?.trim() || null,
         })
         .select()
