@@ -17,6 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   font-size: 0.9375rem;
   transition: background-color var(--transition-fast);
 }
@@ -36,8 +37,25 @@
   background-color: transparent;
 }
 
+.suggestion-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .suggestion-name {
   font-weight: 500;
+  white-space: nowrap;
+}
+
+.suggestion-notes {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .suggestion-badge {

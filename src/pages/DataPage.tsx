@@ -269,6 +269,7 @@ export default function DataPage() {
                         className="data-edit-input"
                         value={editValues.full_name}
                         onChange={e => setEditValues(v => ({ ...v, full_name: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(person.id); else if (e.key === 'Escape') cancelEdit(); }}
                         autoFocus
                       />
                     </td>
@@ -277,6 +278,7 @@ export default function DataPage() {
                         className="data-edit-input"
                         value={editValues.notes}
                         onChange={e => setEditValues(v => ({ ...v, notes: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(person.id); else if (e.key === 'Escape') cancelEdit(); }}
                         placeholder="Notes"
                       />
                     </td>
