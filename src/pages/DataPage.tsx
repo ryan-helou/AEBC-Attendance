@@ -155,6 +155,7 @@ export default function DataPage() {
         </button>
       </div>
 
+      <div className="data-body">
       <div className="data-search-wrapper">
         <input
           className="data-search"
@@ -277,6 +278,7 @@ export default function DataPage() {
           onCancel={() => setDeleteId(null)}
         />
       )}
+      </div>
     </div>
   );
 }

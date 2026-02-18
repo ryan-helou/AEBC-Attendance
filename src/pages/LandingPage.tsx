@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getTodayDate, formatDate } from '../lib/dateUtils';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useAccentColor, COLOR_PALETTE } from '../hooks/useAccentColor';
 import type { Meeting } from '../types';
 import MeetingCard from '../components/MeetingCard';
 import Spinner from '../components/Spinner';
@@ -18,7 +19,21 @@ export default function LandingPage() {
   const [verseFading, setVerseFading] = useState(false);
   const { logout } = useAuth();
   const { dark, toggle: toggleTheme } = useTheme();
+  const { accent, setAccent } = useAccentColor(dark);
+  const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!showSettings) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setShowSettings(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSettings]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -79,6 +94,40 @@ export default function LandingPage() {
             <p className="landing-date">{formatDate(getTodayDate())}</p>
           </div>
           <div className="landing-header-actions">
+            <div className="settings-container" ref={settingsRef}>
+              <button
+                className="theme-toggle-btn"
+                onClick={() => setShowSettings(s => !s)}
+                title="Settings"
+              >
+                ⚙
+              </button>
+              {showSettings && (
+                <div className="settings-panel">
+                  <p className="settings-label">Accent Colour</p>
+                  <div className="settings-swatches">
+                    {Array.from({ length: 5 }, (_, row) =>
+                      COLOR_PALETTE.map(col => {
+                        const color = col[row];
+                        return (
+                          <button
+                            key={color.name}
+                            className={
+                              'settings-swatch' +
+                              (row === 0 ? ' settings-swatch-base' : '') +
+                              (accent.name === color.name ? ' settings-swatch-active' : '')
+                            }
+                            style={{ background: color.light }}
+                            title={color.name}
+                            onClick={() => setAccent(color)}
+                          />
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <button className="theme-toggle-btn" onClick={toggleTheme}>
               {dark ? 'Light' : 'Dark'}
             </button>

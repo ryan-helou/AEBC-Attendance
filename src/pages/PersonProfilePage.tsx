@@ -101,7 +101,6 @@ export default function PersonProfilePage() {
   const [totalAttendances, setTotalAttendances] = useState(0);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
-  const [nameColor, setNameColor] = useState(() => localStorage.getItem('ryan-name-color') || '#d4af37');
 
   useEffect(() => {
     if (!personId) return;
@@ -205,25 +204,16 @@ export default function PersonProfilePage() {
   }
 
   return (
-    <div
-      className={`profile-page ${isRyan ? 'profile-themed' : ''}`}
-      style={isRyan ? { '--theme-color': nameColor } as React.CSSProperties : undefined}
-    >
+    <div className={`profile-page ${isRyan ? 'profile-themed' : ''}`}>
       <div className="profile-header">
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
-        <h1 className={isRyan ? 'profile-name-special' : ''}>
+        <h1>
+          {isRyan && <span className="profile-crown">👑</span>}
           {person.full_name}
         </h1>
-        {isRyan && (
-          <input
-            type="color"
-            className="profile-color-picker"
-            value={nameColor}
-            onChange={e => { setNameColor(e.target.value); localStorage.setItem('ryan-name-color', e.target.value); }}
-          />
-        )}
       </div>
 
+      <div className="profile-body">
       <div className="profile-total-card">
         <span className="profile-total-number">{totalAttendances}</span>
         <span className="profile-total-label">Total Attendances</span>
@@ -300,6 +290,7 @@ export default function PersonProfilePage() {
           onCancel={() => setPendingDelete(null)}
         />
       )}
+      </div>
     </div>
   );
 }

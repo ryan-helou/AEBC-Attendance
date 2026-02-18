@@ -86,6 +86,40 @@ export default function HistoryPage() {
   const [compareData, setCompareData] = useState<ComparePoint[]>([]);
   const [topAttendees, setTopAttendees] = useState<TopAttendee[]>([]);
   const [maxCount, setMaxCount] = useState(1);
+  const [topTimeframe, setTopTimeframe] = useState<'4w' | '12w' | '6m' | '1y' | 'all'>('12w');
+  const [topLoading, setTopLoading] = useState(false);
+
+  async function loadTopAttendees(timeframe: '4w' | '12w' | '6m' | '1y' | 'all') {
+    setTopLoading(true);
+    const today = getTodayDate();
+    let query = supabase
+      .from('attendance_records')
+      .select('person_id, person:people(full_name)');
+    if (timeframe !== 'all') {
+      const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
+      query = query.gte('date', shiftDate(today, -daysMap[timeframe]));
+    }
+    const { data } = await query;
+    if (data) {
+      const personCounts = new Map<string, { name: string; count: number }>();
+      for (const r of data as Array<Record<string, unknown>>) {
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const existing = personCounts.get(pid);
+        if (existing) { existing.count++; } else { personCounts.set(pid, { name, count: 1 }); }
+      }
+      const sorted = Array.from(personCounts.entries())
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 15)
+        .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.count }));
+      setTopAttendees(sorted);
+      setMaxCount(sorted[0]?.count || 1);
+    }
+    setTopLoading(false);
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]);
 
   useEffect(() => {
     async function load() {
@@ -112,49 +146,42 @@ export default function HistoryPage() {
           setSelectedDate(snapToValidDate(today, day));
         }
 
-        // Build chart data
-        const dateMeetingCounts = new Map<string, Map<string, number>>();
+        // Build chart data — group by week (Mon–Sun) so Sat+Sun services share one X point
+        function weekOf(dateStr: string): string {
+          const d = new Date(dateStr + 'T00:00:00');
+          const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1; // days since Monday
+          d.setDate(d.getDate() - daysBack);
+          return d.toISOString().slice(0, 10);
+        }
+
+        const weekCounts = new Map<string, Map<string, number>>();
         for (const r of dashRecords) {
-          const d = r.date as string;
+          const week = weekOf(r.date as string);
           const mid = r.meeting_id as string;
-          if (!dateMeetingCounts.has(d)) dateMeetingCounts.set(d, new Map());
-          const mc = dateMeetingCounts.get(d)!;
+          if (!weekCounts.has(week)) weekCounts.set(week, new Map());
+          const mc = weekCounts.get(week)!;
           mc.set(mid, (mc.get(mid) || 0) + 1);
         }
 
-        const allDates = Array.from(dateMeetingCounts.keys()).sort();
-        const points: WeekPoint[] = allDates.map(dateStr => {
-          const d = parseDate(dateStr);
-          const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          const point: WeekPoint = { date: dateStr, label };
-          const mc = dateMeetingCounts.get(dateStr)!;
+        const allWeeks = Array.from(weekCounts.keys()).sort();
+        const points: WeekPoint[] = allWeeks.map(week => {
+          // Label as "Feb 14–15" (Saturday–Sunday of that week)
+          const sat = new Date(week + 'T00:00:00');
+          sat.setDate(sat.getDate() + 5);
+          const sun = new Date(week + 'T00:00:00');
+          sun.setDate(sun.getDate() + 6);
+          const satLabel = sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const label = sat.getMonth() === sun.getMonth()
+            ? `${satLabel}–${sun.getDate()}`
+            : `${satLabel}–${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+          const point: WeekPoint = { date: week, label };
+          const mc = weekCounts.get(week)!;
           for (const meeting of data) {
             point[meeting.name] = mc.get(meeting.id) || 0;
           }
           return point;
         });
         setChartData(points);
-
-        // Build top attendees
-        const personCounts = new Map<string, { name: string; count: number }>();
-        for (const r of dashRecords) {
-          const pid = r.person_id as string;
-          const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-          const existing = personCounts.get(pid);
-          if (existing) {
-            existing.count++;
-          } else {
-            personCounts.set(pid, { name, count: 1 });
-          }
-        }
-
-        const sorted = Array.from(personCounts.entries())
-          .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 15)
-          .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.count }));
-
-        setTopAttendees(sorted);
-        setMaxCount(sorted[0]?.count || 1);
 
         // Build comparison data (total per meeting)
         const meetingTotals = new Map<string, number>();
@@ -343,6 +370,7 @@ export default function HistoryPage() {
         </button>
       </div>
 
+      <div className="history-body">
       {/* Attendance Over Time — full width */}
       <section className="history-section">
         <h2>Attendance Over Time <span className="dashboard-subtitle">(last 12 weeks)</span></h2>
@@ -447,8 +475,23 @@ export default function HistoryPage() {
 
         {/* Top Attendees */}
         <section className="history-section leaderboard-section">
-          <h2>Top Attendees <span className="dashboard-subtitle">(last 12 weeks)</span></h2>
-          {topAttendees.length === 0 ? (
+          <div className="section-header-row">
+            <h2>Top Attendees</h2>
+            <div className="timeframe-pills">
+              {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+                <button
+                  key={tf}
+                  className={`timeframe-pill${topTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                  onClick={() => setTopTimeframe(tf)}
+                >
+                  {tf === 'all' ? 'All' : tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          {topLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topAttendees.length === 0 ? (
             <p className="history-empty">No attendance data yet.</p>
           ) : (
             <table className="leaderboard-table">
@@ -640,6 +683,7 @@ export default function HistoryPage() {
           onCancel={() => setPendingDelete(null)}
         />
       )}
+      </div>
     </div>
   );
 }
