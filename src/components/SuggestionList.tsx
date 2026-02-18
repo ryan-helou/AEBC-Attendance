@@ -50,7 +50,12 @@ export default function SuggestionList({
             if (!result.alreadyMarked) onSelect(result);
           }}
         >
-          <span className="suggestion-name">{result.person.full_name}</span>
+          <span className="suggestion-main">
+            <span className="suggestion-name">{result.person.full_name}</span>
+            {result.person.notes && (
+              <span className="suggestion-notes">{result.person.notes}</span>
+            )}
+          </span>
           {result.alreadyMarked && (
             <span className="suggestion-badge">Already marked</span>
           )}

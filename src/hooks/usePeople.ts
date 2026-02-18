@@ -5,6 +5,7 @@ import type { Person } from '../types';
 export interface SearchResult {
   person: Person;
   alreadyMarked: boolean;
+  notesMatch: boolean;
 }
 
 function scorePerson(person: Person, query: string): number {
@@ -20,6 +21,8 @@ function scorePerson(person: Person, query: string): number {
   }
 
   if (name.includes(q)) return 70;
+
+  if (person.notes?.toLowerCase().includes(q)) return 50;
 
   return 0;
 }
@@ -70,6 +73,7 @@ export function usePeople() {
             person,
             score,
             alreadyMarked: markedIds.has(person.id),
+            notesMatch: score <= 50,
           });
         }
       }
@@ -86,9 +90,10 @@ export function usePeople() {
         return a.person.full_name.localeCompare(b.person.full_name);
       });
 
-      return results.slice(0, 20).map(({ person, alreadyMarked }) => ({
+      return results.slice(0, 20).map(({ person, alreadyMarked, notesMatch }) => ({
         person,
         alreadyMarked,
+        notesMatch,
       }));
     },
     []
