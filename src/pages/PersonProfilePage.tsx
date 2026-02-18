@@ -135,6 +135,7 @@ export default function PersonProfilePage() {
         supabase
           .from('attendance_records')
           .select('date')
+          .eq('person_id', personId)
           .order('date', { ascending: true })
           .limit(1),
       ]);
