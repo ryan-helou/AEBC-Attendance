@@ -58,6 +58,27 @@ interface ComparePoint {
 
 type Timeframe = '4w' | '12w' | '6m' | '1y' | 'all';
 
+interface StreakLeader {
+  person_id: string;
+  person_name: string;
+  meeting_name: string;
+  streak: number;
+}
+
+function computeLongestStreak(dates: string[]): number {
+  if (dates.length === 0) return 0;
+  const sorted = [...dates].sort();
+  let longest = 1, current = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1] + 'T00:00:00');
+    const curr = new Date(sorted[i] + 'T00:00:00');
+    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 7) { current++; if (current > longest) longest = current; }
+    else current = 1;
+  }
+  return longest;
+}
+
 const LINE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function HistoryPage() {
@@ -94,6 +115,8 @@ export default function HistoryPage() {
   const [chartLoading, setChartLoading] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
+  const [streakLeaders, setStreakLeaders] = useState<StreakLeader[]>([]);
+  const [streakLoading, setStreakLoading] = useState(true);
 
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
@@ -162,6 +185,31 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (meetings.length > 0) loadCompareData(compareTimeframe, meetings); }, [compareTimeframe]);
 
+  async function loadStreakLeaders() {
+    setStreakLoading(true);
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('person_id, meeting_id, date, person:people(full_name), meeting:meetings(name)');
+    if (data) {
+      const groups = new Map<string, { person_id: string; person_name: string; meeting_name: string; dates: string[] }>();
+      for (const r of data as Array<Record<string, unknown>>) {
+        const key = `${r.person_id}|${r.meeting_id}`;
+        const personName = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const meetingName = ((r.meeting as Record<string, unknown>)?.name as string) || 'Unknown';
+        if (!groups.has(key)) groups.set(key, { person_id: r.person_id as string, person_name: personName, meeting_name: meetingName, dates: [] });
+        groups.get(key)!.dates.push(r.date as string);
+      }
+      const leaders: StreakLeader[] = [];
+      for (const g of groups.values()) {
+        const streak = computeLongestStreak(g.dates);
+        if (streak >= 2) leaders.push({ person_id: g.person_id, person_name: g.person_name, meeting_name: g.meeting_name, streak });
+      }
+      leaders.sort((a, b) => b.streak - a.streak);
+      setStreakLeaders(leaders.slice(0, 15));
+    }
+    setStreakLoading(false);
+  }
+
   async function loadTopAttendees(timeframe: Timeframe) {
     setTopLoading(true);
     const today = getTodayDate();
@@ -214,6 +262,7 @@ export default function HistoryPage() {
         loadChartData(chartTimeframe, data);
         loadCompareData(compareTimeframe, data);
       }
+      loadStreakLeaders();
       setLoading(false);
     }
     load();
@@ -583,6 +632,51 @@ export default function HistoryPage() {
                 ))}
               </tbody>
             </table>
+            </div>
+          )}
+        </section>
+
+        {/* Streak Leaderboard */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🔥 Best Streaks</h2>
+          {streakLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : streakLeaders.length === 0 ? (
+            <p className="history-empty">Not enough data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th>Meeting</th>
+                    <th className="lb-col-count">Weeks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {streakLeaders.map((leader, i) => (
+                    <tr
+                      key={leader.person_id + leader.meeting_name}
+                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      onClick={() => navigate(`/person/${leader.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {i < 3 ? (
+                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        ) : (
+                          <span className="lb-rank-num">{i + 1}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{leader.person_name}</span>
+                      </td>
+                      <td className="streak-lb-meeting">{leader.meeting_name}</td>
+                      <td className="lb-col-count">🔥 {leader.streak}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
