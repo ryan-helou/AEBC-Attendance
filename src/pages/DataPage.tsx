@@ -5,6 +5,7 @@ import type { Person } from '../types';
 import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import '../components/AddPersonModal.css';
 import './DataPage.css';
 
 export default function DataPage() {
@@ -21,6 +22,11 @@ export default function DataPage() {
   const [importStatus, setImportStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showMerge, setShowMerge] = useState(false);
+  const [mergeSelected, setMergeSelected] = useState<string[]>([]);
+  const [mergeKeepId, setMergeKeepId] = useState<string | null>(null);
+  const [mergeSearch, setMergeSearch] = useState('');
+  const [merging, setMerging] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -95,6 +101,51 @@ export default function DataPage() {
     setDeleteId(null);
   }
 
+  function closeMerge() {
+    setShowMerge(false);
+    setMergeSelected([]);
+    setMergeKeepId(null);
+    setMergeSearch('');
+  }
+
+  function toggleMergeSelect(id: string) {
+    setMergeSelected(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id);
+      if (prev.length >= 2) return prev;
+      return [...prev, id];
+    });
+    setMergeKeepId(null);
+  }
+
+  async function executeMerge() {
+    if (mergeSelected.length !== 2 || !mergeKeepId) return;
+    const loserId = mergeSelected.find(id => id !== mergeKeepId)!;
+    const keeperId = mergeKeepId;
+    setMerging(true);
+
+    const { data: keeperRecords } = await supabase
+      .from('attendance_records').select('meeting_id, date').eq('person_id', keeperId);
+    const keeperSet = new Set(
+      (keeperRecords ?? []).map((r: Record<string, string>) => `${r.meeting_id}|${r.date}`)
+    );
+
+    const { data: loserRecords } = await supabase
+      .from('attendance_records').select('id, meeting_id, date').eq('person_id', loserId);
+    const conflictIds = (loserRecords ?? [])
+      .filter((r: Record<string, string>) => keeperSet.has(`${r.meeting_id}|${r.date}`))
+      .map((r: Record<string, string>) => r.id);
+
+    if (conflictIds.length > 0) {
+      await supabase.from('attendance_records').delete().in('id', conflictIds);
+    }
+    await supabase.from('attendance_records').update({ person_id: keeperId }).eq('person_id', loserId);
+    await supabase.from('people').delete().eq('id', loserId);
+
+    setPeople(prev => prev.filter(p => p.id !== loserId));
+    closeMerge();
+    setMerging(false);
+  }
+
   async function handleImport() {
     const names = importText
       .split(',')
@@ -147,9 +198,14 @@ export default function DataPage() {
           &larr;
         </button>
         <h1>All People ({people.length})</h1>
-        <button className="import-toggle-btn" onClick={() => setShowImport(v => !v)}>
-          {showImport ? 'Cancel' : 'Import'}
-        </button>
+        <div className="header-btn-group">
+          <button className="import-toggle-btn" onClick={() => setShowMerge(true)}>
+            Merge
+          </button>
+          <button className="import-toggle-btn" onClick={() => setShowImport(v => !v)}>
+            {showImport ? 'Cancel' : 'Import'}
+          </button>
+        </div>
       </div>
 
       <div className="data-body">
@@ -265,6 +321,74 @@ export default function DataPage() {
           onCancel={() => setDeleteId(null)}
         />
       )}
+
+      {showMerge && (() => {
+        const filtered = people.filter(p =>
+          p.full_name.toLowerCase().includes(mergeSearch.toLowerCase())
+        );
+        const twoSelected = mergeSelected.length === 2;
+        return (
+          <div className="modal-overlay" onMouseDown={closeMerge}>
+            <div className="modal-card merge-modal" onMouseDown={e => e.stopPropagation()}>
+              <h2>Merge People</h2>
+              <p className="merge-subtitle">Select 2 people to merge{twoSelected ? ' — keep which name?' : ''}.</p>
+              {!twoSelected && (
+                <input
+                  className="merge-search-input"
+                  type="text"
+                  placeholder="Search…"
+                  value={mergeSearch}
+                  onChange={e => setMergeSearch(e.target.value)}
+                  autoFocus
+                />
+              )}
+              {!twoSelected ? (
+                <ul className="merge-list">
+                  {filtered.map(p => (
+                    <li
+                      key={p.id}
+                      className={`merge-list-item${mergeSelected.includes(p.id) ? ' merge-list-item-selected' : ''}`}
+                      onClick={() => toggleMergeSelect(p.id)}
+                    >
+                      <span className="merge-check">{mergeSelected.includes(p.id) ? '✓' : ''}</span>
+                      {p.full_name}
+                    </li>
+                  ))}
+                  {filtered.length === 0 && <li className="merge-list-empty">No results</li>}
+                </ul>
+              ) : (
+                <div className="merge-options">
+                  {mergeSelected.map(id => {
+                    const p = people.find(pp => pp.id === id)!;
+                    return (
+                      <button
+                        key={id}
+                        className={`merge-option${mergeKeepId === id ? ' merge-option-active' : ''}`}
+                        onClick={() => setMergeKeepId(id)}
+                      >
+                        {p.full_name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {twoSelected && (
+                <p className="merge-warning">All attendance records will be combined. The other person will be removed.</p>
+              )}
+              <div className="modal-actions">
+                <button className="modal-cancel" onClick={twoSelected ? () => { setMergeSelected([]); setMergeKeepId(null); } : closeMerge}>
+                  {twoSelected ? 'Back' : 'Cancel'}
+                </button>
+                {twoSelected && (
+                  <button className="modal-save" onClick={executeMerge} disabled={merging || !mergeKeepId}>
+                    {merging ? 'Merging…' : 'Merge'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       </div>
     </div>
   );
