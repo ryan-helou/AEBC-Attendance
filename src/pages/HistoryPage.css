@@ -222,7 +222,7 @@
 }
 
 .alltime-name {
-  color: var(--color-primary);
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -262,12 +262,13 @@
 }
 
 .person-link {
-  color: var(--color-primary);
+  color: var(--color-text);
   cursor: pointer;
-  transition: text-decoration var(--transition-fast);
+  transition: color var(--transition-fast), text-decoration var(--transition-fast);
 }
 
 .person-link:hover {
+  color: var(--color-primary);
   text-decoration: underline;
 }
 

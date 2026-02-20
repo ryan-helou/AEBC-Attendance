@@ -13,6 +13,7 @@ import {
   BarChart,
   Bar,
   Cell,
+  LabelList,
   XAxis,
   YAxis,
   Tooltip,
@@ -80,6 +81,15 @@ function computeLongestStreak(dates: string[]): number {
 }
 
 const LINE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+const COMPARE_COLORS = [
+  { base: '#8b5cf6', light: '#a78bfa' },
+  { base: '#0ea5e9', light: '#38bdf8' },
+  { base: '#10b981', light: '#34d399' },
+  { base: '#f59e0b', light: '#fbbf24' },
+  { base: '#f43f5e', light: '#fb7185' },
+  { base: '#4f46e5', light: '#6366f1' },
+];
 
 export default function HistoryPage() {
   const navigate = useNavigate();
@@ -536,33 +546,52 @@ export default function HistoryPage() {
             <p className="history-empty">No attendance data yet.</p>
           ) : (
             <div className="dashboard-chart-wrapper">
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={compareData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }} barGap={8}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <ResponsiveContainer width="100%" height={230}>
+                <BarChart data={compareData} margin={{ top: 24, right: 16, bottom: 4, left: -10 }} barCategoryGap="38%">
+                  <defs>
+                    {COMPARE_COLORS.map((c, i) => (
+                      <linearGradient key={i} id={`cmp-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={c.light} stopOpacity={1} />
+                        <stop offset="100%" stopColor={c.base} stopOpacity={0.9} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" stroke="var(--color-border)" vertical={false} strokeOpacity={0.6} />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)', fontWeight: 500 }}
                     tickLine={false}
-                    axisLine={{ stroke: 'var(--color-border)' }}
+                    axisLine={false}
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
                     tickLine={false}
                     axisLine={false}
-                    width={30}
+                    width={28}
                   />
                   <Tooltip
+                    cursor={{ fill: 'var(--color-primary-light)', radius: 6 }}
                     contentStyle={{
-                      borderRadius: '8px',
+                      borderRadius: '10px',
                       border: '1px solid var(--color-border)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                       fontSize: '0.8125rem',
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      padding: '8px 12px',
                     }}
+                    labelStyle={{ fontWeight: 600, marginBottom: '2px', color: 'var(--color-text)' }}
+                    itemStyle={{ color: 'var(--color-text-secondary)' }}
                   />
-                  <Bar dataKey="Attendance" radius={[6, 6, 0, 0]} maxBarSize={80}>
+                  <Bar dataKey="Attendance" radius={[8, 8, 3, 3]} maxBarSize={68}>
+                    <LabelList
+                      dataKey="Attendance"
+                      position="top"
+                      style={{ fontSize: '11px', fontWeight: 700, fill: 'var(--color-text-secondary)' }}
+                    />
                     {compareData.map((_entry, i) => (
-                      <Cell key={i} fill={LINE_COLORS[i % LINE_COLORS.length]} />
+                      <Cell key={i} fill={`url(#cmp-grad-${i % COMPARE_COLORS.length})`} />
                     ))}
                   </Bar>
                 </BarChart>

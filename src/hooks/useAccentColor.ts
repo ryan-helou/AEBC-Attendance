@@ -100,6 +100,13 @@ export const COLOR_PALETTE: AccentColor[][] = [
     ac('Cyan-700',    '#0e7490', '#155e75', '#0891b2', '#06b6d4'),
     ac('Cyan-900',    '#164e63', '#164e63', '#155e75', '#0e7490'),
   ],
+  [ // Grey
+    ac('Grey',        '#52525b', '#3f3f46', '#a1a1aa', '#d4d4d8'),
+    ac('Grey-400',    '#a1a1aa', '#71717a', '#d4d4d8', '#a1a1aa'),
+    ac('Grey-300',    '#d4d4d8', '#a1a1aa', '#e4e4e7', '#d4d4d8'),
+    ac('Grey-700',    '#3f3f46', '#27272a', '#52525b', '#71717a'),
+    ac('Grey-900',    '#18181b', '#18181b', '#27272a', '#3f3f46'),
+  ],
 ];
 
 export const ACCENT_COLORS: AccentColor[] = COLOR_PALETTE.flat();
