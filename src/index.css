@@ -112,20 +112,20 @@ input::placeholder {
   --color-success-light: rgba(34, 197, 94, 0.15);
   --color-danger: #ef4444;
   --color-danger-hover: #f87171;
-  --color-bg: #0f172a;
-  --color-surface: #1e293b;
-  --color-border: #334155;
-  --color-text: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
-  --color-header: #f8fafc;
+  --color-bg: #18181b;
+  --color-surface: #27272a;
+  --color-border: #3f3f46;
+  --color-text: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #71717a;
+  --color-header: #fafafa;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 [data-theme="dark"] body {
-  background: linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%);
+  background: linear-gradient(135deg, #18181b 0%, #232326 50%, #18181b 100%);
 }
 
 @media print {
