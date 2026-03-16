@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import './AddPersonModal.css';
 
 interface AddPersonModalProps {
@@ -14,6 +14,14 @@ export default function AddPersonModal({ initialName, onSave, onCancel, isDuplic
   const [saving, setSaving] = useState(false);
 
   const duplicate = isDuplicate ? isDuplicate(name) : false;
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

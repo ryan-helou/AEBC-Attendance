@@ -137,6 +137,9 @@ export default function PersonProfilePage() {
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
   const [notes, setNotes] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
   const [customColor, setCustomColor] = useState<string>(
     () => localStorage.getItem('ryan-custom-hex') ?? '#7c3aed'
@@ -244,6 +247,23 @@ export default function PersonProfilePage() {
     setPerson(prev => prev ? { ...prev, notes: trimmed || null } : prev);
   }
 
+  function startEditName() {
+    setNameValue(person?.full_name ?? '');
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  }
+
+  async function saveName() {
+    const trimmed = nameValue.trim();
+    if (!trimmed || trimmed === person?.full_name) {
+      setEditingName(false);
+      return;
+    }
+    await supabase.from('people').update({ full_name: trimmed }).eq('id', personId!);
+    setPerson(prev => prev ? { ...prev, full_name: trimmed } : prev);
+    setEditingName(false);
+  }
+
   const isRyan = person?.full_name === 'Ryan Helou';
 
   function handleColorChange(hex: string) {
@@ -279,7 +299,24 @@ export default function PersonProfilePage() {
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}
-          {person.full_name}
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              className="profile-name-input"
+              value={nameValue}
+              onChange={e => setNameValue(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveName();
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              autoFocus
+            />
+          ) : (
+            <span className="profile-name-tap" onClick={startEditName}>
+              {person.full_name}
+            </span>
+          )}
         </h1>
         {isRyan && (
           <div className="ryan-color-picker">

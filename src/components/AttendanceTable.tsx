@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AttendanceEntry } from '../types';
 import './AttendanceTable.css';
@@ -6,6 +6,7 @@ import './AttendanceTable.css';
 interface AttendanceTableProps {
   entries: AttendanceEntry[];
   onRemove: (recordId: string) => void;
+  onUpdateTime?: (recordId: string, newMarkedAt: string) => void;
 }
 
 function formatTime(isoString: string) {
@@ -15,13 +16,52 @@ function formatTime(isoString: string) {
   });
 }
 
-export default function AttendanceTable({ entries, onRemove }: AttendanceTableProps) {
+function toTimeInputValue(isoString: string) {
+  const d = new Date(isoString);
+  const h = d.getHours().toString().padStart(2, '0');
+  const m = d.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+export default function AttendanceTable({ entries, onRemove, onUpdateTime }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     prevIdsRef.current = new Set(entries.map(e => e.id));
   });
+
+  useEffect(() => {
+    if (editingId && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingId]);
+
+  function startEdit(entry: AttendanceEntry) {
+    if (!onUpdateTime) return;
+    setEditingId(entry.id);
+    setEditValue(toTimeInputValue(entry.marked_at));
+  }
+
+  function commitEdit(entry: AttendanceEntry) {
+    if (!onUpdateTime || !editValue) {
+      setEditingId(null);
+      return;
+    }
+    const [h, m] = editValue.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) {
+      setEditingId(null);
+      return;
+    }
+    const d = new Date(entry.marked_at);
+    d.setHours(h, m, 0, 0);
+    onUpdateTime(entry.id, d.toISOString());
+    setEditingId(null);
+  }
 
   if (entries.length === 0) {
     return <div className="attendance-empty">No one marked yet</div>;
@@ -52,7 +92,29 @@ export default function AttendanceTable({ entries, onRemove }: AttendanceTablePr
                     {entry.person.full_name}
                   </span>
                 </td>
-                <td className="col-time">{formatTime(entry.marked_at)}</td>
+                <td className="col-time">
+                  {editingId === entry.id ? (
+                    <input
+                      ref={editInputRef}
+                      type="time"
+                      className="time-edit-input"
+                      value={editValue}
+                      onChange={e => setEditValue(e.target.value)}
+                      onBlur={() => commitEdit(entry)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitEdit(entry);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className={onUpdateTime ? 'time-tap' : ''}
+                      onClick={() => startEdit(entry)}
+                    >
+                      {formatTime(entry.marked_at)}
+                    </span>
+                  )}
+                </td>
                 <td className="col-action">
                   <button
                     className="remove-btn"

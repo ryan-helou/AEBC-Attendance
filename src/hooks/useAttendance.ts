@@ -189,5 +189,24 @@ export function useAttendance(meetingId: string, date: string) {
     commitRemove(pendingUndo.entry.id);
   }, [pendingUndo, commitRemove]);
 
-  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
+  const updateMarkedAt = useCallback(
+    async (recordId: string, newMarkedAt: string) => {
+      setEntries(prev =>
+        [...prev.map(e => (e.id === recordId ? { ...e, marked_at: newMarkedAt } : e))]
+          .sort((a, b) => new Date(b.marked_at).getTime() - new Date(a.marked_at).getTime())
+      );
+
+      const { error } = await supabase
+        .from('attendance_records')
+        .update({ marked_at: newMarkedAt })
+        .eq('id', recordId);
+
+      if (error) {
+        fetchAttendance();
+      }
+    },
+    [fetchAttendance]
+  );
+
+  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
 }

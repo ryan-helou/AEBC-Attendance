@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type KeyboardEvent } from 'react';
+import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from 'react';
 import type { SearchResult } from '../hooks/usePeople';
 import type { Person } from '../types';
 import SuggestionList from './SuggestionList';
@@ -34,6 +34,20 @@ export default function AttendanceInput({
   const [crosses, setCrosses] = useState<CrossItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const crossTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Redirect keystrokes to the input even when it's not focused
+  useEffect(() => {
+    function handleGlobalKeyDown(e: globalThis.KeyboardEvent) {
+      if (inputRef.current && document.activeElement !== inputRef.current) {
+        // Ignore modifier-only keys and shortcuts
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          inputRef.current.focus();
+        }
+      }
+    }
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   function triggerCrossShower() {
     if (crossTimerRef.current) clearTimeout(crossTimerRef.current);
