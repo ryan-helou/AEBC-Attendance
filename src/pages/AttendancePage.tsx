@@ -27,6 +27,7 @@ export default function AttendancePage() {
     loading: attendanceLoading,
     markAttendance,
     removeAttendance,
+    updateMarkedAt,
     pendingUndo,
     undoRemove,
     dismissUndo,
@@ -168,7 +169,7 @@ export default function AttendancePage() {
 
         <div className="attendance-count">{entries.length} present</div>
 
-        <AttendanceTable entries={entries} onRemove={removeAttendance} />
+        <AttendanceTable entries={entries} onRemove={removeAttendance} onUpdateTime={updateMarkedAt} />
 
         <textarea
           className="service-notes-input"
