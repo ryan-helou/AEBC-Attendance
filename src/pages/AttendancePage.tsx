@@ -10,7 +10,6 @@ import { AttendanceSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
-import Spinner from '../components/Spinner';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import './AttendancePage.css';
 
