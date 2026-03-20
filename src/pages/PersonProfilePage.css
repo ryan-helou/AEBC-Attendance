@@ -11,6 +11,10 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  transition: padding 0.2s ease;
 }
 
 .profile-header .back-btn {
@@ -256,12 +260,19 @@
 
 /* Meeting cards */
 .profile-meeting-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-lg);
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
   box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .profile-meeting-card {
+  background: rgba(39, 39, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .profile-meeting-header {

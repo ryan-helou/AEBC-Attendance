@@ -7,8 +7,11 @@ export function useEscapeBack() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const el = e.target as HTMLElement;
+      const tag = el?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        el.blur();
+      }
       navigate(-1);
     }
     window.addEventListener('keydown', handleKey);

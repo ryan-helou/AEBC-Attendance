@@ -132,6 +132,22 @@ input::placeholder {
   background: linear-gradient(135deg, #18181b 0%, #232326 50%, #18181b 100%);
 }
 
+.header-compact {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  transition: padding 0.2s ease;
+}
+
+.header-compact h1 {
+  font-size: 1rem !important;
+  transition: font-size 0.2s ease;
+}
+
+.header-compact .back-btn {
+  font-size: 1rem;
+  padding: 0.25rem 0.45rem;
+}
+
 @media print {
   .attendance-input-wrapper,
   .back-btn,

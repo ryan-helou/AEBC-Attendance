@@ -11,12 +11,14 @@ import AnimatedNumber from '../components/AnimatedNumber';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { useScrolledDown } from '../hooks/useScrolledDown';
 import './AttendancePage.css';
 
 export default function AttendancePage() {
   const { meetingId, date } = useParams<{ meetingId: string; date: string }>();
   const navigate = useNavigate();
   useEscapeBack();
+  const scrolled = useScrolledDown();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -137,7 +139,7 @@ export default function AttendancePage() {
 
   return (
     <div className="attendance-page">
-      <div className="attendance-header">
+      <div className={`attendance-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate('/')}>
           &larr;
         </button>

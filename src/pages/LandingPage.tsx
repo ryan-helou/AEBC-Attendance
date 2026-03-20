@@ -36,6 +36,25 @@ export default function LandingPage() {
   }, [showSettings]);
 
   useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      if (e.key === 'h' || e.key === 'H') {
+        navigate('/history');
+      } else if (e.key === 'd' || e.key === 'D') {
+        navigate('/data');
+      } else if (e.key === '1' && meetings[0]) {
+        navigate(`/attendance/${meetings[0].id}/${getTodayDate()}`);
+      } else if (e.key === '2' && meetings[1]) {
+        navigate(`/attendance/${meetings[1].id}/${getTodayDate()}`);
+      }
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [meetings, navigate]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setVerseFading(true);
       setTimeout(() => {
