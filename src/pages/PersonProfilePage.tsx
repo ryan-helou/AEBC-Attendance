@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { getMeetingDay } from '../lib/dateUtils';
 import type { Person, Meeting } from '../types';
 import Spinner from '../components/Spinner';
+import { ProfileSkeleton } from '../components/Skeleton';
+import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import './PersonProfilePage.css';
@@ -265,6 +267,7 @@ export default function PersonProfilePage() {
   }
 
   const isRyan = person?.full_name === 'Ryan Helou';
+  const isJona = person?.full_name === 'Jona Safadi';
 
   function handleColorChange(hex: string) {
     setCustomColor(hex);
@@ -272,7 +275,7 @@ export default function PersonProfilePage() {
   }
 
 
-  if (loading) return <Spinner />;
+  if (loading) return <ProfileSkeleton />;
   if (!person) {
     return (
       <div className="profile-page">
@@ -299,6 +302,7 @@ export default function PersonProfilePage() {
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}
+          {isJona && <span className="profile-crown">🤡</span>}
           {editingName ? (
             <input
               ref={nameInputRef}
@@ -366,7 +370,7 @@ export default function PersonProfilePage() {
 
       <div className="profile-body">
       <div className="profile-total-card">
-        <span className="profile-total-number">{totalAttendances}</span>
+        <span className="profile-total-number"><AnimatedNumber value={totalAttendances} /></span>
         <span className="profile-total-label">Total Attendances</span>
       </div>
 
@@ -393,22 +397,22 @@ export default function PersonProfilePage() {
           </div>
           <div className="profile-stat-row">
             <div className="profile-stat-item">
-              <span className="profile-stat-value">{stat.timesAttended}</span>
+              <span className="profile-stat-value"><AnimatedNumber value={stat.timesAttended} /></span>
               <span className="profile-stat-label">Attended</span>
             </div>
             <div className="profile-stat-divider" />
             <div className="profile-stat-item">
-              <span className="profile-stat-value">{stat.longestStreak}</span>
+              <span className="profile-stat-value"><AnimatedNumber value={stat.longestStreak} /></span>
               <span className="profile-stat-label">Best Streak</span>
             </div>
             <div className="profile-stat-divider" />
             <div className="profile-stat-item">
-              <span className={`profile-stat-value${stat.currentStreak >= 2 ? ' profile-streak-active' : ''}`}>{stat.currentStreak}</span>
+              <span className={`profile-stat-value${stat.currentStreak >= 2 ? ' profile-streak-active' : ''}`}><AnimatedNumber value={stat.currentStreak} /></span>
               <span className="profile-stat-label">Current</span>
             </div>
             <div className="profile-stat-divider" />
             <div className="profile-stat-item">
-              <span className="profile-stat-value">{stat.attendanceRate}%</span>
+              <span className="profile-stat-value"><AnimatedNumber value={stat.attendanceRate} suffix="%" /></span>
               <span className="profile-stat-label">Rate</span>
             </div>
           </div>

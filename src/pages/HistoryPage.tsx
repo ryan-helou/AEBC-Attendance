@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import Spinner from '../components/Spinner';
+import { HistorySkeleton } from '../components/Skeleton';
+import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import {
@@ -434,7 +436,7 @@ export default function HistoryPage() {
     setExporting(false);
   }
 
-  if (loading) return <Spinner />;
+  if (loading) return <HistorySkeleton />;
 
   return (
     <div className="history-page">
@@ -656,7 +658,7 @@ export default function HistoryPage() {
                         />
                       </div>
                     </td>
-                    <td className="lb-col-count">{person.count}</td>
+                    <td className="lb-col-count"><AnimatedNumber value={person.count} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -701,7 +703,7 @@ export default function HistoryPage() {
                         <span className="person-link">{leader.person_name}</span>
                       </td>
                       <td className="streak-lb-meeting">{leader.meeting_name}</td>
-                      <td className="lb-col-count">🔥 {leader.streak}</td>
+                      <td className="lb-col-count"><AnimatedNumber value={leader.streak} prefix="🔥 " /></td>
                     </tr>
                   ))}
                 </tbody>

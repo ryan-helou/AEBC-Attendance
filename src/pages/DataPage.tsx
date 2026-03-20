@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Person } from '../types';
 import Spinner from '../components/Spinner';
+import { DataSkeleton } from '../components/Skeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import '../components/AddPersonModal.css';
@@ -192,7 +193,7 @@ export default function DataPage() {
       )
     : people;
 
-  if (loading) return <Spinner />;
+  if (loading) return <DataSkeleton />;
 
   return (
     <div className="data-page">

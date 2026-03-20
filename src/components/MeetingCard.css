@@ -23,7 +23,9 @@
 }
 
 .meeting-card:active {
-  transform: translateY(0px);
+  transform: translateY(0px) scale(0.98);
+  box-shadow: var(--shadow-sm);
+  transition-duration: 0.05s;
 }
 
 .meeting-card-name {
