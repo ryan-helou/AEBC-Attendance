@@ -7,6 +7,7 @@ import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { useScrolledDown } from '../hooks/useScrolledDown';
 import './PersonProfilePage.css';
 
 function hexDarken(hex: string, factor = 0.82): string {
@@ -131,6 +132,7 @@ export default function PersonProfilePage() {
   const { personId } = useParams<{ personId: string }>();
   const navigate = useNavigate();
   useEscapeBack();
+  const scrolled = useScrolledDown();
   const [loading, setLoading] = useState(true);
   const [person, setPerson] = useState<Person | null>(null);
   const [meetingStats, setMeetingStats] = useState<MeetingStat[]>([]);
@@ -297,7 +299,7 @@ export default function PersonProfilePage() {
         '--ryan-accent-light': hexLighten(customColor, 0.4),
       } as React.CSSProperties : undefined}
     >
-      <div className="profile-header">
+      <div className={`profile-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}

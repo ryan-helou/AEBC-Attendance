@@ -188,8 +188,10 @@
   font-size: 1rem;
   font-weight: 600;
   color: var(--color-text);
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast), transform 0.15s ease, box-shadow 0.15s ease;
@@ -199,6 +201,11 @@
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+}
+
+[data-theme="dark"] .landing-history-btn {
+  background: rgba(39, 39, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 @media (max-width: 600px) {

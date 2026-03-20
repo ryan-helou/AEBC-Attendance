@@ -28,6 +28,7 @@
   padding: 1rem;
   max-width: 600px;
   margin: 0 auto;
+  min-height: 100vh;
 }
 
 .skeleton-header {

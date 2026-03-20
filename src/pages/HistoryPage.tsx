@@ -7,6 +7,7 @@ import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { useScrolledDown } from '../hooks/useScrolledDown';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -95,6 +96,7 @@ const COMPARE_COLORS = [
 export default function HistoryPage() {
   const navigate = useNavigate();
   useEscapeBack();
+  const scrolled = useScrolledDown();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -439,7 +441,7 @@ export default function HistoryPage() {
 
   return (
     <div className="history-page">
-      <div className="history-header">
+      <div className={`history-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate('/')}>
           &larr;
         </button>

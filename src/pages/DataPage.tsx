@@ -5,12 +5,14 @@ import type { Person } from '../types';
 import { DataSkeleton } from '../components/Skeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { useScrolledDown } from '../hooks/useScrolledDown';
 import '../components/AddPersonModal.css';
 import './DataPage.css';
 
 export default function DataPage() {
   const navigate = useNavigate();
   useEscapeBack();
+  const scrolled = useScrolledDown();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -196,7 +198,7 @@ export default function DataPage() {
 
   return (
     <div className="data-page">
-      <div className="data-header">
+      <div className={`data-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate('/')}>
           &larr;
         </button>
