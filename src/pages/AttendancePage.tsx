@@ -6,6 +6,8 @@ import { useAttendance } from '../hooks/useAttendance';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
 import type { Meeting, Person } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
+import { AttendanceSkeleton } from '../components/Skeleton';
+import AnimatedNumber from '../components/AnimatedNumber';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
 import Spinner from '../components/Spinner';
@@ -132,7 +134,7 @@ export default function AttendancePage() {
     navigate(`/attendance/${meetingId}/${todayDate}`, { replace: true });
   }
 
-  if (peopleLoading || attendanceLoading || !meeting) return <Spinner />;
+  if (peopleLoading || attendanceLoading || !meeting) return <AttendanceSkeleton />;
 
   return (
     <div className="attendance-page">
@@ -167,7 +169,7 @@ export default function AttendancePage() {
           onAddNew={handleAddNew}
         />
 
-        <div className="attendance-count">{entries.length} present</div>
+        <div className="attendance-count"><AnimatedNumber value={entries.length} /> present</div>
 
         <AttendanceTable entries={entries} onRemove={removeAttendance} onUpdateTime={updateMarkedAt} />
 

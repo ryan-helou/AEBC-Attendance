@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getTodayDate, formatDate } from '../lib/dateUtils';
 import { useAuth } from '../hooks/useAuth';
+import { LandingSkeleton } from '../components/Skeleton';
 import { useTheme } from '../hooks/useTheme';
 import { useAccentColor, COLOR_PALETTE } from '../hooks/useAccentColor';
 import type { Meeting } from '../types';
@@ -82,7 +83,7 @@ export default function LandingPage() {
     navigate('/login', { replace: true });
   }
 
-  if (loading) return <Spinner />;
+  if (loading) return <LandingSkeleton />;
 
   return (
     <div className="landing-page">
