@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay } from '../lib/dateUtils';
 import type { Person, Meeting } from '../types';
-import Spinner from '../components/Spinner';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';

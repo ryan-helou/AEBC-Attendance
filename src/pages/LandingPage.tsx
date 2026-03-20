@@ -8,7 +8,6 @@ import { useTheme } from '../hooks/useTheme';
 import { useAccentColor, COLOR_PALETTE } from '../hooks/useAccentColor';
 import type { Meeting } from '../types';
 import MeetingCard from '../components/MeetingCard';
-import Spinner from '../components/Spinner';
 import verses from '../data/verses';
 import './LandingPage.css';
 

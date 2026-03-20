@@ -9,8 +9,8 @@ interface AnimatedNumberProps {
 
 export default function AnimatedNumber({ value, duration = 600, suffix = '', prefix = '' }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(0);
-  const rafRef = useRef<number>();
-  const startRef = useRef<number>();
+  const rafRef = useRef<number>(0);
+  const startRef = useRef<number>(0);
   const fromRef = useRef(0);
 
   useEffect(() => {
@@ -20,10 +20,10 @@ export default function AnimatedNumber({ value, duration = 600, suffix = '', pre
     const diff = value - from;
     if (diff === 0) return;
 
-    startRef.current = undefined;
+    startRef.current = -1;
 
     const step = (ts: number) => {
-      if (!startRef.current) startRef.current = ts;
+      if (startRef.current < 0) startRef.current = ts;
       const elapsed = ts - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
       // ease-out cubic
