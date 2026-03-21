@@ -9,6 +9,7 @@ interface AttendanceInputProps {
   markedPersonIds: Set<string>;
   onMark: (person: Person) => Promise<boolean>;
   onAddNew: (name: string) => void;
+  onQueryChange?: (query: string) => void;
 }
 
 interface CrossItem {
@@ -25,6 +26,7 @@ export default function AttendanceInput({
   markedPersonIds,
   onMark,
   onAddNew,
+  onQueryChange,
 }: AttendanceInputProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -32,8 +34,10 @@ export default function AttendanceInput({
   const [showDropdown, setShowDropdown] = useState(false);
   const [flash, setFlash] = useState(false);
   const [crosses, setCrosses] = useState<CrossItem[]>([]);
+  const [lebrons, setLebrons] = useState<CrossItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const crossTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lebronTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Redirect keystrokes to the input even when it's not focused
   useEffect(() => {
@@ -73,6 +77,20 @@ export default function AttendanceInput({
     [searchPeople, markedPersonIds]
   );
 
+  function triggerLebronShower() {
+    if (lebronTimerRef.current) clearTimeout(lebronTimerRef.current);
+    const items: CrossItem[] = Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      left: 5 + Math.random() * 90,
+      size: 5 + Math.random() * 8,
+      delay: Math.random() * 2,
+      duration: 3 + Math.random() * 2.5,
+      wobble: (Math.random() - 0.5) * 60,
+    }));
+    setLebrons(items);
+    lebronTimerRef.current = setTimeout(() => setLebrons([]), 7000);
+  }
+
   function handleChange(value: string) {
     if (value.toLowerCase() === 'amen') {
       triggerCrossShower();
@@ -81,8 +99,16 @@ export default function AttendanceInput({
       setShowDropdown(false);
       return;
     }
+    if (value.toLowerCase() === 'lebron') {
+      triggerLebronShower();
+      setQuery('');
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
     setQuery(value);
     updateResults(value);
+    onQueryChange?.(value);
   }
 
   async function selectPerson(result: SearchResult) {
@@ -92,6 +118,7 @@ export default function AttendanceInput({
     setQuery('');
     setResults([]);
     setShowDropdown(false);
+    onQueryChange?.('');
     inputRef.current?.focus();
 
     if (success) {
@@ -105,6 +132,7 @@ export default function AttendanceInput({
     setQuery('');
     setResults([]);
     setShowDropdown(false);
+    onQueryChange?.('');
   }
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -151,6 +179,25 @@ export default function AttendanceInput({
             >
               ✝
             </span>
+          ))}
+        </div>
+      )}
+      {lebrons.length > 0 && (
+        <div className="cross-shower-overlay" aria-hidden="true">
+          {lebrons.map(l => (
+            <img
+              key={l.id}
+              className="lebron-item"
+              src="/lebron.png"
+              alt=""
+              style={{
+                left: `${l.left}%`,
+                width: `${l.size}rem`,
+                animationDelay: `${l.delay}s`,
+                animationDuration: `${l.duration}s`,
+                '--wobble': `${l.wobble}px`,
+              } as React.CSSProperties}
+            />
           ))}
         </div>
       )}
