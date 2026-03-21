@@ -6,6 +6,7 @@ import AttendancePage from './pages/AttendancePage'
 import DataPage from './pages/DataPage'
 import HistoryPage from './pages/HistoryPage'
 import PersonProfilePage from './pages/PersonProfilePage'
+import IdeasPage from './pages/IdeasPage'
 import './App.css'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/data" element={<DataPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/person/:personId" element={<PersonProfilePage />} />
+        <Route path="/ideas" element={<IdeasPage />} />
       </Route>
     </Routes>
   )

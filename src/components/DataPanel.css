@@ -1,8 +1,14 @@
-.data-fab {
+.fab-group {
   position: fixed;
   bottom: 1.25rem;
   left: 1.25rem;
   z-index: 100;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.data-fab,
+.ideas-fab {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: #fff;
   border: none;
@@ -15,12 +21,16 @@
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
-.data-fab:hover {
+.data-fab:hover,
+.ideas-fab:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   background: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary));
+  color: #fff;
+  border: none;
 }
 
-.data-fab:active {
+.data-fab:active,
+.ideas-fab:active {
   transform: translateY(0);
 }
