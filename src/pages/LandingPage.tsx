@@ -24,6 +24,7 @@ export default function LandingPage() {
   const settingsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+
   useEffect(() => {
     if (!showSettings) return;
     function handleClickOutside(e: MouseEvent) {

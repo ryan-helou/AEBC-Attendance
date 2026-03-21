@@ -5,8 +5,13 @@ export default function DataPanel() {
   const navigate = useNavigate();
 
   return (
-    <button className="data-fab" onClick={() => navigate('/data')}>
-      Data
-    </button>
+    <div className="fab-group">
+      <button className="data-fab" onClick={() => navigate('/data')}>
+        Data
+      </button>
+      <button className="ideas-fab" onClick={() => navigate('/ideas')}>
+        Ideas
+      </button>
+    </div>
   );
 }
