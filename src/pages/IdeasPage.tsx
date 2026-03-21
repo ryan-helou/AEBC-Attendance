@@ -115,9 +115,7 @@ export default function IdeasPage() {
 
         {loading ? (
           <p className="ideas-empty">Loading...</p>
-        ) : ideas.length === 0 ? (
-          <p className="ideas-empty">No ideas yet — add one above!</p>
-        ) : (
+        ) : ideas.length === 0 ? null : (
           <ul className="ideas-list">
             {openIdeas.map(idea => (
               <li key={idea.id} className="ideas-item">
