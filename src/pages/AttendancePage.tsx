@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { usePeople } from '../hooks/usePeople';
@@ -12,6 +12,7 @@ import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import { useScrolledDown } from '../hooks/useScrolledDown';
+import Confetti from '../components/Confetti';
 import './AttendancePage.css';
 
 export default function AttendancePage() {
@@ -22,6 +23,9 @@ export default function AttendancePage() {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [filterQuery, setFilterQuery] = useState('');
+  const [milestone, setMilestone] = useState<{ count: number } | null>(null);
+  const prevCountRef = useRef(0);
 
   const { searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
@@ -35,6 +39,20 @@ export default function AttendancePage() {
     undoRemove,
     dismissUndo,
   } = useAttendance(meetingId!, date!);
+
+  const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const MILESTONES = [25, 50, 75, 100];
+    const count = entries.length;
+    if (count > prevCountRef.current && MILESTONES.includes(count)) {
+      // Clear any existing confetti timeout so the new one takes over
+      if (milestoneRef.current) clearTimeout(milestoneRef.current);
+      setMilestone({ count });
+      milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
+    }
+    prevCountRef.current = count;
+  }, [entries.length]);
 
   useEffect(() => {
     async function load() {
@@ -168,11 +186,18 @@ export default function AttendancePage() {
           markedPersonIds={markedPersonIds}
           onMark={handleMark}
           onAddNew={handleAddNew}
+          onQueryChange={setFilterQuery}
         />
 
         <div className="attendance-count"><AnimatedNumber value={entries.length} /> present</div>
 
-        <AttendanceTable entries={entries} onRemove={removeAttendance} onUpdateTime={updateMarkedAt} />
+        <AttendanceTable
+          entries={filterQuery.trim()
+            ? entries.filter(e => e.person.full_name.toLowerCase().includes(filterQuery.toLowerCase()))
+            : entries}
+          onRemove={removeAttendance}
+          onUpdateTime={updateMarkedAt}
+        />
 
         <textarea
           className="service-notes-input"
@@ -199,6 +224,13 @@ export default function AttendancePage() {
           <button className="undo-btn" onClick={undoRemove}>Undo</button>
           <button className="undo-dismiss" onClick={dismissUndo}>&times;</button>
         </div>
+      )}
+
+      {milestone && (
+        <Confetti
+          key={milestone.count}
+          count={milestone.count}
+        />
       )}
     </div>
   );

@@ -64,3 +64,12 @@
     opacity: 0;
   }
 }
+
+.lebron-item {
+  position: absolute;
+  bottom: -5rem;
+  opacity: 0;
+  animation: floatUpCross linear forwards;
+  user-select: none;
+  pointer-events: none;
+}
