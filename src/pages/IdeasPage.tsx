@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import { useScrolledDown } from '../hooks/useScrolledDown';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -9,43 +10,57 @@ interface Idea {
   id: string;
   text: string;
   done: boolean;
-}
-
-function loadIdeas(): Idea[] {
-  try { return JSON.parse(localStorage.getItem('aebc-ideas') || '[]'); }
-  catch { return []; }
+  created_at: string;
 }
 
 export default function IdeasPage() {
   const navigate = useNavigate();
   useEscapeBack();
   const scrolled = useScrolledDown();
-  const [ideas, setIdeas] = useState<Idea[]>(loadIdeas);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newIdea, setNewIdea] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function save(next: Idea[]) {
-    setIdeas(next);
-    localStorage.setItem('aebc-ideas', JSON.stringify(next));
-  }
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from('ideas')
+        .select('*')
+        .order('created_at');
+      if (data) setIdeas(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
-  function addIdea() {
+  async function addIdea() {
     const text = newIdea.trim();
     if (!text) return;
-    save([...ideas, { id: Date.now().toString(), text, done: false }]);
+    const { data } = await supabase
+      .from('ideas')
+      .insert({ text, done: false })
+      .select()
+      .single();
+    if (data) setIdeas(prev => [...prev, data]);
     setNewIdea('');
     inputRef.current?.focus();
   }
 
-  function toggleIdea(id: string) {
-    save(ideas.map(i => i.id === id ? { ...i, done: !i.done } : i));
+  async function toggleIdea(id: string) {
+    const idea = ideas.find(i => i.id === id);
+    if (!idea) return;
+    const done = !idea.done;
+    await supabase.from('ideas').update({ done }).eq('id', id);
+    setIdeas(prev => prev.map(i => i.id === id ? { ...i, done } : i));
   }
 
-  function removeIdea(id: string) {
-    save(ideas.filter(i => i.id !== id));
+  async function removeIdea(id: string) {
+    await supabase.from('ideas').delete().eq('id', id);
+    setIdeas(prev => prev.filter(i => i.id !== id));
     setConfirmDelete(null);
   }
 
@@ -54,11 +69,18 @@ export default function IdeasPage() {
     setEditText(idea.text);
   }
 
-  function saveEdit(id: string) {
+  async function saveEdit(id: string) {
     const text = editText.trim();
     if (!text) return;
-    save(ideas.map(i => i.id === id ? { ...i, text } : i));
+    await supabase.from('ideas').update({ text }).eq('id', id);
+    setIdeas(prev => prev.map(i => i.id === id ? { ...i, text } : i));
     setEditingId(null);
+  }
+
+  async function clearDone() {
+    const doneIds = ideas.filter(i => i.done).map(i => i.id);
+    await supabase.from('ideas').delete().in('id', doneIds);
+    setIdeas(prev => prev.filter(i => !i.done));
   }
 
   const openIdeas = ideas.filter(i => !i.done);
@@ -68,9 +90,9 @@ export default function IdeasPage() {
     <div className="ideas-page">
       <div className={`ideas-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
-        <h1>Ideas ({openIdeas.length})</h1>
+        <h1>Ideas {!loading && `(${openIdeas.length})`}</h1>
         {doneIdeas.length > 0 && (
-          <button className="ideas-clear-done" onClick={() => save(openIdeas)}>
+          <button className="ideas-clear-done" onClick={clearDone}>
             Clear done
           </button>
         )}
@@ -91,7 +113,9 @@ export default function IdeasPage() {
           <button className="ideas-add-btn" onClick={addIdea} disabled={!newIdea.trim()}>+</button>
         </div>
 
-        {ideas.length === 0 ? (
+        {loading ? (
+          <p className="ideas-empty">Loading...</p>
+        ) : ideas.length === 0 ? (
           <p className="ideas-empty">No ideas yet — add one above!</p>
         ) : (
           <ul className="ideas-list">

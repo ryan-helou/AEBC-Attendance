@@ -45,6 +45,8 @@ export default function LandingPage() {
         navigate('/history');
       } else if (e.key === 'd' || e.key === 'D') {
         navigate('/data');
+      } else if (e.key === 'i' || e.key === 'I') {
+        navigate('/ideas');
       } else if (e.key === '1' && meetings[0]) {
         navigate(`/attendance/${meetings[0].id}/${getTodayDate()}`);
       } else if (e.key === '2' && meetings[1]) {
