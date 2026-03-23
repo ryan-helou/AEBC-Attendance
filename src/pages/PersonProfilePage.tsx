@@ -210,8 +210,9 @@ export default function PersonProfilePage() {
         const latestMeetingDate = [...dates].sort().at(-1)!;
 
         let attendanceRate = 0;
-        if (earliestDate) {
-          const totalOccurrences = countOccurrencesSince(earliestDate, day, latestMeetingDate);
+        {
+          const APP_START_DATE = '2026-03-14';
+          const totalOccurrences = countOccurrencesSince(APP_START_DATE, day, latestMeetingDate);
           if (totalOccurrences > 0) {
             attendanceRate = Math.round((timesAttended / totalOccurrences) * 100);
           }
