@@ -221,6 +221,15 @@
   font-style: normal;
 }
 
+.profile-lebron {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
 /* Total card */
 .profile-total-card {
   display: flex;
