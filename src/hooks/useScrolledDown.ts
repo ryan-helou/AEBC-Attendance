@@ -7,7 +7,7 @@ export function useScrolledDown(threshold = 30) {
     function handleScroll() {
       if (window.scrollY > threshold) {
         setScrolled(true);
-      } else if (window.scrollY < 5) {
+      } else if (window.scrollY < 10) {
         setScrolled(false);
       }
     }
