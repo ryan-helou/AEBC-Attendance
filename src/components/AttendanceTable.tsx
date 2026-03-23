@@ -57,7 +57,9 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
       setEditingId(null);
       return;
     }
-    const d = new Date(entry.marked_at);
+    // Use the meeting date as the base, not the original marked_at date
+    // (handles retroactively added entries whose marked_at is on a different day)
+    const d = new Date(entry.date + 'T00:00:00');
     d.setHours(h, m, 0, 0);
     onUpdateTime(entry.id, d.toISOString());
     setEditingId(null);
