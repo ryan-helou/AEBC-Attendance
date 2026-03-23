@@ -91,6 +91,9 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
                   <span className="name-tap" onClick={() => navigate(`/person/${entry.person_id}`)}>
                     {entry.person.full_name}
                   </span>
+                  {entry.person.notes && (
+                    <span className="person-note">{entry.person.notes}</span>
+                  )}
                 </td>
                 <td className="col-time">
                   {editingId === entry.id ? (
