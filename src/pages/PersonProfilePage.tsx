@@ -266,6 +266,7 @@ export default function PersonProfilePage() {
 
   const isRyan = person?.full_name === 'Ryan Helou';
   const isJona = person?.full_name === 'Jona Safadi';
+  const isGeorge = person?.full_name === 'George Hag Moussa';
 
   function handleColorChange(hex: string) {
     setCustomColor(hex);
@@ -301,6 +302,7 @@ export default function PersonProfilePage() {
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}
           {isJona && <span className="profile-crown">🤡</span>}
+          {isGeorge && <img src="/lebron.png" alt="LeBron" className="profile-lebron" />}
           {editingName ? (
             <input
               ref={nameInputRef}
