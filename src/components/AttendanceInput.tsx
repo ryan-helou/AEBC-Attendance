@@ -43,6 +43,9 @@ export default function AttendanceInput({
   useEffect(() => {
     function handleGlobalKeyDown(e: globalThis.KeyboardEvent) {
       if (inputRef.current && document.activeElement !== inputRef.current) {
+        // Don't steal focus from other inputs, textareas, or contenteditable elements
+        const tag = (document.activeElement as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) return;
         // Ignore modifier-only keys and shortcuts
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
           inputRef.current.focus();
