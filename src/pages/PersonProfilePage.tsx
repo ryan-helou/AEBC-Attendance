@@ -28,6 +28,7 @@ interface AttendanceRow {
   id: string;
   meeting_id: string;
   date: string;
+  marked_at: string;
 }
 
 interface MeetingStat {
@@ -60,6 +61,7 @@ interface HistoryRow {
   id: string;
   meeting_id: string;
   date: string;
+  marked_at: string;
   meetingName: string;
 }
 
@@ -160,7 +162,7 @@ export default function PersonProfilePage() {
         supabase.from('meetings').select('*').order('display_order'),
         supabase
           .from('attendance_records')
-          .select('id, meeting_id, date')
+          .select('id, meeting_id, date, marked_at')
           .eq('person_id', personId)
           .order('date', { ascending: false }),
         supabase
@@ -189,6 +191,7 @@ export default function PersonProfilePage() {
           id: r.id,
           meeting_id: r.meeting_id,
           date: r.date,
+          marked_at: r.marked_at,
           meetingName: meetingMap.get(r.meeting_id)?.name ?? 'Unknown',
         }))
       );
@@ -431,6 +434,7 @@ export default function PersonProfilePage() {
               <tr>
                 <th>Date</th>
                 <th>Meeting</th>
+                <th>Time</th>
                 <th className="col-action"></th>
               </tr>
             </thead>
@@ -446,6 +450,12 @@ export default function PersonProfilePage() {
                     })}
                   </td>
                   <td>{row.meetingName}</td>
+                  <td className="col-time">
+                    {new Date(row.marked_at).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </td>
                   <td className="col-action">
                     <button className="profile-remove-btn" onClick={() => setPendingDelete({ id: row.id, meetingId: row.meeting_id })}>
                       &times;
