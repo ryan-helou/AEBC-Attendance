@@ -196,14 +196,13 @@ export function useAttendance(meetingId: string, date: string) {
           .sort((a, b) => new Date(b.marked_at).getTime() - new Date(a.marked_at).getTime())
       );
 
-      const { error } = await supabase
+      await supabase
         .from('attendance_records')
         .update({ marked_at: newMarkedAt })
         .eq('id', recordId);
 
-      if (error) {
-        fetchAttendance();
-      }
+      // Always re-fetch to guarantee sort matches DB
+      fetchAttendance();
     },
     [fetchAttendance]
   );
