@@ -1,22 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export function useScrolledDown(threshold = 30, hysteresis = 10) {
+export function useScrolledDown(threshold = 30) {
   const [scrolled, setScrolled] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     function handleScroll() {
-      setScrolled(prev => {
-        if (prev) {
-          // Already compact — only expand back when scrolled well above threshold
-          return window.scrollY > threshold - hysteresis;
-        }
-        // Not compact — only collapse when scrolled past threshold
-        return window.scrollY > threshold;
-      });
+      const shouldBeScrolled = window.scrollY > threshold;
+      // Only schedule a change if the value is actually different
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setScrolled(shouldBeScrolled);
+      }, 80);
     }
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [threshold, hysteresis]);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [threshold]);
 
   return scrolled;
 }
