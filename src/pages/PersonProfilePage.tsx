@@ -157,7 +157,7 @@ export default function PersonProfilePage() {
     if (!personId) return;
 
     async function load() {
-      const [personRes, meetingsRes, recordsRes, earliestRes] = await Promise.all([
+      const [personRes, meetingsRes, recordsRes] = await Promise.all([
         supabase.from('people').select('*').eq('id', personId).single(),
         supabase.from('meetings').select('*').order('display_order'),
         supabase
@@ -165,18 +165,11 @@ export default function PersonProfilePage() {
           .select('id, meeting_id, date, marked_at')
           .eq('person_id', personId)
           .order('date', { ascending: false }),
-        supabase
-          .from('attendance_records')
-          .select('date')
-          .eq('person_id', personId)
-          .order('date', { ascending: true })
-          .limit(1),
       ]);
 
       const personData = personRes.data as Person | null;
       const meetings = (meetingsRes.data ?? []) as Meeting[];
       const records = (recordsRes.data ?? []) as AttendanceRow[];
-      const earliestDate = (earliestRes.data?.[0] as { date: string } | undefined)?.date;
 
       setPerson(personData);
       setNotes(personData?.notes ?? '');
