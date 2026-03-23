@@ -94,7 +94,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
                     {entry.person.full_name}
                   </span>
                   {entry.person.notes && (
-                    <span className="person-note">{entry.person.notes}</span>
+                    <span className="person-note"> — {entry.person.notes}</span>
                   )}
                 </td>
                 <td className="col-time">
