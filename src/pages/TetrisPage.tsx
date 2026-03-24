@@ -468,8 +468,8 @@ export default function TetrisPage() {
   return (
     <div className="tetris-page">
       <header className="tetris-header">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          ←
+        <button className="back-btn" onClick={() => navigate('/games')}>
+          &larr;
         </button>
         <h1>Tetris</h1>
         <div className="tetris-header-stats">
