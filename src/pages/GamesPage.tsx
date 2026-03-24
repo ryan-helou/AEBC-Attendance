@@ -28,8 +28,8 @@ const GAMES = [
     description: 'Find the best move',
     gradient: 'linear-gradient(135deg, #78350f, #d97706)',
     icon: '♟',
-    scoreKey: 'aebc-chess-highscore',
-    scoreLabel: 'Best Run',
+    scoreKey: '',
+    scoreLabel: '',
   },
   {
     id: 'wordle',
