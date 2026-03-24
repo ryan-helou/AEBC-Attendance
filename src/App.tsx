@@ -7,6 +7,10 @@ import DataPage from './pages/DataPage'
 import HistoryPage from './pages/HistoryPage'
 import PersonProfilePage from './pages/PersonProfilePage'
 import IdeasPage from './pages/IdeasPage'
+import GamesPage from './pages/GamesPage'
+import TetrisPage from './pages/TetrisPage'
+import BreakoutPage from './pages/BreakoutPage'
+import ChessPuzzlePage from './pages/ChessPuzzlePage'
 import './App.css'
 
 function App() {
@@ -20,6 +24,10 @@ function App() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/person/:personId" element={<PersonProfilePage />} />
         <Route path="/ideas" element={<IdeasPage />} />
+        <Route path="/games" element={<GamesPage />} />
+        <Route path="/games/tetris" element={<TetrisPage />} />
+        <Route path="/games/breakout" element={<BreakoutPage />} />
+        <Route path="/games/chess" element={<ChessPuzzlePage />} />
       </Route>
     </Routes>
   )
