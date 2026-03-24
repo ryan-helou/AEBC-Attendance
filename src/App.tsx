@@ -11,6 +11,7 @@ import GamesPage from './pages/GamesPage'
 import TetrisPage from './pages/TetrisPage'
 import BreakoutPage from './pages/BreakoutPage'
 import ChessPuzzlePage from './pages/ChessPuzzlePage'
+import WordlePage from './pages/WordlePage'
 import './App.css'
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         <Route path="/games/tetris" element={<TetrisPage />} />
         <Route path="/games/breakout" element={<BreakoutPage />} />
         <Route path="/games/chess" element={<ChessPuzzlePage />} />
+        <Route path="/games/wordle" element={<WordlePage />} />
       </Route>
     </Routes>
   )

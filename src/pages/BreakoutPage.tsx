@@ -449,7 +449,7 @@ export default function BreakoutPage() {
   return (
     <div className="breakout-page">
       <div className="breakout-header">
-        <button className="back-btn" onClick={() => navigate('/')}>
+        <button className="back-btn" onClick={() => navigate('/games')}>
           &larr;
         </button>
         <div className="breakout-header-info">
