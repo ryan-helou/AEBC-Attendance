@@ -1,0 +1,217 @@
+.chess-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.chess-header {
+  background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chess-header .back-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.4rem 0.6rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.chess-header .back-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.chess-header-info {
+  flex: 1;
+}
+
+.chess-header-info h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.chess-header-sub {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+.chess-scores {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.chess-score {
+  color: #ffffff;
+}
+
+.chess-highscore {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
+
+.chess-lives {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.chess-life-dot {
+  display: inline-block;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.chess-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.chess-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 500px;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.chess-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.chess-turn-info {
+  font-weight: 500;
+}
+
+.chess-difficulty-badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.chess-difficulty-badge.d1 { background: #22c55e; }
+.chess-difficulty-badge.d2 { background: #3b82f6; }
+.chess-difficulty-badge.d3 { background: #f59e0b; }
+.chess-difficulty-badge.d4 { background: #ef4444; }
+.chess-difficulty-badge.d5 { background: #7c3aed; }
+
+.chess-board-wrap {
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--color-border);
+  position: relative;
+}
+
+.chess-board-wrap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.chess-board-wrap .square {
+  cursor: pointer;
+}
+
+.chess-board-wrap .piece-text {
+  pointer-events: none;
+  user-select: none;
+  font-family: 'Segoe UI Symbol', 'Noto Sans Symbols2', 'Apple Color Emoji', sans-serif;
+}
+
+.chess-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  gap: 1rem;
+  z-index: 10;
+}
+
+.chess-overlay h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+.chess-overlay p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+}
+
+.chess-overlay button {
+  margin-top: 0.5rem;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: #d97706;
+  color: #fff;
+}
+
+.chess-overlay button:hover {
+  background: #b45309;
+}
+
+.chess-puzzle-hint {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  opacity: 0.6;
+  text-align: center;
+  max-width: 500px;
+}
+
+@keyframes flash-green {
+  0% { fill: #22c55e; }
+  100% { fill: transparent; }
+}
+
+@keyframes flash-red {
+  0% { fill: #ef4444; }
+  100% { fill: transparent; }
+}
+
+.flash-correct {
+  animation: flash-green 0.6s ease-out forwards;
+}
+
+.flash-wrong {
+  animation: flash-red 0.6s ease-out forwards;
+}
