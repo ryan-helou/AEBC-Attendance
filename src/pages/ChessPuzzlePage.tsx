@@ -793,7 +793,7 @@ export default function ChessPuzzlePage() {
                 <p>puzzles solved in {formatTime(elapsed)}</p>
                 {score >= highScore && score > 0 && <p className="new-hs">New high score!</p>}
 
-                {score > 0 && !nameSubmitted && (
+                {!nameSubmitted && (
                   <div className="chess-name-form">
                     <input
                       type="text"
@@ -809,24 +809,29 @@ export default function ChessPuzzlePage() {
                     </button>
                   </div>
                 )}
-                {nameSubmitted && <p style={{ color: '#22c55e', fontSize: '0.85rem' }}>Score saved!</p>}
 
-                {leaderboard.length > 0 && (
-                  <div className="chess-leaderboard">
-                    <h3>Top 5</h3>
-                    <ul className="chess-leaderboard-list">
-                      {leaderboard.map((entry, i) => (
-                        <li key={i}>
-                          <span className="lb-rank">{i + 1}.</span>
-                          <span className="lb-name">{entry.player_name}</span>
-                          <span className="lb-score">{entry.score}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {nameSubmitted && (
+                  <>
+                    <p style={{ color: '#22c55e', fontSize: '0.85rem' }}>Score saved!</p>
+
+                    {leaderboard.length > 0 && (
+                      <div className="chess-leaderboard">
+                        <h3>Leaderboard</h3>
+                        <ul className="chess-leaderboard-list">
+                          {leaderboard.map((entry, i) => (
+                            <li key={i}>
+                              <span className="lb-rank">{i + 1}.</span>
+                              <span className="lb-name">{entry.player_name}</span>
+                              <span className="lb-score">{entry.score}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <button onClick={startGame}>Play Again</button>
+                  </>
                 )}
-
-                <button onClick={startGame}>Play Again</button>
               </div>
             )}
           </div>
