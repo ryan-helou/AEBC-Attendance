@@ -23,6 +23,7 @@ export default function AttendancePage() {
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [takenBy, setTakenBy] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
   const prevCountRef = useRef(0);
@@ -70,24 +71,27 @@ export default function AttendancePage() {
   useEffect(() => {
     async function loadNote() {
       setNote('');
+      setTakenBy('');
       const { data } = await supabase
         .from('meeting_notes')
-        .select('note')
+        .select('note, taken_by')
         .eq('meeting_id', meetingId!)
         .eq('date', date!)
         .maybeSingle();
       setNote(data?.note ?? '');
+      setTakenBy(data?.taken_by ?? '');
     }
     loadNote();
   }, [meetingId, date]);
 
-  async function saveNote() {
-    const trimmed = note.trim();
-    if (!trimmed) {
+  async function saveNoteFields() {
+    const trimmedNote = note.trim();
+    const trimmedTakenBy = takenBy.trim();
+    if (!trimmedNote && !trimmedTakenBy) {
       await supabase.from('meeting_notes').delete().eq('meeting_id', meetingId!).eq('date', date!);
     } else {
       await supabase.from('meeting_notes').upsert(
-        { meeting_id: meetingId, date, note: trimmed },
+        { meeting_id: meetingId, date, note: trimmedNote || null, taken_by: trimmedTakenBy || null },
         { onConflict: 'meeting_id,date' }
       );
     }
@@ -199,14 +203,23 @@ export default function AttendancePage() {
           onUpdateTime={updateMarkedAt}
         />
 
-        <textarea
-          className="service-notes-input"
-          placeholder="Service notes…"
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          onBlur={saveNote}
-          rows={2}
-        />
+        <div className="attendance-footer-fields">
+          <input
+            className="taken-by-input"
+            placeholder="Taken by…"
+            value={takenBy}
+            onChange={e => setTakenBy(e.target.value)}
+            onBlur={saveNoteFields}
+          />
+          <textarea
+            className="service-notes-input"
+            placeholder="Service notes…"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            onBlur={saveNoteFields}
+            rows={2}
+          />
+        </div>
       </div>
 
       {addModalName !== null && (
