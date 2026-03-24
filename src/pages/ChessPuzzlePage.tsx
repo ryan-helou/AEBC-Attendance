@@ -4,7 +4,6 @@ import { useEscapeBack } from '../hooks/useEscapeBack';
 import { supabase } from '../lib/supabase';
 import './ChessPuzzlePage.css';
 
-const STORAGE_KEY = 'aebc-chess-highscore';
 
 /* ─── Types ─── */
 interface Puzzle {
@@ -350,9 +349,6 @@ export default function ChessPuzzlePage() {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
-  const [highScore, setHighScore] = useState(() =>
-    parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
-  );
   const [elapsed, setElapsed] = useState(0);
   const [flashSquare, setFlashSquare] = useState<{ sq: string; type: 'correct' | 'wrong' } | null>(null);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -477,10 +473,6 @@ export default function ChessPuzzlePage() {
     function puzzleSolved() {
       const newScore = score + 1;
       setScore(newScore);
-      if (newScore > highScore) {
-        setHighScore(newScore);
-        localStorage.setItem(STORAGE_KEY, String(newScore));
-      }
       const nextPuzzle = puzzleIndex + 1;
       if (nextPuzzle < sortedPuzzles.current.length) {
         setTimeout(() => loadPuzzle(nextPuzzle), 700);
@@ -488,7 +480,7 @@ export default function ChessPuzzlePage() {
         setTimeout(() => loadPuzzle(0), 700);
       }
     }
-  }, [puzzleIndex, score, highScore, loadPuzzle]);
+  }, [puzzleIndex, score, loadPuzzle]);
 
   const handleWrongMove = useCallback((destSq: string) => {
     setFlashSquare({ sq: destSq, type: 'wrong' });
@@ -497,13 +489,9 @@ export default function ChessPuzzlePage() {
     setLives(newLives);
     if (newLives <= 0) {
       setGameState('lost');
-      if (score > highScore) {
-        setHighScore(score);
-        localStorage.setItem(STORAGE_KEY, String(score));
-      }
     }
     setSelectedSquare(null);
-  }, [lives, score, highScore]);
+  }, [lives]);
 
   const handleSquareClick = useCallback((file: number, rank: number) => {
     if (gameState !== 'playing' || waitingForOpponent) return;
@@ -745,7 +733,6 @@ export default function ChessPuzzlePage() {
         </div>
         <div className="chess-scores">
           <span className="chess-score">Score: {score}</span>
-          <span className="chess-highscore">Best: {highScore}</span>
           <div className="chess-lives">
             {[0, 1, 2].map(i => (
               <span key={i} className={`chess-life${i >= lives ? ' lost' : ''}`}>
@@ -791,7 +778,6 @@ export default function ChessPuzzlePage() {
                 <h2>Game Over</h2>
                 <div className="final-score">{score}</div>
                 <p>puzzles solved in {formatTime(elapsed)}</p>
-                {score >= highScore && score > 0 && <p className="new-hs">New high score!</p>}
 
                 {!nameSubmitted && (
                   <div className="chess-name-form">
