@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { supabase } from '../lib/supabase';
 import { WORDS, VALID_GUESSES } from '../data/words';
 import './WordlePage.css';
 
@@ -115,9 +116,32 @@ export default function WordlePage() {
   const [showStats, setShowStats] = useState(false);
   const [stats, setStats] = useState<Stats>(loadStats);
   const [lastGuessIndex, setLastGuessIndex] = useState(-1);
+  const [playerName, setPlayerName] = useState('');
+  const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{player_name: string; score: number}[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const gameOverRef = useRef(gameOver);
   gameOverRef.current = gameOver;
+
+  const fetchLeaderboard = async () => {
+    try {
+      const { data } = await supabase.from('game_scores').select('*').eq('game', 'wordle').order('score', { ascending: false }).limit(5);
+      if (data) setLeaderboard(data.map((d: any) => ({ player_name: d.player_name, score: d.score })));
+    } catch {}
+  };
+
+  const submitScore = async () => {
+    const trimmed = playerName.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    try {
+      await supabase.from('game_scores').insert({ game: 'wordle', player_name: trimmed, score: stats.maxStreak });
+      setNameSubmitted(true);
+      await fetchLeaderboard();
+    } catch {}
+    setSubmitting(false);
+  };
 
   const showToast = useCallback((msg: string, duration = 1500) => {
     setToasts(prev => [...prev, msg]);
@@ -206,6 +230,7 @@ export default function WordlePage() {
         saveUsedWords(used);
 
         // Show stats modal after a brief delay
+        fetchLeaderboard();
         setTimeout(() => setShowStats(true), isWin ? 1500 : 2500);
       }
     }, revealDuration);
@@ -256,6 +281,8 @@ export default function WordlePage() {
     setToasts([]);
     setShowStats(false);
     setLastGuessIndex(-1);
+    setPlayerName('');
+    setNameSubmitted(false);
   }, []);
 
   const winPct = stats.gamesPlayed > 0 ? Math.round((stats.wins / stats.gamesPlayed) * 100) : 0;
@@ -416,6 +443,38 @@ export default function WordlePage() {
                 </div>
               ))}
             </div>
+
+            {gameOver && !nameSubmitted && (
+              <div className="wordle-name-form">
+                <p className="wordle-name-label">Save your streak to the leaderboard</p>
+                <div className="wordle-name-row">
+                  <input type="text" placeholder="Your name" value={playerName}
+                    onChange={e => setPlayerName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && submitScore()}
+                    maxLength={20} />
+                  <button onClick={submitScore} disabled={submitting || !playerName.trim()}>
+                    {submitting ? '...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {nameSubmitted && <p className="wordle-saved">Score saved!</p>}
+
+            {leaderboard.length > 0 && (
+              <div className="wordle-leaderboard">
+                <h3>Top Streaks</h3>
+                <ul>
+                  {leaderboard.map((entry, i) => (
+                    <li key={i}>
+                      <span className="lb-rank">{i + 1}.</span>
+                      <span className="lb-name">{entry.player_name}</span>
+                      <span className="lb-score">{entry.score}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {gameOver && (
               <div className="wordle-modal-actions">

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { supabase } from '../lib/supabase';
 import './BreakoutPage.css';
 
-const STORAGE_KEY = 'aebc-breakout-highscore';
 const COLS = 10;
 const ROWS = 6;
 const BRICK_GAP = 3;
@@ -38,11 +38,12 @@ export default function BreakoutPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(() =>
-    parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)
-  );
   const [lives, setLives] = useState(3);
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'won' | 'lost'>('idle');
+  const [playerName, setPlayerName] = useState('');
+  const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{player_name: string; score: number}[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const gameRef = useRef({
     paddle: { x: 0, w: PADDLE_WIDTH },
@@ -57,6 +58,25 @@ export default function BreakoutPage() {
   });
 
   const mouseXRef = useRef<number | null>(null);
+
+  const fetchLeaderboard = async () => {
+    try {
+      const { data } = await supabase.from('game_scores').select('*').eq('game', 'breakout').order('score', { ascending: false }).limit(5);
+      if (data) setLeaderboard(data.map((d: any) => ({ player_name: d.player_name, score: d.score })));
+    } catch {}
+  };
+
+  const submitScore = async () => {
+    const trimmed = playerName.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    try {
+      await supabase.from('game_scores').insert({ game: 'breakout', player_name: trimmed, score });
+      setNameSubmitted(true);
+      await fetchLeaderboard();
+    } catch {}
+    setSubmitting(false);
+  };
 
   const initBricks = useCallback((cw: number, ch: number): Brick[] => {
     const brickTop = 40;
@@ -108,6 +128,13 @@ export default function BreakoutPage() {
     setLives(3);
   }, [initBricks, resetBall]);
 
+  // Fetch leaderboard when game ends
+  useEffect(() => {
+    if (gameState === 'won' || gameState === 'lost') {
+      fetchLeaderboard();
+    }
+  }, [gameState]);
+
   // Resize canvas to container
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -154,23 +181,14 @@ export default function BreakoutPage() {
     };
   }, []);
 
-  // Click/tap to launch or restart
+  // Click/tap to launch ball (only during playing state)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     function handleClick() {
       const g = gameRef.current;
-      if (gameState === 'idle') {
-        setGameState('playing');
-        return;
-      }
-      if (gameState === 'won' || gameState === 'lost') {
-        initGame();
-        setGameState('playing');
-        return;
-      }
-      if (!g.launched) {
+      if (gameState === 'playing' && !g.launched) {
         g.launched = true;
       }
     }
@@ -181,31 +199,24 @@ export default function BreakoutPage() {
       canvas.removeEventListener('click', handleClick);
       canvas.removeEventListener('touchstart', handleClick);
     };
-  }, [gameState, initGame]);
+  }, [gameState]);
 
-  // Space/Enter to launch or restart
+  // Space/Enter to launch ball (only during playing state)
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === ' ' || e.key === 'Enter') {
+        // Don't intercept when typing in the name input
+        if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
         e.preventDefault();
         const g = gameRef.current;
-        if (gameState === 'idle') {
-          setGameState('playing');
-          return;
-        }
-        if (gameState === 'won' || gameState === 'lost') {
-          initGame();
-          setGameState('playing');
-          return;
-        }
-        if (!g.launched) {
+        if (gameState === 'playing' && !g.launched) {
           g.launched = true;
         }
       }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [gameState, initGame]);
+  }, [gameState]);
 
   // Game loop
   useEffect(() => {
@@ -288,12 +299,6 @@ export default function BreakoutPage() {
             g.score += (ROWS - brick.row) * 10;
             setScore(g.score);
 
-            // Update high score
-            if (g.score > parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)) {
-              localStorage.setItem(STORAGE_KEY, String(g.score));
-              setHighScore(g.score);
-            }
-
             // Determine bounce direction
             const overlapLeft = g.ball.x + BALL_RADIUS - brick.x;
             const overlapRight = brick.x + brick.w - (g.ball.x - BALL_RADIUS);
@@ -368,7 +373,7 @@ export default function BreakoutPage() {
     return () => cancelAnimationFrame(g.animId);
   }, [gameState, resetBall]);
 
-  // Draw idle/end state
+  // Draw static state when not playing (idle/won/lost) - just the board, no text overlay
   useEffect(() => {
     if (gameState === 'playing') return;
     const canvas = canvasRef.current;
@@ -378,7 +383,6 @@ export default function BreakoutPage() {
     const ch = canvas.height;
     const g = gameRef.current;
 
-    // Draw current state
     ctx.clearRect(0, 0, cw, ch);
     ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim() || '#ffffff';
     ctx.fillRect(0, 0, cw, ch);
@@ -403,47 +407,6 @@ export default function BreakoutPage() {
     ctx.beginPath();
     ctx.arc(g.ball.x, g.ball.y, BALL_RADIUS, 0, Math.PI * 2);
     ctx.fill();
-
-    // Overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillRect(0, 0, cw, ch);
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-
-    if (gameState === 'idle') {
-      ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('Click or press Space to start', cw / 2, ch / 2);
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillText('Move mouse to control paddle', cw / 2, ch / 2 + 28);
-    } else if (gameState === 'won') {
-      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('You Win!', cw / 2, ch / 2 - 20);
-      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText(`Score: ${g.score}`, cw / 2, ch / 2 + 14);
-      if (g.score >= parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10)) {
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
-        ctx.fillText('New High Score!', cw / 2, ch / 2 + 40);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('Click or press Space to play again', cw / 2, ch / 2 + 68);
-    } else if (gameState === 'lost') {
-      ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('Game Over', cw / 2, ch / 2 - 20);
-      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText(`Score: ${g.score}`, cw / 2, ch / 2 + 14);
-      if (g.score >= parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10) && g.score > 0) {
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
-        ctx.fillText('New High Score!', cw / 2, ch / 2 + 40);
-      }
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillText('Click or press Space to try again', cw / 2, ch / 2 + 68);
-    }
   }, [gameState]);
 
   return (
@@ -462,13 +425,59 @@ export default function BreakoutPage() {
             ))}
           </span>
           <span className="breakout-score">Score: {score}</span>
-          <span className="breakout-highscore">Best: {highScore}</span>
         </div>
       </div>
 
       <div className="breakout-body">
         <div className="breakout-board" ref={containerRef}>
           <canvas ref={canvasRef} className="breakout-canvas" />
+
+          {gameState === 'idle' && (
+            <div className="breakout-overlay">
+              <h2>Breakout</h2>
+              <button onClick={() => setGameState('playing')}>Start</button>
+            </div>
+          )}
+
+          {(gameState === 'won' || gameState === 'lost') && (
+            <div className="breakout-overlay">
+              <h2>{gameState === 'won' ? 'You Win!' : 'Game Over'}</h2>
+              <div className="breakout-final-score">{score}</div>
+
+              {!nameSubmitted && (
+                <div className="breakout-name-form">
+                  <input type="text" placeholder="Your name" value={playerName}
+                    onChange={e => setPlayerName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && submitScore()}
+                    maxLength={20} autoFocus />
+                  <button onClick={submitScore} disabled={submitting || !playerName.trim()}>
+                    {submitting ? '...' : 'Save'}
+                  </button>
+                </div>
+              )}
+
+              {nameSubmitted && (
+                <>
+                  <p className="breakout-saved">Score saved!</p>
+                  {leaderboard.length > 0 && (
+                    <div className="breakout-leaderboard">
+                      <h3>Leaderboard</h3>
+                      <ul>
+                        {leaderboard.map((entry, i) => (
+                          <li key={i}>
+                            <span className="lb-rank">{i + 1}.</span>
+                            <span className="lb-name">{entry.player_name}</span>
+                            <span className="lb-score">{entry.score}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <button onClick={() => { initGame(); setGameState('playing'); setPlayerName(''); setNameSubmitted(false); setLeaderboard([]); }}>Play Again</button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

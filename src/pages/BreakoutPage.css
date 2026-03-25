@@ -50,10 +50,6 @@
   color: #ffffff;
 }
 
-.breakout-highscore {
-  color: rgba(255, 255, 255, 0.6);
-}
-
 .breakout-lives {
   display: flex;
   gap: 4px;
@@ -76,6 +72,7 @@
 }
 
 .breakout-board {
+  position: relative;
   width: 100%;
   max-width: 500px;
   border-radius: var(--radius-lg);
@@ -88,6 +85,160 @@
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* ─── Overlay (start / game over) ─── */
+.breakout-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  gap: 0.75rem;
+  z-index: 10;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.breakout-overlay h2 {
+  margin: 0;
+  font-size: 2rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+.breakout-overlay p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.breakout-final-score {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #8b5cf6;
+  margin: 0.25rem 0;
+}
+
+.breakout-saved {
+  color: #a78bfa;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.breakout-overlay button {
+  margin-top: 0.25rem;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: #8b5cf6;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: var(--transition-fast);
+}
+
+.breakout-overlay button:hover {
+  background: #7c3aed;
+}
+
+.breakout-overlay button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Name input for leaderboard ─── */
+.breakout-name-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.breakout-name-form input {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.95rem;
+  width: 140px;
+  outline: none;
+}
+
+.breakout-name-form input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.breakout-name-form input:focus {
+  border-color: #8b5cf6;
+}
+
+.breakout-name-form button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  margin-top: 0;
+}
+
+/* ─── Leaderboard ─── */
+.breakout-leaderboard {
+  width: 100%;
+  max-width: 240px;
+  margin-top: 0.25rem;
+}
+
+.breakout-leaderboard h3 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.breakout-leaderboard ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.breakout-leaderboard li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.breakout-leaderboard li .lb-rank {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+  margin-right: 0.5rem;
+  min-width: 1.2rem;
+}
+
+.breakout-leaderboard li .lb-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakout-leaderboard li .lb-score {
+  font-weight: 700;
+  color: #a78bfa;
+  margin-left: 0.5rem;
 }
 
 @media (max-width: 600px) {
@@ -111,5 +262,13 @@
 
   .breakout-board {
     cursor: default;
+  }
+
+  .breakout-overlay h2 {
+    font-size: 1.6rem;
+  }
+
+  .breakout-final-score {
+    font-size: 2rem;
   }
 }
