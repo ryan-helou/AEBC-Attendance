@@ -9,37 +9,37 @@ const GAMES = [
     id: 'tetris',
     name: 'Tetris',
     description: 'Classic block stacking',
-    gradient: 'linear-gradient(135deg, #1a237e, #3949ab)',
-    icon: '⬜⬜\n⬜⬜',
+    gradient: 'linear-gradient(145deg, #1a237e 0%, #3949ab 100%)',
     dbGame: 'tetris',
     scoreLabel: 'Top Score',
+    symbol: '⠶',
   },
   {
     id: 'breakout',
     name: 'Breakout',
     description: 'Smash all the bricks',
-    gradient: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-    icon: '🏓',
+    gradient: 'linear-gradient(145deg, #5b21b6 0%, #8b5cf6 100%)',
     dbGame: 'breakout',
     scoreLabel: 'Top Score',
+    symbol: '◎',
   },
   {
     id: 'chess',
     name: 'Puzzle Rush',
     description: 'Find the best move',
-    gradient: 'linear-gradient(135deg, #78350f, #d97706)',
-    icon: '♟',
+    gradient: 'linear-gradient(145deg, #78350f 0%, #d97706 100%)',
     dbGame: 'chess',
     scoreLabel: 'Best Run',
+    symbol: '♞',
   },
   {
     id: 'wordle',
     name: 'Wordle',
     description: 'Guess the 5-letter word',
-    gradient: 'linear-gradient(135deg, #15803d, #16a34a)',
-    icon: '🟩',
+    gradient: 'linear-gradient(145deg, #14532d 0%, #16a34a 100%)',
     dbGame: 'wordle',
     scoreLabel: 'Top Streak',
+    symbol: 'W',
   },
 ];
 
@@ -89,21 +89,22 @@ export default function GamesPage() {
               <button
                 key={game.id}
                 className="game-card"
+                style={{ background: game.gradient }}
                 onClick={() => navigate(`/games/${game.id}`)}
               >
-                <div className="game-card-icon" style={{ background: game.gradient }}>
-                  <span>{game.icon}</span>
-                </div>
-                <div className="game-card-text">
+                <div className="game-card-symbol">{game.symbol}</div>
+                <div className="game-card-content">
                   <span className="game-card-name">{game.name}</span>
                   <span className="game-card-desc">{game.description}</span>
+                  {top && (
+                    <div className="game-card-leader">
+                      <span className="game-card-trophy">🏆</span>
+                      <span className="game-card-leader-name">{top.name}</span>
+                      <span className="game-card-leader-score">{top.score.toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
-                {top && (
-                  <div className="game-card-score">
-                    <span className="game-card-score-value">{top.score.toLocaleString()}</span>
-                    <span className="game-card-score-label">{top.name}</span>
-                  </div>
-                )}
+                <div className="game-card-arrow">&rsaquo;</div>
               </button>
             );
           })}

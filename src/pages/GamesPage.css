@@ -42,30 +42,39 @@
 }
 
 .games-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
 }
 
 .game-card {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
   width: 100%;
-  padding: 1rem 1.25rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  padding: 1.25rem;
+  border: none;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   cursor: pointer;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   text-align: left;
+  position: relative;
+  overflow: hidden;
+  min-height: 140px;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.1) 100%);
+  pointer-events: none;
 }
 
 .game-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-text-muted);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-lg);
 }
 
 .game-card:active {
@@ -74,65 +83,69 @@
   transition-duration: 0.05s;
 }
 
-.game-card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 1.25rem;
-  color: #fff;
+.game-card-symbol {
+  font-size: 2rem;
   line-height: 1;
-  white-space: pre;
+  color: rgba(255, 255, 255, 0.2);
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-weight: 700;
 }
 
-.game-card-text {
-  flex: 1;
+.game-card-content {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
+  gap: 0.2rem;
+  position: relative;
+  z-index: 1;
+  flex: 1;
 }
 
 .game-card-name {
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--color-text);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: #fff;
+  letter-spacing: -0.01em;
 }
 
 .game-card-desc {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
 }
 
-.game-card-score {
+.game-card-leader {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.1rem;
-  flex-shrink: 0;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.game-card-score-value {
-  font-size: 1.1rem;
+.game-card-trophy {
+  font-size: 0.7rem;
+}
+
+.game-card-leader-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+}
+
+.game-card-leader-score {
   font-weight: 700;
-  color: var(--color-primary);
+  color: rgba(255, 255, 255, 0.9);
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
 }
 
-.game-card-score-label {
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-[data-theme="dark"] .game-card {
-  background: rgba(39, 39, 42, 0.6);
-  border-color: rgba(255, 255, 255, 0.08);
+.game-card-arrow {
+  display: none;
 }
 
 @media (max-width: 600px) {
@@ -148,17 +161,45 @@
     padding: 1rem 0.75rem;
   }
 
-  .game-card {
-    padding: 0.85rem 1rem;
+  .games-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
   }
 
-  .game-card-icon {
-    width: 42px;
-    height: 42px;
-    font-size: 1.1rem;
+  .game-card {
+    padding: 1rem;
+    min-height: 120px;
   }
 
   .game-card-name {
-    font-size: 0.95rem;
+    font-size: 1rem;
+  }
+
+  .game-card-symbol {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .games-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .game-card {
+    min-height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .game-card-symbol {
+    position: static;
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .game-card-leader {
+    padding-top: 0.35rem;
   }
 }
