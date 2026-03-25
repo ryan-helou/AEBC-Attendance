@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEscapeBack } from '../hooks/useEscapeBack';
+import { supabase } from '../lib/supabase';
 import './TetrisPage.css';
 
 const COLS = 10;
@@ -120,8 +121,6 @@ function getSpeed(level: number): number {
 
 const SCORE_TABLE = [0, 100, 300, 500, 800];
 
-const LS_KEY = 'aebc-tetris-highscore';
-
 export default function TetrisPage() {
   const navigate = useNavigate();
   useEscapeBack();
@@ -143,10 +142,29 @@ export default function TetrisPage() {
   const [level, setLevel] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [started, setStarted] = useState(false);
-  const [highScore, setHighScore] = useState(() => {
-    const saved = localStorage.getItem(LS_KEY);
-    return saved ? parseInt(saved, 10) : 0;
-  });
+  const [playerName, setPlayerName] = useState('');
+  const [nameSubmitted, setNameSubmitted] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<{player_name: string; score: number}[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchLeaderboard = async () => {
+    try {
+      const { data } = await supabase.from('game_scores').select('*').eq('game', 'tetris').order('score', { ascending: false }).limit(5);
+      if (data) setLeaderboard(data.map((d: any) => ({ player_name: d.player_name, score: d.score })));
+    } catch {}
+  };
+
+  const submitScore = async () => {
+    const trimmed = playerName.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    try {
+      await supabase.from('game_scores').insert({ game: 'tetris', player_name: trimmed, score });
+      setNameSubmitted(true);
+      await fetchLeaderboard();
+    } catch {}
+    setSubmitting(false);
+  };
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -219,32 +237,6 @@ export default function TetrisPage() {
       }
     }
 
-    // Game over overlay
-    if (gameOverRef.current) {
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 24px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
-      ctx.font = '14px system-ui, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillText('Press Space or Enter to restart', canvas.width / 2, canvas.height / 2 + 15);
-    }
-
-    // Not started overlay
-    if (!startedRef.current && !gameOverRef.current) {
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 22px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('TETRIS', canvas.width / 2, canvas.height / 2 - 30);
-      ctx.font = '14px system-ui, sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.fillText('Click or press Space to start', canvas.width / 2, canvas.height / 2 + 5);
-    }
-
     // Draw preview
     drawPreview();
   }, []);
@@ -315,6 +307,9 @@ export default function TetrisPage() {
     setLevel(0);
     setGameOver(false);
     setStarted(true);
+    setPlayerName('');
+    setNameSubmitted(false);
+    setLeaderboard([]);
     draw();
     scheduleDrop();
   }, [draw, scheduleDrop]);
@@ -339,14 +334,6 @@ export default function TetrisPage() {
         setScore(scoreRef.current);
         setLines(linesRef.current);
         setLevel(levelRef.current);
-
-        // High score
-        const saved = localStorage.getItem(LS_KEY);
-        const hs = saved ? parseInt(saved, 10) : 0;
-        if (scoreRef.current > hs) {
-          localStorage.setItem(LS_KEY, String(scoreRef.current));
-          setHighScore(scoreRef.current);
-        }
       }
 
       // Next piece
@@ -358,13 +345,7 @@ export default function TetrisPage() {
         gameOverRef.current = true;
         setGameOver(true);
         if (dropTimerRef.current) clearTimeout(dropTimerRef.current);
-        // Final high score check
-        const saved = localStorage.getItem(LS_KEY);
-        const hs = saved ? parseInt(saved, 10) : 0;
-        if (scoreRef.current > hs) {
-          localStorage.setItem(LS_KEY, String(scoreRef.current));
-          setHighScore(scoreRef.current);
-        }
+        fetchLeaderboard();
       }
     }
     draw();
@@ -372,10 +353,6 @@ export default function TetrisPage() {
 
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (gameOverRef.current) {
-      if (e.code === 'Space' || e.code === 'Enter') {
-        e.preventDefault();
-        resetGame();
-      }
       return;
     }
     if (!startedRef.current) {
@@ -459,12 +436,6 @@ export default function TetrisPage() {
     };
   }, [handleKey, draw]);
 
-  function handleCanvasClick() {
-    if (!startedRef.current && !gameOverRef.current) {
-      resetGame();
-    }
-  }
-
   return (
     <div className="tetris-page">
       <header className="tetris-header">
@@ -474,7 +445,6 @@ export default function TetrisPage() {
         <h1>Tetris</h1>
         <div className="tetris-header-stats">
           <span>Score: {score.toLocaleString()}</span>
-          <span>Hi: {highScore.toLocaleString()}</span>
         </div>
       </header>
 
@@ -503,13 +473,62 @@ export default function TetrisPage() {
               <span className="tetris-stat-value">{score.toLocaleString()}</span>
             </div>
           </div>
-          <canvas
-            ref={canvasRef}
-            width={COLS * BLOCK_SIZE}
-            height={ROWS * BLOCK_SIZE}
-            className="tetris-canvas"
-            onClick={handleCanvasClick}
-          />
+          <div className="tetris-canvas-wrap">
+            <canvas
+              ref={canvasRef}
+              width={COLS * BLOCK_SIZE}
+              height={ROWS * BLOCK_SIZE}
+              className="tetris-canvas"
+            />
+
+            {!started && !gameOver && (
+              <div className="tetris-overlay">
+                <h2>TETRIS</h2>
+                <button onClick={resetGame}>Start</button>
+              </div>
+            )}
+
+            {gameOver && (
+              <div className="tetris-overlay">
+                <h2>Game Over</h2>
+                <div className="tetris-final-score">{score.toLocaleString()}</div>
+                <p>Level {level} · {lines} lines</p>
+
+                {!nameSubmitted && (
+                  <div className="tetris-name-form">
+                    <input type="text" placeholder="Your name" value={playerName}
+                      onChange={e => setPlayerName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && submitScore()}
+                      maxLength={20} autoFocus />
+                    <button onClick={submitScore} disabled={submitting || !playerName.trim()}>
+                      {submitting ? '...' : 'Save'}
+                    </button>
+                  </div>
+                )}
+
+                {nameSubmitted && (
+                  <>
+                    <p className="tetris-saved">Score saved!</p>
+                    {leaderboard.length > 0 && (
+                      <div className="tetris-leaderboard">
+                        <h3>Leaderboard</h3>
+                        <ul>
+                          {leaderboard.map((entry, i) => (
+                            <li key={i}>
+                              <span className="lb-rank">{i + 1}.</span>
+                              <span className="lb-name">{entry.player_name}</span>
+                              <span className="lb-score">{entry.score.toLocaleString()}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <button onClick={resetGame}>Play Again</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="tetris-controls-hint">

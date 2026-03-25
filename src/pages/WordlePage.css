@@ -406,6 +406,130 @@
   margin-top: 1rem;
 }
 
+/* ─── Leaderboard name form ─── */
+.wordle-name-form {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.wordle-name-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.wordle-name-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.wordle-name-row input {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  width: 140px;
+  outline: none;
+}
+
+.wordle-name-row input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.wordle-name-row input:focus {
+  border-color: #22c55e;
+}
+
+.wordle-name-row button {
+  background: #15803d;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.wordle-name-row button:hover:not(:disabled) {
+  background: #166534;
+}
+
+.wordle-name-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.wordle-saved {
+  color: #22c55e;
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0.5rem 0 0;
+}
+
+/* ─── Leaderboard ─── */
+.wordle-leaderboard {
+  width: 100%;
+  max-width: 260px;
+  margin: 0.75rem auto 0;
+}
+
+.wordle-leaderboard h3 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+.wordle-leaderboard ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wordle-leaderboard li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--color-text);
+}
+
+.wordle-leaderboard .lb-rank {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-right: 0.5rem;
+  min-width: 1.2rem;
+}
+
+.wordle-leaderboard .lb-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wordle-leaderboard .lb-score {
+  font-weight: 700;
+  color: #22c55e;
+  margin-left: 0.5rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .wordle-tile {
