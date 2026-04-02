@@ -302,7 +302,7 @@ export default function PersonProfilePage() {
     >
       {isJona && (
         <div className="phil-bg" aria-hidden="true">
-          {Array.from({ length: 3000 }, (_, i) => 'Phil Wickham ').join('')}
+          {Array.from({ length: 3000 }, () => 'Phil Wickham ').join('')}
         </div>
       )}
       <div className={`profile-header${scrolled ? ' header-compact' : ''}`}>
