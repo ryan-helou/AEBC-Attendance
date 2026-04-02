@@ -30,12 +30,25 @@ create table attendance_records (
   person_id uuid not null references people(id) on delete cascade,
   date date not null default current_date,
   marked_at timestamptz default now(),
+  first_time boolean not null default false,
   constraint unique_attendance unique (meeting_id, person_id, date)
 );
 
 create index idx_attendance_meeting_date on attendance_records (meeting_id, date);
 
--- 4. Meeting notes (one short note per service date)
+-- 4. Guest attendance (anonymous walk-ins)
+create table guest_attendance (
+  id uuid default gen_random_uuid() primary key,
+  meeting_id uuid not null references meetings(id) on delete cascade,
+  date date not null default current_date,
+  guest_number integer not null,
+  marked_at timestamptz default now(),
+  first_time boolean not null default false
+);
+
+create index idx_guest_attendance_meeting_date on guest_attendance (meeting_id, date);
+
+-- 5. Meeting notes (one short note per service date)
 create table meeting_notes (
   id uuid default gen_random_uuid() primary key,
   meeting_id uuid not null references meetings(id) on delete cascade,
@@ -67,7 +80,11 @@ create policy "Allow all on people" on people for all using (true) with check (t
 create policy "Allow all on attendance_records" on attendance_records for all using (true) with check (true);
 create policy "Allow all on app_config" on app_config for all using (true) with check (true);
 
+alter table guest_attendance enable row level security;
+create policy "Allow all on guest_attendance" on guest_attendance for all using (true) with check (true);
+
 -- 6. Enable realtime on attendance_records
 -- Go to Database → Replication in the Supabase dashboard and enable replication for attendance_records
 -- Or run:
 alter publication supabase_realtime add table attendance_records;
+alter publication supabase_realtime add table guest_attendance;

@@ -89,108 +89,110 @@ const PUZZLES: Puzzle[] = [
 ];
 
 /* ─── SVG Chess Pieces ─── */
-// CBurnett-style SVG piece paths. Each returns an SVG group meant to be placed in a viewBox of "0 0 45 45".
 function PieceSVG({ piece, x, y, size }: { piece: string; x: number; y: number; size: number }) {
   const isWhite = piece === piece.toUpperCase();
   const type = piece.toLowerCase();
-  const fill = isWhite ? '#fff' : '#333';
-  const stroke = isWhite ? '#333' : '#fff';
-  const sw = 1.5;
-
-  // Scale factor: pieces designed in 45x45 box, we place them at (x,y) with given size
-  const scale = size / 45;
-  const pad = size * 0.1; // 10% padding
+  const pad = size * 0.05;
   const actualScale = (size - pad * 2) / 45;
   const tx = x + pad;
   const ty = y + pad;
-
   const transform = `translate(${tx}, ${ty}) scale(${actualScale})`;
 
+  const fill = isWhite ? '#fff' : '#262421';
+  const stroke = isWhite ? '#262421' : '#262421';
+  const detailStroke = isWhite ? '#262421' : '#ababab';
+  const sw = 1.5;
+
+  const common = { fill, stroke, strokeWidth: sw, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+  let paths: React.ReactNode = null;
+
   switch (type) {
-    case 'k': // King
-      return (
-        <g transform={transform}>
-          <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-            {/* Cross on top */}
-            <path d="M 22.5 11.63 V 6" strokeWidth={sw} />
-            <path d="M 20 8 h 5" strokeWidth={sw} />
-            {/* Crown body */}
-            <path d="M 22.5 25 c 0 0 4.5 -7.5 3 -10.5 c 0 0 -1.23 -1.5 -3 -0.5 c -1.77 -1 -3 0.5 -3 0.5 c -1.5 3 3 10.5 3 10.5" />
-            <path d="M 12.5 37 c 5.5 3.5 14.5 3.5 20 0 v -7 c 0 0 9 -4.5 6 -10.5 c -1.5 -3 -12.5 -2.5 -16 -3.5 c -3.5 1 -14.5 0.5 -16 3.5 c -3 6 6 10.5 6 10.5 v 7" />
-            <path d="M 12.5 30 c 5.5 -3 14.5 -3 20 0" fill="none" />
-            <path d="M 12.5 33.5 c 5.5 -3 14.5 -3 20 0" fill="none" />
-            <path d="M 12.5 37 c 5.5 -3 14.5 -3 20 0" fill="none" />
+    case 'k':
+      paths = (
+        <>
+          <g {...common}>
+            <path d="M 22.5 11.63 V 6" fill="none" stroke={detailStroke} strokeWidth={sw} />
+            <path d="M 20 8 h 5" fill="none" stroke={detailStroke} strokeWidth={sw} />
+            <path d="M 22.5 25 s 4.5 -7.5 3 -10.5 c 0 0 -1.23 -1.5 -3 -0.5 c -1.77 -1 -3 0.5 -3 0.5 c -1.5 3 3 10.5 3 10.5" />
+            <path d="M 12.5 37 c 5.5 3.5 14.5 3.5 20 0 v -7 s 9 -4.5 6 -10.5 c -1.5 -3 -12.5 -2.5 -16 -3.5 c -3.5 1 -14.5 0.5 -16 3.5 c -3 6 6 10.5 6 10.5 v 7" />
           </g>
-        </g>
+          <path d="M 12.5 30 c 5.5 -3 14.5 -3 20 0" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+          <path d="M 12.5 33.5 c 5.5 -3 14.5 -3 20 0" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+          <path d="M 12.5 37 c 5.5 -3 14.5 -3 20 0" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+        </>
       );
-    case 'q': // Queen
-      return (
-        <g transform={transform}>
-          <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-            {/* Crown points */}
+      break;
+    case 'q':
+      paths = (
+        <>
+          <g {...common}>
             <circle cx="6" cy="12" r="2.75" />
             <circle cx="14" cy="9" r="2.75" />
             <circle cx="22.5" cy="8" r="2.75" />
             <circle cx="31" cy="9" r="2.75" />
             <circle cx="39" cy="12" r="2.75" />
-            {/* Body */}
-            <path d="M 9 26 c 8.5 -1.5 21 -1.5 27 0 l 2.5 -12.5 -7.5 -1 -5.5 6 -5 -8 -5 8 -5.5 -6 -7.5 1 L 9 26 z" />
-            <path d="M 9 26 c 0 2 1.5 2 2.5 4 1 1.5 1 1 0.5 3.5 -1.5 1 -2.5 2.5 -2.5 2.5 h 26 c 0 0 -1 -1.5 -2.5 -2.5 -0.5 -2.5 -0.5 -2 0.5 -3.5 1 -2 2.5 -2 2.5 -4 -8.5 -1.5 -18.5 -1.5 -27 0 z" />
-            <path d="M 11.5 30 c 3.5 -1 18.5 -1 22 0" fill="none" />
-            <path d="M 12 33.5 c 6 -1 15 -1 21 0" fill="none" />
+            <path d="M 9 26 c 8.5 -1.5 21 -1.5 27 0 l 2.5 -12.5 L 31 25 l -3.5 -7 l -5 6.5 l -5 -6.5 l -3.5 7 L 9 26 z" />
+            <path d="M 9 26 c 0 2 1.5 2 2.5 4 c 1 1.5 1 1 0.5 3.5 c -1.5 1 -2.5 2.5 -2.5 2.5 h 26 s -1 -1.5 -2.5 -2.5 c -0.5 -2.5 -0.5 -2 0.5 -3.5 c 1 -2 2.5 -2 2.5 -4 c -8.5 -1.5 -18.5 -1.5 -27 0 z" />
           </g>
-        </g>
+          <path d="M 11.5 30 c 3.5 -1 18.5 -1 22 0" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+          <path d="M 12 33.5 c 6 -1 15 -1 21 0" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+        </>
       );
-    case 'r': // Rook
-      return (
-        <g transform={transform}>
-          <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+      break;
+    case 'r':
+      paths = (
+        <>
+          <g {...common}>
             <path d="M 9 39 h 27 v -3 H 9 v 3 z" />
             <path d="M 12.5 32 l 1.5 -2.5 h 17 l 1.5 2.5 h -20 z" />
             <path d="M 12 36 v -4 h 21 v 4 H 12 z" />
             <path d="M 14 29.5 v -13 h 17 v 13 H 14 z" />
             <path d="M 14 16.5 L 11 14 h 4 V 9 h 4 v 5 h 7 V 9 h 4 v 5 h 4 l -3 2.5 H 14 z" />
-            {!isWhite && (
-              <>
-                <path d="M 14 29.5 v -13 h 17 v 13 H 14 z" fill="none" stroke={stroke} strokeWidth={0.75} />
-              </>
-            )}
           </g>
-        </g>
+          {!isWhite && (
+            <>
+              <path d="M 14 29.5 v -13 h 17 v 13 H 14 z" fill="none" stroke={detailStroke} strokeWidth={0.75} />
+              <path d="M 12 36 v -4 h 21 v 4 H 12 z" fill="none" stroke={detailStroke} strokeWidth={0.75} />
+            </>
+          )}
+        </>
       );
-    case 'b': // Bishop
-      return (
-        <g transform={transform}>
-          <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M 9 36 c 3.39 -0.97 10.11 0.43 13.5 -2 c 3.39 2.43 10.11 1.03 13.5 2 c 0 0 1.65 0.54 3 2 c -0.68 0.97 -1.65 0.99 -3 0.5 c -3.39 -0.97 -10.11 0.46 -13.5 -1 c -3.39 1.46 -10.11 0.03 -13.5 1 c -1.354 0.49 -2.323 0.47 -3 -0.5 c 1.354 -1.94 3 -2 3 -2 z" />
+      break;
+    case 'b':
+      paths = (
+        <>
+          <g {...common}>
+            <path d="M 9 36 c 3.39 -0.97 10.11 0.43 13.5 -2 c 3.39 2.43 10.11 1.03 13.5 2 c 0 0 1.65 0.54 3 2 c -0.68 0.97 -1.65 0.99 -3 0.5 c -3.39 -0.97 -10.11 0.46 -13.5 -1 c -3.39 1.46 -10.11 0.03 -13.5 1 c -1.35 0.49 -2.32 0.47 -3 -0.5 c 1.35 -1.94 3 -2 3 -2 z" />
             <path d="M 15 32 c 2.5 2.5 12.5 2.5 15 0 c 0.5 -1.5 0 -2 0 -2 c 0 -2.5 -2.5 -4 -2.5 -4 c 5.5 -1.5 6 -11.5 -5 -15.5 c -11 4 -10.5 14 -5 15.5 c 0 0 -2.5 1.5 -2.5 4 c 0 0 -0.5 0.5 0 2 z" />
             <circle cx="22.5" cy="8" r="2.5" />
-            <path d="M 17.5 26 h 10 M 15 30 h 15" fill="none" stroke={stroke} strokeWidth={sw * 0.67} />
           </g>
-        </g>
+          <path d="M 17.5 26 h 10 M 15 30 h 15" fill="none" stroke={detailStroke} strokeWidth={1} strokeLinecap="round" />
+        </>
       );
-    case 'n': // Knight
-      return (
-        <g transform={transform}>
+      break;
+    case 'n':
+      paths = (
+        <>
           <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
             <path d="M 22 10 c 10.5 1 16.5 8 16 29 H 7 c 0 -13 5 -15.5 6 -21 c 0 0 1.5 -7 5 -4.5 c 0 0 0.5 1.5 1 2 c -2.5 5.5 -0.7 10.2 4 10.5 c 2.3 0.1 5.1 -3.4 4 -7" />
-            <path d="M 9.5 25.5 c 0 0 2 -1 3.5 -1 c 2.5 0 6 1.5 6 1.5" fill="none" />
-            <circle cx="14.5" cy="15.5" r="1" fill={stroke} stroke="none" />
-            <path d="M 24.55 10.4 l -0.45 1.45 c 0 0 -2.2 -1.7 -3.5 -1 c -1.3 0.7 -0.2 2.1 0 2.5 c 0.2 0.4 -1.7 1 -2 3 l -1.5 1.5" fill="none" stroke={stroke} strokeWidth={sw * 0.5} />
           </g>
+          <path d="M 9.5 25.5 c 0 0 2 -1 3.5 -1 c 2.5 0 6 1.5 6 1.5" fill="none" stroke={detailStroke} strokeWidth={sw} strokeLinecap="round" />
+          <circle cx="14.5" cy="15.5" r="1" fill={isWhite ? '#262421' : '#ababab'} stroke="none" />
+          <path d="M 24.55 10.4 l -0.45 1.45 s -2.2 -1.7 -3.5 -1 c -1.3 0.7 -0.2 2.1 0 2.5 c 0.2 0.4 -1.7 1 -2 3 l -1.5 1.5" fill="none" stroke={detailStroke} strokeWidth={0.75} strokeLinecap="round" />
+        </>
+      );
+      break;
+    case 'p':
+      paths = (
+        <g {...common}>
+          <path d="M 22.5 9 c -2.21 0 -4 1.79 -4 4 c 0 0.89 0.29 1.71 0.78 2.38 C 17.33 16.5 16 18.59 16 21 c 0 2.03 0.94 3.84 2.41 5.03 C 15.41 27.09 11 31.58 11 39.5 h 23 c 0 -7.92 -4.41 -12.41 -7.41 -13.47 C 28.06 24.84 29 23.03 29 21 c 0 -2.41 -1.33 -4.5 -3.28 -5.62 c 0.49 -0.67 0.78 -1.49 0.78 -2.38 c 0 -2.21 -1.79 -4 -4 -4 z" />
         </g>
       );
-    case 'p': // Pawn
-      return (
-        <g transform={transform}>
-          <g fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M 22.5 9 c -2.21 0 -4 1.79 -4 4 c 0 0.89 0.29 1.71 0.78 2.38 C 17.33 16.5 16 18.59 16 21 c 0 2.03 0.94 3.84 2.41 5.03 C 15.41 27.09 11 31.58 11 39.5 h 23 c 0 -7.92 -4.41 -12.41 -7.41 -13.47 C 28.06 24.84 29 23.03 29 21 c 0 -2.41 -1.33 -4.5 -3.28 -5.62 c 0.49 -0.67 0.78 -1.49 0.78 -2.38 c 0 -2.21 -1.79 -4 -4 -4 z" />
-          </g>
-        </g>
-      );
-    default:
-      return null;
+      break;
   }
+
+  return <g transform={transform} className="piece-svg">{paths}</g>;
 }
 
 /* ─── Board Helpers ─── */

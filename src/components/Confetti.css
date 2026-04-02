@@ -47,13 +47,26 @@
   transform: rotate(var(--rotation, 0deg));
 }
 
+.confetti-number {
+  position: absolute;
+  top: -2rem;
+  font-weight: 800;
+  user-select: none;
+  animation: confettiFall linear forwards;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+}
+
 @keyframes confettiFall {
   0% {
-    transform: translateY(0) translateX(0) rotate(0deg);
+    transform: translateY(0) translateX(0) rotate(var(--rotation, 0deg));
     opacity: 1;
   }
+  80% {
+    opacity: 0.7;
+  }
   100% {
-    transform: translateY(110vh) translateX(var(--wobble, 0px)) rotate(720deg);
+    transform: translateY(110vh) translateX(var(--wobble, 0px)) rotate(var(--rotation, 0deg));
     opacity: 0;
   }
 }

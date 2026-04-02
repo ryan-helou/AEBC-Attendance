@@ -139,12 +139,20 @@ export default function HistoryPage() {
 
   async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
     setChartLoading(true);
-    let query = supabase.from('attendance_records').select('meeting_id, date');
+    let query = supabase.from('attendance_records').select('meeting_id, date, first_time');
     const cutoff = timeframeCutoff(tf);
     if (cutoff) query = query.gte('date', cutoff);
-    const { data } = await query;
+
+    // Also fetch guest first-timers
+    let guestQuery = supabase.from('guest_attendance').select('meeting_id, date, first_time');
+    if (cutoff) guestQuery = guestQuery.gte('date', cutoff);
+
+    const [{ data }, { data: guestData }] = await Promise.all([query, guestQuery]);
+
     if (data) {
-      const records = data as Array<{ meeting_id: string; date: string }>;
+      const records = data as Array<{ meeting_id: string; date: string; first_time: boolean }>;
+      const guestRecords = (guestData ?? []) as Array<{ meeting_id: string; date: string; first_time: boolean }>;
+
       function weekOf(dateStr: string): string {
         const d = new Date(dateStr + 'T00:00:00');
         const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1;
@@ -152,11 +160,17 @@ export default function HistoryPage() {
         return d.toISOString().slice(0, 10);
       }
       const weekCounts = new Map<string, Map<string, number>>();
+      const weekFirstTimers = new Map<string, number>();
       for (const r of records) {
         const week = weekOf(r.date);
         if (!weekCounts.has(week)) weekCounts.set(week, new Map());
         const mc = weekCounts.get(week)!;
         mc.set(r.meeting_id, (mc.get(r.meeting_id) || 0) + 1);
+        if (r.first_time) weekFirstTimers.set(week, (weekFirstTimers.get(week) || 0) + 1);
+      }
+      for (const r of guestRecords) {
+        const week = weekOf(r.date);
+        if (r.first_time) weekFirstTimers.set(week, (weekFirstTimers.get(week) || 0) + 1);
       }
       const allWeeks = Array.from(weekCounts.keys()).sort();
       const points: WeekPoint[] = allWeeks.map(week => {
@@ -171,6 +185,7 @@ export default function HistoryPage() {
         const point: WeekPoint = { date: week, label };
         const mc = weekCounts.get(week)!;
         for (const m of meetingsList) point[m.name] = mc.get(m.id) || 0;
+        point['First Timers'] = weekFirstTimers.get(week) || 0;
         return point;
       });
       setChartData(points);
@@ -483,6 +498,10 @@ export default function HistoryPage() {
                       <stop offset="95%" stopColor={LINE_COLORS[i % LINE_COLORS.length]} stopOpacity={0} />
                     </linearGradient>
                   ))}
+                  <linearGradient id="grad-firsttimers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis
@@ -519,6 +538,16 @@ export default function HistoryPage() {
                     activeDot={{ r: 6, strokeWidth: 0 }}
                   />
                 ))}
+                <Area
+                  type="monotone"
+                  dataKey="First Timers"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="5 3"
+                  fill="url(#grad-firsttimers)"
+                  dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 5, strokeWidth: 0 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>

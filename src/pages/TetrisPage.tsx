@@ -6,26 +6,29 @@ import './TetrisPage.css';
 
 const COLS = 10;
 const ROWS = 20;
-const BLOCK_SIZE = 30;
+const BLOCK_SIZE = 28;
 
+// NES Tetris level 0 color palette — each piece gets a unique color
+// inspired by the classic NES palette
 const COLORS: Record<string, string> = {
-  I: '#00f0f0',
-  O: '#f0f000',
-  T: '#a000f0',
-  S: '#00f000',
-  Z: '#f00000',
-  J: '#0000f0',
-  L: '#f0a000',
+  I: '#00fbfb', // cyan
+  O: '#fcfcfc', // white
+  T: '#a800a8', // purple
+  S: '#00a800', // green
+  Z: '#f83800', // red
+  J: '#0058f8', // blue
+  L: '#f87858', // orange/salmon
 };
 
-const GHOST_COLORS: Record<string, string> = {
-  I: 'rgba(0,240,240,0.2)',
-  O: 'rgba(240,240,0,0.2)',
-  T: 'rgba(160,0,240,0.2)',
-  S: 'rgba(0,240,0,0.2)',
-  Z: 'rgba(240,0,0,0.2)',
-  J: 'rgba(0,0,240,0.2)',
-  L: 'rgba(240,160,0,0.2)',
+// NES-style block inner highlight colors
+const HIGHLIGHT: Record<string, string> = {
+  I: '#88fbfb',
+  O: '#fcfcfc',
+  T: '#f878f8',
+  S: '#58f858',
+  Z: '#f87858',
+  J: '#6888fc',
+  L: '#fcb8a8',
 };
 
 type Shape = number[][];
@@ -60,8 +63,14 @@ function rotateMatrix(matrix: Shape): Shape {
   return result;
 }
 
+// NES Tetris random: pick random, if same as last piece, re-roll once
+let lastPieceType = '';
 function randomPiece(): Piece {
-  const type = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
+  let type = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
+  if (type === lastPieceType) {
+    type = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
+  }
+  lastPieceType = type;
   const shape = SHAPES[type].map(row => [...row]);
   return { type, shape, x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
 }
@@ -108,18 +117,27 @@ function clearLines(board: Board): { board: Board; cleared: number } {
   return { board: [...empty, ...remaining], cleared };
 }
 
-function ghostY(board: Board, piece: Piece): number {
-  let dy = 0;
-  while (!collides(board, piece, 0, dy + 1)) dy++;
-  return piece.y + dy;
-}
-
+// NES Tetris speed table (frames per gridcell at ~60fps, converted to ms)
 function getSpeed(level: number): number {
-  const speeds = [800, 720, 630, 550, 470, 380, 300, 220, 140, 100, 80, 70, 60, 50, 40];
-  return speeds[Math.min(level, speeds.length - 1)];
+  if (level <= 0) return 800;
+  if (level === 1) return 717;
+  if (level === 2) return 633;
+  if (level === 3) return 550;
+  if (level === 4) return 467;
+  if (level === 5) return 383;
+  if (level === 6) return 300;
+  if (level === 7) return 217;
+  if (level === 8) return 133;
+  if (level === 9) return 100;
+  if (level <= 12) return 83;
+  if (level <= 15) return 67;
+  if (level <= 18) return 50;
+  if (level <= 28) return 33;
+  return 17; // level 29+ "kill screen"
 }
 
-const SCORE_TABLE = [0, 100, 300, 500, 800];
+// NES Tetris scoring
+const SCORE_TABLE = [0, 40, 100, 300, 1200];
 
 export default function TetrisPage() {
   const navigate = useNavigate();
@@ -175,55 +193,21 @@ export default function TetrisPage() {
     const board = boardRef.current;
     const piece = pieceRef.current;
 
-    // Background
-    ctx.fillStyle = '#1a1a2e';
+    // Pure black background like NES
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = 1;
-    for (let r = 0; r <= ROWS; r++) {
-      ctx.beginPath();
-      ctx.moveTo(0, r * BLOCK_SIZE);
-      ctx.lineTo(COLS * BLOCK_SIZE, r * BLOCK_SIZE);
-      ctx.stroke();
-    }
-    for (let c = 0; c <= COLS; c++) {
-      ctx.beginPath();
-      ctx.moveTo(c * BLOCK_SIZE, 0);
-      ctx.lineTo(c * BLOCK_SIZE, ROWS * BLOCK_SIZE);
-      ctx.stroke();
-    }
 
     // Board cells
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (board[r][c]) {
-          drawBlock(ctx, c, r, COLORS[board[r][c]!]);
+          drawBlock(ctx, c, r, board[r][c]!);
         }
       }
     }
 
+    // No ghost piece — NES Tetris doesn't have one
     if (!gameOverRef.current && startedRef.current) {
-      // Ghost piece
-      const gy = ghostY(board, piece);
-      for (let r = 0; r < piece.shape.length; r++) {
-        for (let c = 0; c < piece.shape[r].length; c++) {
-          if (!piece.shape[r][c]) continue;
-          const px = piece.x + c;
-          const py = gy + r;
-          if (py >= 0) {
-            ctx.fillStyle = GHOST_COLORS[piece.type];
-            ctx.fillRect(px * BLOCK_SIZE + 1, py * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
-            ctx.strokeStyle = COLORS[piece.type];
-            ctx.globalAlpha = 0.3;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(px * BLOCK_SIZE + 1, py * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
-            ctx.globalAlpha = 1;
-          }
-        }
-      }
-
       // Current piece
       for (let r = 0; r < piece.shape.length; r++) {
         for (let c = 0; c < piece.shape[r].length; c++) {
@@ -231,7 +215,7 @@ export default function TetrisPage() {
           const px = piece.x + c;
           const py = piece.y + r;
           if (py >= 0) {
-            drawBlock(ctx, px, py, COLORS[piece.type]);
+            drawBlock(ctx, px, py, piece.type);
           }
         }
       }
@@ -241,19 +225,29 @@ export default function TetrisPage() {
     drawPreview();
   }, []);
 
-  function drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, color: string) {
+  // NES-style block: solid color with a bright inner square highlight
+  function drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, type: string) {
     const bx = x * BLOCK_SIZE;
     const by = y * BLOCK_SIZE;
+    const color = COLORS[type];
+    const highlight = HIGHLIGHT[type];
+
+    // Dark border/outline
+    ctx.fillStyle = '#000';
+    ctx.fillRect(bx, by, BLOCK_SIZE, BLOCK_SIZE);
+
+    // Main block color
     ctx.fillStyle = color;
     ctx.fillRect(bx + 1, by + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2);
-    // highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillRect(bx + 1, by + 1, BLOCK_SIZE - 2, 3);
-    ctx.fillRect(bx + 1, by + 1, 3, BLOCK_SIZE - 2);
-    // shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(bx + 1, by + BLOCK_SIZE - 4, BLOCK_SIZE - 2, 3);
-    ctx.fillRect(bx + BLOCK_SIZE - 4, by + 1, 3, BLOCK_SIZE - 2);
+
+    // NES-style: brighter inner square (top-left portion)
+    ctx.fillStyle = highlight;
+    ctx.fillRect(bx + 2, by + 2, BLOCK_SIZE - 8, BLOCK_SIZE - 8);
+
+    // Dark bottom-right inner edge for depth
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(bx + BLOCK_SIZE - 6, by + 2, 5, BLOCK_SIZE - 3);
+    ctx.fillRect(bx + 2, by + BLOCK_SIZE - 6, BLOCK_SIZE - 3, 5);
   }
 
   function drawPreview() {
@@ -263,8 +257,8 @@ export default function TetrisPage() {
     if (!ctx) return;
 
     const next = nextPieceRef.current;
-    const previewBlockSize = 20;
-    ctx.fillStyle = '#1a1a2e';
+    const previewBlockSize = 18;
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const shape = next.shape;
@@ -276,11 +270,18 @@ export default function TetrisPage() {
         if (!shape[r][c]) continue;
         const bx = offsetX + c * previewBlockSize;
         const by = offsetY + r * previewBlockSize;
-        ctx.fillStyle = COLORS[next.type];
+        const color = COLORS[next.type];
+        const highlight = HIGHLIGHT[next.type];
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(bx, by, previewBlockSize, previewBlockSize);
+        ctx.fillStyle = color;
         ctx.fillRect(bx + 1, by + 1, previewBlockSize - 2, previewBlockSize - 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(bx + 1, by + 1, previewBlockSize - 2, 2);
-        ctx.fillRect(bx + 1, by + 1, 2, previewBlockSize - 2);
+        ctx.fillStyle = highlight;
+        ctx.fillRect(bx + 2, by + 2, previewBlockSize - 6, previewBlockSize - 6);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(bx + previewBlockSize - 5, by + 2, 4, previewBlockSize - 3);
+        ctx.fillRect(bx + 2, by + previewBlockSize - 5, previewBlockSize - 3, 4);
       }
     }
   }
@@ -294,6 +295,7 @@ export default function TetrisPage() {
   }, []);
 
   const resetGame = useCallback(() => {
+    lastPieceType = '';
     boardRef.current = emptyBoard();
     pieceRef.current = randomPiece();
     nextPieceRef.current = randomPiece();
@@ -356,7 +358,7 @@ export default function TetrisPage() {
       return;
     }
     if (!startedRef.current) {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
         resetGame();
       }
@@ -368,6 +370,7 @@ export default function TetrisPage() {
 
     switch (e.code) {
       case 'ArrowLeft':
+      case 'KeyA':
         e.preventDefault();
         if (!collides(board, piece, -1, 0)) {
           piece.x -= 1;
@@ -375,6 +378,7 @@ export default function TetrisPage() {
         }
         break;
       case 'ArrowRight':
+      case 'KeyD':
         e.preventDefault();
         if (!collides(board, piece, 1, 0)) {
           piece.x += 1;
@@ -382,7 +386,9 @@ export default function TetrisPage() {
         }
         break;
       case 'ArrowDown':
+      case 'KeyS':
         e.preventDefault();
+        // Soft drop — NES Tetris gives 1 point per cell
         if (!collides(board, piece, 0, 1)) {
           piece.y += 1;
           scoreRef.current += 1;
@@ -391,41 +397,33 @@ export default function TetrisPage() {
         }
         break;
       case 'ArrowUp':
+      case 'KeyW':
+      case 'KeyX':
         e.preventDefault();
         {
+          // NES Tetris: NO wall kicks. If rotation collides, just don't rotate.
           const rotated = rotateMatrix(piece.shape);
           if (!collides(board, piece, 0, 0, rotated)) {
-            piece.shape = rotated;
-          } else if (!collides(board, piece, 1, 0, rotated)) {
-            piece.x += 1;
-            piece.shape = rotated;
-          } else if (!collides(board, piece, -1, 0, rotated)) {
-            piece.x -= 1;
-            piece.shape = rotated;
-          } else if (!collides(board, piece, 2, 0, rotated)) {
-            piece.x += 2;
-            piece.shape = rotated;
-          } else if (!collides(board, piece, -2, 0, rotated)) {
-            piece.x -= 2;
             piece.shape = rotated;
           }
           draw();
         }
         break;
-      case 'Space':
+      case 'KeyZ':
         e.preventDefault();
-        // Hard drop
-        while (!collides(board, piece, 0, 1)) {
-          piece.y += 1;
-          scoreRef.current += 2;
+        {
+          // Counter-clockwise rotation (rotate 3 times = CCW)
+          let rotated = piece.shape;
+          for (let i = 0; i < 3; i++) rotated = rotateMatrix(rotated);
+          if (!collides(board, piece, 0, 0, rotated)) {
+            piece.shape = rotated;
+          }
+          draw();
         }
-        setScore(scoreRef.current);
-        drop();
-        // Reset drop timer
-        scheduleDrop();
         break;
+      // No hard drop — NES Tetris doesn't have it
     }
-  }, [draw, resetGame, scheduleDrop]);
+  }, [draw, resetGame]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKey);
@@ -442,37 +440,11 @@ export default function TetrisPage() {
         <button className="back-btn" onClick={() => navigate('/games')}>
           &larr;
         </button>
-        <h1>Tetris</h1>
-        <div className="tetris-header-stats">
-          <span>Score: {score.toLocaleString()}</span>
-        </div>
+        <h1>TETRIS</h1>
       </header>
 
       <div className="tetris-body">
         <div className="tetris-game-area">
-          <div className="tetris-sidebar">
-            <div className="tetris-info-box">
-              <label>Next</label>
-              <canvas
-                ref={previewCanvasRef}
-                width={100}
-                height={80}
-                className="tetris-preview"
-              />
-            </div>
-            <div className="tetris-info-box">
-              <label>Level</label>
-              <span className="tetris-stat-value">{level}</span>
-            </div>
-            <div className="tetris-info-box">
-              <label>Lines</label>
-              <span className="tetris-stat-value">{lines}</span>
-            </div>
-            <div className="tetris-info-box">
-              <label>Score</label>
-              <span className="tetris-stat-value">{score.toLocaleString()}</span>
-            </div>
-          </div>
           <div className="tetris-canvas-wrap">
             <canvas
               ref={canvasRef}
@@ -483,35 +455,36 @@ export default function TetrisPage() {
 
             {!started && !gameOver && (
               <div className="tetris-overlay">
-                <h2>TETRIS</h2>
-                <button onClick={resetGame}>Start</button>
+                <div className="tetris-title">TETRIS</div>
+                <div className="tetris-start-hint">Press START</div>
+                <button onClick={resetGame}>START</button>
               </div>
             )}
 
             {gameOver && (
               <div className="tetris-overlay">
-                <h2>Game Over</h2>
+                <div className="tetris-gameover-text">GAME OVER</div>
                 <div className="tetris-final-score">{score.toLocaleString()}</div>
-                <p>Level {level} · {lines} lines</p>
+                <p>LEVEL {level} — {lines} LINES</p>
 
                 {!nameSubmitted && (
                   <div className="tetris-name-form">
-                    <input type="text" placeholder="Your name" value={playerName}
+                    <input type="text" placeholder="YOUR NAME" value={playerName}
                       onChange={e => setPlayerName(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && submitScore()}
                       maxLength={20} autoFocus />
                     <button onClick={submitScore} disabled={submitting || !playerName.trim()}>
-                      {submitting ? '...' : 'Save'}
+                      {submitting ? '...' : 'SAVE'}
                     </button>
                   </div>
                 )}
 
                 {nameSubmitted && (
                   <>
-                    <p className="tetris-saved">Score saved!</p>
+                    <p className="tetris-saved">SCORE SAVED!</p>
                     {leaderboard.length > 0 && (
                       <div className="tetris-leaderboard">
-                        <h3>Leaderboard</h3>
+                        <h3>TOP SCORES</h3>
                         <ul>
                           {leaderboard.map((entry, i) => (
                             <li key={i}>
@@ -523,19 +496,43 @@ export default function TetrisPage() {
                         </ul>
                       </div>
                     )}
-                    <button onClick={resetGame}>Play Again</button>
+                    <button onClick={resetGame}>PLAY AGAIN</button>
                   </>
                 )}
               </div>
             )}
           </div>
+
+          <div className="tetris-sidebar">
+            <div className="tetris-info-box">
+              <label>NEXT</label>
+              <canvas
+                ref={previewCanvasRef}
+                width={90}
+                height={72}
+                className="tetris-preview"
+              />
+            </div>
+            <div className="tetris-info-box">
+              <label>SCORE</label>
+              <span className="tetris-stat-value">{score.toLocaleString()}</span>
+            </div>
+            <div className="tetris-info-box">
+              <label>LEVEL</label>
+              <span className="tetris-stat-value">{level}</span>
+            </div>
+            <div className="tetris-info-box">
+              <label>LINES</label>
+              <span className="tetris-stat-value">{lines}</span>
+            </div>
+          </div>
         </div>
 
         <div className="tetris-controls-hint">
-          <span>← → Move</span>
-          <span>↑ Rotate</span>
-          <span>↓ Soft Drop</span>
-          <span>Space Hard Drop</span>
+          <span>← → / A D MOVE</span>
+          <span>↑ / W ROTATE</span>
+          <span>↓ / S DROP</span>
+          <span>Z/X ROTATE</span>
         </div>
       </div>
     </div>
