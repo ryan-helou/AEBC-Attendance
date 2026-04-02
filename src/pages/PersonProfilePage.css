@@ -221,6 +221,34 @@
   font-style: normal;
 }
 
+.profile-jona {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-jona .phil-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  user-select: none;
+  overflow: hidden;
+  color: var(--color-primary);
+  opacity: 0.55;
+  font-size: 1rem;
+  font-weight: 900;
+  font-family: 'Impact', 'Arial Black', 'Helvetica Neue', sans-serif;
+  line-height: 1.4;
+  letter-spacing: 0.05em;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.profile-jona > *:not(.phil-bg) {
+  position: relative;
+  z-index: 1;
+}
+
 .profile-lebron {
   width: 2.6rem;
   height: 2.6rem;
@@ -277,6 +305,10 @@
   padding: 0.75rem 1rem;
   margin-bottom: 0.5rem;
   box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .profile-jona .phil-bg {
+  opacity: 0.12;
 }
 
 [data-theme="dark"] .profile-meeting-card {

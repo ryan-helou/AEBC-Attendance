@@ -1,17 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
+import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
-import type { Meeting, Person } from '../types';
+import type { Meeting, Person, DisplayEntry } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
 import { useEscapeBack } from '../hooks/useEscapeBack';
-import { useScrolledDown } from '../hooks/useScrolledDown';
+
 import Confetti from '../components/Confetti';
 import './AttendancePage.css';
 
@@ -19,7 +20,7 @@ export default function AttendancePage() {
   const { meetingId, date } = useParams<{ meetingId: string; date: string }>();
   const navigate = useNavigate();
   useEscapeBack();
-  const scrolled = useScrolledDown();
+
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [addModalName, setAddModalName] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -36,24 +37,61 @@ export default function AttendancePage() {
     markAttendance,
     removeAttendance,
     updateMarkedAt,
+    toggleFirstTime,
     pendingUndo,
     undoRemove,
     dismissUndo,
   } = useAttendance(meetingId!, date!);
 
+  const {
+    guests,
+    loading: guestsLoading,
+    addGuest,
+    removeGuest,
+    updateGuestMarkedAt,
+    toggleGuestFirstTime,
+  } = useGuestAttendance(meetingId!, date!);
+
+  // Merge person entries and guest entries into a single sorted list
+  const displayEntries: DisplayEntry[] = useMemo(() => {
+    const personEntries: DisplayEntry[] = entries.map(e => ({ type: 'person', entry: e }));
+    const guestEntries: DisplayEntry[] = guests.map(g => ({ type: 'guest', entry: g }));
+    const merged = [...personEntries, ...guestEntries];
+    merged.sort((a, b) => new Date(b.entry.marked_at).getTime() - new Date(a.entry.marked_at).getTime());
+    return merged;
+  }, [entries, guests]);
+
+  const filteredEntries = useMemo(() => {
+    if (!filterQuery.trim()) return displayEntries;
+    const q = filterQuery.toLowerCase();
+    const filtered = displayEntries.filter(item => {
+      if (item.type === 'guest') {
+        return `guest ${item.entry.guest_number}`.includes(q);
+      }
+      return item.entry.person.full_name.toLowerCase().includes(q);
+    });
+    // If nothing matches, show the full list (avoids blanking on easter eggs etc.)
+    return filtered.length > 0 ? filtered : displayEntries;
+  }, [displayEntries, filterQuery]);
+
+  const totalCount = entries.length + guests.length;
+  const firstTimerCount = useMemo(() =>
+    displayEntries.filter(e => e.entry.first_time).length,
+    [displayEntries]
+  );
+
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const MILESTONES = [25, 50, 75, 100];
-    const count = entries.length;
+    const count = totalCount;
     if (count > prevCountRef.current && MILESTONES.includes(count)) {
-      // Clear any existing confetti timeout so the new one takes over
       if (milestoneRef.current) clearTimeout(milestoneRef.current);
       setMilestone({ count });
       milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
     }
     prevCountRef.current = count;
-  }, [entries.length]);
+  }, [totalCount]);
 
   useEffect(() => {
     async function load() {
@@ -99,13 +137,11 @@ export default function AttendancePage() {
 
   const meetingDay = meeting ? getMeetingDay(meeting.name) : null;
 
-  // If the current date doesn't match the meeting's required day, snap to the nearest valid one
   useEffect(() => {
     if (!meeting || meetingDay === null || !date) return;
     const d = parseDate(date);
     const currentDay = d.getDay();
     if (currentDay !== meetingDay) {
-      // Snap back to the most recent valid day
       let diff = currentDay - meetingDay;
       if (diff < 0) diff += 7;
       d.setDate(d.getDate() - diff);
@@ -135,12 +171,34 @@ export default function AttendancePage() {
     [addPerson, markAttendance]
   );
 
+  const handleRemove = useCallback(
+    (id: string, isGuest: boolean) => {
+      if (isGuest) {
+        removeGuest(id);
+      } else {
+        removeAttendance(id);
+      }
+    },
+    [removeAttendance, removeGuest]
+  );
+
+  const handleToggleFirstTime = useCallback(
+    (id: string, isGuest: boolean) => {
+      if (isGuest) {
+        toggleGuestFirstTime(id);
+      } else {
+        toggleFirstTime(id);
+      }
+    },
+    [toggleFirstTime, toggleGuestFirstTime]
+  );
+
   function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newDate = e.target.value;
     if (!newDate) return;
     if (meetingDay !== null) {
       const d = parseDate(newDate);
-      if (d.getDay() !== meetingDay) return; // ignore invalid day selection
+      if (d.getDay() !== meetingDay) return;
     }
     navigate(`/attendance/${meetingId}/${newDate}`, { replace: true });
   }
@@ -157,11 +215,11 @@ export default function AttendancePage() {
     navigate(`/attendance/${meetingId}/${todayDate}`, { replace: true });
   }
 
-  if (peopleLoading || attendanceLoading || !meeting) return <AttendanceSkeleton />;
+  if (peopleLoading || attendanceLoading || guestsLoading || !meeting) return <AttendanceSkeleton />;
 
   return (
     <div className="attendance-page">
-      <div className={`attendance-header${scrolled ? ' header-compact' : ''}`}>
+      <div className="attendance-header">
         <button className="back-btn" onClick={() => navigate('/')}>
           &larr;
         </button>
@@ -185,22 +243,32 @@ export default function AttendancePage() {
       </div>
 
       <div className="attendance-body">
-        <AttendanceInput
-          searchPeople={searchPeople}
-          markedPersonIds={markedPersonIds}
-          onMark={handleMark}
-          onAddNew={handleAddNew}
-          onQueryChange={setFilterQuery}
-        />
+        <div className="attendance-input-row">
+          <AttendanceInput
+            searchPeople={searchPeople}
+            markedPersonIds={markedPersonIds}
+            onMark={handleMark}
+            onAddNew={handleAddNew}
+            onQueryChange={setFilterQuery}
+          />
+          <button className="add-guest-btn" onClick={addGuest} title="Add guest">
+            + Guest
+          </button>
+        </div>
 
-        <div className="attendance-count"><AnimatedNumber value={entries.length} /> present</div>
+        <div className="attendance-count">
+          <AnimatedNumber value={totalCount} /> present
+          {firstTimerCount > 0 && (
+            <span className="first-timer-count"> · <AnimatedNumber value={firstTimerCount} /> new</span>
+          )}
+        </div>
 
         <AttendanceTable
-          entries={filterQuery.trim()
-            ? entries.filter(e => e.person.full_name.toLowerCase().includes(filterQuery.toLowerCase()))
-            : entries}
-          onRemove={removeAttendance}
+          entries={filteredEntries}
+          onRemove={handleRemove}
           onUpdateTime={updateMarkedAt}
+          onUpdateGuestTime={updateGuestMarkedAt}
+          onToggleFirstTime={handleToggleFirstTime}
         />
 
         <div className="attendance-footer-fields">

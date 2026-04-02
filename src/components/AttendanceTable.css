@@ -43,7 +43,7 @@
 }
 
 .attendance-table tbody tr:nth-child(even) {
-  background: rgba(241, 245, 249, 0.5);
+  background: var(--color-row-stripe, rgba(241, 245, 249, 0.5));
 }
 
 .attendance-table tbody tr:last-child td {
@@ -58,10 +58,53 @@
   background: var(--color-primary-light);
 }
 
+.guest-row .col-name {
+  font-style: italic;
+}
+
+.guest-name {
+  color: var(--color-text-secondary);
+}
+
 .col-num {
-  width: 3rem;
+  width: 2.5rem;
   text-align: center;
   color: var(--color-text-muted);
+}
+
+.col-first {
+  width: 2.5rem;
+  text-align: center;
+}
+
+.first-time-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: transparent;
+  font-size: 0.8rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.first-time-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: none;
+  box-shadow: none;
+}
+
+.first-time-btn.is-first {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
 }
 
 .col-name {

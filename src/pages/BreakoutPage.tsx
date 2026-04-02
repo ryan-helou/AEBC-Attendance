@@ -330,26 +330,22 @@ export default function BreakoutPage() {
       ctx.clearRect(0, 0, cw, ch);
 
       // Background
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim() || '#ffffff';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, cw, ch);
 
       // Bricks
       for (const brick of g.bricks) {
         if (!brick.alive) continue;
         ctx.fillStyle = brick.color;
-        ctx.beginPath();
-        ctx.roundRect(brick.x, brick.y, brick.w, brick.h, 3);
-        ctx.fill();
+        ctx.fillRect(brick.x, brick.y, brick.w, brick.h);
       }
 
       // Paddle
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-text').trim() || '#1e293b';
-      ctx.beginPath();
-      ctx.roundRect(g.paddle.x, ch - PADDLE_HEIGHT, g.paddle.w, PADDLE_HEIGHT, 5);
-      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(g.paddle.x, ch - PADDLE_HEIGHT, g.paddle.w, PADDLE_HEIGHT);
 
       // Ball
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#2563eb';
+      ctx.fillStyle = '#a855f7';
       ctx.beginPath();
       ctx.arc(g.ball.x, g.ball.y, BALL_RADIUS, 0, Math.PI * 2);
       ctx.fill();
@@ -434,34 +430,34 @@ export default function BreakoutPage() {
 
           {gameState === 'idle' && (
             <div className="breakout-overlay">
-              <h2>Breakout</h2>
-              <button onClick={() => setGameState('playing')}>Start</button>
+              <h2>BREAKOUT</h2>
+              <button onClick={() => setGameState('playing')}>START</button>
             </div>
           )}
 
           {(gameState === 'won' || gameState === 'lost') && (
             <div className="breakout-overlay">
-              <h2>{gameState === 'won' ? 'You Win!' : 'Game Over'}</h2>
+              <h2>{gameState === 'won' ? 'YOU WIN!' : 'GAME OVER'}</h2>
               <div className="breakout-final-score">{score}</div>
 
               {!nameSubmitted && (
                 <div className="breakout-name-form">
-                  <input type="text" placeholder="Your name" value={playerName}
+                  <input type="text" placeholder="YOUR NAME" value={playerName}
                     onChange={e => setPlayerName(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && submitScore()}
                     maxLength={20} autoFocus />
                   <button onClick={submitScore} disabled={submitting || !playerName.trim()}>
-                    {submitting ? '...' : 'Save'}
+                    {submitting ? '...' : 'SAVE'}
                   </button>
                 </div>
               )}
 
               {nameSubmitted && (
                 <>
-                  <p className="breakout-saved">Score saved!</p>
+                  <p className="breakout-saved">SCORE SAVED!</p>
                   {leaderboard.length > 0 && (
                     <div className="breakout-leaderboard">
-                      <h3>Leaderboard</h3>
+                      <h3>TOP SCORES</h3>
                       <ul>
                         {leaderboard.map((entry, i) => (
                           <li key={i}>
@@ -473,7 +469,7 @@ export default function BreakoutPage() {
                       </ul>
                     </div>
                   )}
-                  <button onClick={() => { initGame(); setGameState('playing'); setPlayerName(''); setNameSubmitted(false); setLeaderboard([]); }}>Play Again</button>
+                  <button onClick={() => { initGame(); setGameState('playing'); setPlayerName(''); setNameSubmitted(false); setLeaderboard([]); }}>PLAY AGAIN</button>
                 </>
               )}
             </div>

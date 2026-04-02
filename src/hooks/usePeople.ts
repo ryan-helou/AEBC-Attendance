@@ -8,12 +8,34 @@ export interface SearchResult {
   notesMatch: boolean;
 }
 
+// Search aliases: maps keywords to person names they should match
+const SEARCH_ALIASES: Record<string, string[]> = {
+  'phil wickham': ['jona safadi'],
+  'phil': ['jona safadi'],
+  'wickham': ['jona safadi'],
+};
+
+function aliasScore(person: Person, query: string): number {
+  const q = query.toLowerCase();
+  const name = person.full_name.toLowerCase();
+
+  for (const [keyword, targets] of Object.entries(SEARCH_ALIASES)) {
+    if (keyword.startsWith(q) || q.startsWith(keyword)) {
+      if (targets.some(t => name.includes(t))) return 85;
+    }
+  }
+  return 0;
+}
+
 function scorePerson(person: Person, query: string): number {
   const name = person.full_name.toLowerCase();
   const q = query.toLowerCase();
 
   if (name === q) return 100;
   if (name.startsWith(q)) return 90;
+
+  const alias = aliasScore(person, q);
+  if (alias > 0) return alias;
 
   const words = name.split(/\s+/);
   for (const word of words) {

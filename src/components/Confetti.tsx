@@ -27,15 +27,15 @@ export default function Confetti({ count }: ConfettiProps) {
   const colors = MILESTONE_COLORS[count] || MILESTONE_COLORS[25];
 
   const [pieces] = useState<ConfettiPiece[]>(() =>
-    Array.from({ length: 120 }, (_, i) => ({
+    Array.from({ length: 300 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
-      size: 0.4 + Math.random() * 0.6,
+      size: 0.9 + Math.random() * 1.2,
       delay: Math.random() * 1.5,
       duration: 2.5 + Math.random() * 2,
       wobble: (Math.random() - 0.5) * 80,
       color: colors[Math.floor(Math.random() * colors.length)],
-      rotation: Math.random() * 360,
+      rotation: (Math.random() - 0.5) * 40,
     }))
   );
 
@@ -44,18 +44,19 @@ export default function Confetti({ count }: ConfettiProps) {
       {pieces.map(p => (
         <span
           key={p.id}
-          className="confetti-piece"
+          className="confetti-number"
           style={{
             left: `${p.left}%`,
-            width: `${p.size}rem`,
-            height: `${p.size * 0.6}rem`,
-            background: p.color,
+            fontSize: `${p.size}rem`,
+            color: p.color,
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.duration}s`,
             '--wobble': `${p.wobble}px`,
             '--rotation': `${p.rotation}deg`,
           } as React.CSSProperties}
-        />
+        >
+          {count}
+        </span>
       ))}
     </div>
   );

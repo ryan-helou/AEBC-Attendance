@@ -24,6 +24,7 @@ export function useAttendance(meetingId: string, date: string) {
         person_id: r.person_id as string,
         date: r.date as string,
         marked_at: r.marked_at as string,
+        first_time: (r.first_time as boolean) ?? false,
         person: r.person as AttendanceEntry['person'],
       }));
       setEntries(mapped);
@@ -75,6 +76,7 @@ export function useAttendance(meetingId: string, date: string) {
         person_id: personId,
         date,
         marked_at: new Date().toISOString(),
+        first_time: false,
         person,
       };
 
@@ -112,6 +114,7 @@ export function useAttendance(meetingId: string, date: string) {
           person_id: (data as Record<string, unknown>).person_id as string,
           date: (data as Record<string, unknown>).date as string,
           marked_at: (data as Record<string, unknown>).marked_at as string,
+          first_time: ((data as Record<string, unknown>).first_time as boolean) ?? false,
           person: (data as Record<string, unknown>).person as AttendanceEntry['person'],
         };
         setEntries(prev => prev.map(e => (e.id === tempId ? real : e)));
@@ -207,5 +210,19 @@ export function useAttendance(meetingId: string, date: string) {
     [fetchAttendance]
   );
 
-  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
+  const toggleFirstTime = useCallback(
+    async (recordId: string) => {
+      const entry = entries.find(e => e.id === recordId);
+      if (!entry) return;
+      const newVal = !entry.first_time;
+      setEntries(prev => prev.map(e => (e.id === recordId ? { ...e, first_time: newVal } : e)));
+      await supabase
+        .from('attendance_records')
+        .update({ first_time: newVal })
+        .eq('id', recordId);
+    },
+    [entries]
+  );
+
+  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, toggleFirstTime, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
 }

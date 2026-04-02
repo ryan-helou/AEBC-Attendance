@@ -17,8 +17,22 @@ export interface AttendanceRecord {
   person_id: string;
   date: string;
   marked_at: string;
+  first_time: boolean;
 }
 
 export interface AttendanceEntry extends AttendanceRecord {
   person: Person;
 }
+
+export interface GuestEntry {
+  id: string;
+  meeting_id: string;
+  date: string;
+  guest_number: number;
+  marked_at: string;
+  first_time: boolean;
+}
+
+export type DisplayEntry =
+  | { type: 'person'; entry: AttendanceEntry }
+  | { type: 'guest'; entry: GuestEntry };

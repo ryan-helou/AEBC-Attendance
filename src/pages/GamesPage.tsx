@@ -9,7 +9,6 @@ const GAMES = [
     id: 'tetris',
     name: 'Tetris',
     description: 'Classic block stacking',
-    gradient: 'linear-gradient(145deg, #1a237e 0%, #3949ab 100%)',
     dbGame: 'tetris',
     scoreLabel: 'Top Score',
     symbol: '⠶',
@@ -18,7 +17,6 @@ const GAMES = [
     id: 'breakout',
     name: 'Breakout',
     description: 'Smash all the bricks',
-    gradient: 'linear-gradient(145deg, #5b21b6 0%, #8b5cf6 100%)',
     dbGame: 'breakout',
     scoreLabel: 'Top Score',
     symbol: '◎',
@@ -27,7 +25,6 @@ const GAMES = [
     id: 'chess',
     name: 'Puzzle Rush',
     description: 'Find the best move',
-    gradient: 'linear-gradient(145deg, #78350f 0%, #d97706 100%)',
     dbGame: 'chess',
     scoreLabel: 'Best Run',
     symbol: '♞',
@@ -36,7 +33,6 @@ const GAMES = [
     id: 'wordle',
     name: 'Wordle',
     description: 'Guess the 5-letter word',
-    gradient: 'linear-gradient(145deg, #14532d 0%, #16a34a 100%)',
     dbGame: 'wordle',
     scoreLabel: 'Top Streak',
     symbol: 'W',
@@ -77,7 +73,7 @@ export default function GamesPage() {
           &larr;
         </button>
         <div className="games-header-info">
-          <h1>Arcade</h1>
+          <h1>ARCADE</h1>
         </div>
       </div>
 
@@ -89,7 +85,7 @@ export default function GamesPage() {
               <button
                 key={game.id}
                 className="game-card"
-                style={{ background: game.gradient }}
+                style={{}}
                 onClick={() => navigate(`/games/${game.id}`)}
               >
                 <div className="game-card-symbol">{game.symbol}</div>

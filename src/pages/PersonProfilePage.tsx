@@ -267,6 +267,9 @@ export default function PersonProfilePage() {
   const isRyan = person?.full_name === 'Ryan Helou';
   const isJona = person?.full_name === 'Jona Safadi';
   const isGeorge = person?.full_name === 'George Hag Moussa';
+  const isAttendanceMinistry = ['Holy', 'Aly', 'Julia'].some(n =>
+    person?.full_name.startsWith(n)
+  );
 
   function handleColorChange(hex: string) {
     setCustomColor(hex);
@@ -288,7 +291,7 @@ export default function PersonProfilePage() {
 
   return (
     <div
-      className={`profile-page ${isRyan ? 'profile-themed' : ''}`}
+      className={`profile-page ${isRyan ? 'profile-themed' : ''} ${isJona ? 'profile-jona' : ''}`}
       onMouseDown={() => setShowColorPanel(false)}
       style={isRyan ? {
         '--ryan-accent':       customColor,
@@ -297,12 +300,18 @@ export default function PersonProfilePage() {
         '--ryan-accent-light': hexLighten(customColor, 0.4),
       } as React.CSSProperties : undefined}
     >
+      {isJona && (
+        <div className="phil-bg" aria-hidden="true">
+          {Array.from({ length: 3000 }, (_, i) => 'Phil Wickham ').join('')}
+        </div>
+      )}
       <div className={`profile-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>
           {isRyan && <span className="profile-crown">👑</span>}
           {isJona && <span className="profile-crown">🤡</span>}
           {isGeorge && <img src="/lebron.png" alt="LeBron" className="profile-lebron" />}
+          {isAttendanceMinistry && <span className="profile-crown">🕵️</span>}
           {editingName ? (
             <input
               ref={nameInputRef}

@@ -1,34 +1,37 @@
+/* ─── NES Retro Chess Puzzle Rush ─── */
 .chess-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
+  background: #0f0f0f;
 }
 
 /* ─── Header ─── */
 .chess-header {
-  background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%);
-  padding: 1rem 1.5rem;
+  background: #000;
+  border-bottom: 3px solid #d97706;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .chess-header .back-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 0.4rem 0.6rem;
-  font-size: 1.25rem;
+  background: transparent;
+  border: 2px solid #d97706;
+  padding: 0.3rem 0.5rem;
+  font-size: 1.1rem;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.7);
-  border-radius: var(--radius);
+  color: #d97706;
+  border-radius: 0;
   cursor: pointer;
-  transition: var(--transition-fast);
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
 }
 
 .chess-header .back-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.15);
+  color: #000;
+  background: #d97706;
 }
 
 .chess-header-info {
@@ -38,14 +41,18 @@
 .chess-header-info h1 {
   margin: 0;
   font-size: 1.4rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-weight: 800;
+  color: #d97706;
+  letter-spacing: 0.15em;
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
 }
 
 .chess-header-sub {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  color: #666;
   margin-top: 2px;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-scores {
@@ -53,18 +60,18 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-score {
-  color: #ffffff;
-  font-size: 1.1rem;
+  color: #fff;
+  font-size: 1rem;
 }
 
 .chess-highscore {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.8rem;
+  color: #666;
+  font-size: 0.7rem;
 }
 
 .chess-lives {
@@ -74,13 +81,13 @@
 }
 
 .chess-life {
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1;
-  transition: var(--transition-fast);
+  transition: opacity 0.2s;
 }
 
 .chess-life.lost {
-  opacity: 0.25;
+  opacity: 0.2;
   filter: grayscale(1);
 }
 
@@ -90,8 +97,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem;
-  gap: 0.75rem;
+  padding: 0.75rem;
+  gap: 0.5rem;
 }
 
 /* ─── Status Bar ─── */
@@ -101,18 +108,20 @@
   justify-content: space-between;
   width: 100%;
   max-width: 500px;
-  padding: 0.5rem 0.75rem;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  color: var(--color-text);
+  padding: 0.4rem 0.6rem;
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 0;
+  font-size: 0.75rem;
+  color: #aaa;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-timer {
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
   min-width: 3.5rem;
+  color: #fff;
 }
 
 .chess-turn-info {
@@ -120,7 +129,7 @@
 }
 
 .chess-difficulty-stars {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   letter-spacing: 1px;
 }
 
@@ -129,7 +138,7 @@
 }
 
 .chess-difficulty-stars .star-empty {
-  color: var(--color-border);
+  color: #333;
 }
 
 /* ─── Board ─── */
@@ -142,10 +151,10 @@
 .chess-board-wrap {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  border: 2px solid var(--color-border);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  border: 3px solid #555;
   position: relative;
   user-select: none;
 }
@@ -172,7 +181,7 @@
 .chess-board-wrap .board-label {
   pointer-events: none;
   user-select: none;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-board-wrap .move-dot {
@@ -210,78 +219,88 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
-  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.88);
+  gap: 0.6rem;
   z-index: 10;
-  border-radius: var(--radius-lg);
   padding: 1.5rem;
 }
 
 .chess-overlay h2 {
   margin: 0;
-  font-size: 2rem;
-  color: #fff;
+  font-size: 1.8rem;
+  color: #d97706;
   font-weight: 800;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .chess-overlay p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
+  color: #888;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
   text-align: center;
 }
 
 .chess-overlay .final-score {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 800;
-  color: #d97706;
-  margin: 0.25rem 0;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  margin: 0.15rem 0;
 }
 
 .chess-overlay .new-hs {
   color: #fbbf24;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-overlay button {
-  margin-top: 0.25rem;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
+  margin-top: 0.15rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  border: none;
-  border-radius: var(--radius);
+  border: 2px solid #d97706;
+  border-radius: 0;
   cursor: pointer;
-  background: #d97706;
-  color: #fff;
-  transition: var(--transition-fast);
+  background: transparent;
+  color: #d97706;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .chess-overlay button:hover {
-  background: #b45309;
+  background: #d97706;
+  color: #000;
 }
 
 /* ─── Name input for leaderboard ─── */
 .chess-name-form {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .chess-name-form input {
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.6rem;
+  border-radius: 0;
+  border: 2px solid #555;
+  background: #111;
   color: #fff;
-  font-size: 0.95rem;
-  width: 140px;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  width: 130px;
   outline: none;
+  text-transform: uppercase;
 }
 
 .chess-name-form input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: #444;
 }
 
 .chess-name-form input:focus {
@@ -289,25 +308,26 @@
 }
 
 .chess-name-form button {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
   margin-top: 0;
 }
 
 /* ─── Leaderboard ─── */
 .chess-leaderboard {
   width: 100%;
-  max-width: 240px;
-  margin-top: 0.25rem;
+  max-width: 200px;
+  margin-top: 0.15rem;
 }
 
 .chess-leaderboard h3 {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  color: #d97706;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
   text-align: center;
+  text-transform: uppercase;
 }
 
 .chess-leaderboard-list {
@@ -316,25 +336,25 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .chess-leaderboard-list li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.3rem 0.6rem;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
+  padding: 0.2rem 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
 }
 
 .chess-leaderboard-list li .lb-rank {
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 600;
-  margin-right: 0.5rem;
-  min-width: 1.2rem;
+  color: #666;
+  font-weight: 700;
+  margin-right: 0.4rem;
+  min-width: 1rem;
 }
 
 .chess-leaderboard-list li .lb-name {
@@ -342,35 +362,36 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .chess-leaderboard-list li .lb-score {
   font-weight: 700;
   color: #fbbf24;
-  margin-left: 0.5rem;
+  margin-left: 0.4rem;
 }
 
 /* ─── Puzzle hint ─── */
 .chess-puzzle-hint {
-  font-size: 0.85rem;
-  color: var(--color-text);
-  opacity: 0.6;
+  font-size: 0.75rem;
+  color: #666;
   text-align: center;
   max-width: 500px;
+  font-family: 'Courier New', monospace;
 }
 
 /* ─── Responsive ─── */
 @media (max-width: 540px) {
   .chess-header {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem;
   }
 
   .chess-header-info h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   .chess-body {
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
 
   .chess-board-container {
@@ -378,10 +399,10 @@
   }
 
   .chess-overlay h2 {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .chess-overlay .final-score {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 }

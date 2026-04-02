@@ -1,30 +1,36 @@
+/* ─── NES Retro Breakout ─── */
 .breakout-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #0f0f0f;
 }
 
 .breakout-header {
-  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-  padding: 1rem 1.5rem;
+  background: #000;
+  border-bottom: 3px solid #a855f7;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .breakout-header .back-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 0.4rem 0.6rem;
-  font-size: 1.25rem;
+  background: transparent;
+  border: 2px solid #a855f7;
+  padding: 0.3rem 0.5rem;
+  font-size: 1.1rem;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.7);
-  border-radius: var(--radius);
+  color: #a855f7;
+  border-radius: 0;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
 }
 
 .breakout-header .back-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.15);
+  color: #000;
+  background: #a855f7;
 }
 
 .breakout-header-info {
@@ -33,21 +39,26 @@
 
 .breakout-header-info h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #a855f7;
+  letter-spacing: 0.15em;
+  font-family: 'Courier New', monospace;
+  text-transform: uppercase;
 }
 
 .breakout-scores {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  font-weight: 600;
-  font-size: 0.9rem;
+  gap: 0.75rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
 }
 
 .breakout-score {
-  color: #ffffff;
+  color: #fff;
+  letter-spacing: 0.05em;
 }
 
 .breakout-lives {
@@ -57,10 +68,10 @@
 
 .breakout-life-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ef4444;
+  width: 8px;
+  height: 8px;
+  border-radius: 0;
+  background: #f44;
 }
 
 .breakout-body {
@@ -75,9 +86,10 @@
   position: relative;
   width: 100%;
   max-width: 500px;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+  border: 2px solid #555;
   cursor: none;
 }
 
@@ -95,110 +107,118 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.8);
-  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.88);
+  gap: 0.6rem;
   z-index: 10;
-  border-radius: var(--radius-lg);
   padding: 1.5rem;
 }
 
 .breakout-overlay h2 {
   margin: 0;
-  font-size: 2rem;
-  color: #fff;
+  font-size: 1.8rem;
+  color: #a855f7;
   font-weight: 800;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .breakout-overlay p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
-  text-align: center;
+  color: #888;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
 }
 
 .breakout-final-score {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 800;
-  color: #8b5cf6;
-  margin: 0.25rem 0;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  margin: 0.15rem 0;
 }
 
 .breakout-saved {
-  color: #a78bfa;
-  font-weight: 700;
-  font-size: 0.95rem;
+  color: #0f0 !important;
+  font-weight: 700 !important;
+  font-family: 'Courier New', monospace;
 }
 
 .breakout-overlay button {
-  margin-top: 0.25rem;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
+  margin-top: 0.15rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  background: #8b5cf6;
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
+  border: 2px solid #a855f7;
+  border-radius: 0;
   cursor: pointer;
-  letter-spacing: 0.01em;
-  transition: var(--transition-fast);
+  background: transparent;
+  color: #a855f7;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .breakout-overlay button:hover {
-  background: #7c3aed;
+  background: #a855f7;
+  color: #000;
 }
 
 .breakout-overlay button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 /* ─── Name input for leaderboard ─── */
 .breakout-name-form {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   align-items: center;
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .breakout-name-form input {
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.6rem;
+  border-radius: 0;
+  border: 2px solid #555;
+  background: #111;
   color: #fff;
-  font-size: 0.95rem;
-  width: 140px;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  width: 130px;
   outline: none;
+  text-transform: uppercase;
 }
 
 .breakout-name-form input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: #444;
 }
 
 .breakout-name-form input:focus {
-  border-color: #8b5cf6;
+  border-color: #a855f7;
 }
 
 .breakout-name-form button {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
   margin-top: 0;
 }
 
 /* ─── Leaderboard ─── */
 .breakout-leaderboard {
   width: 100%;
-  max-width: 240px;
-  margin-top: 0.25rem;
+  max-width: 200px;
+  margin-top: 0.15rem;
 }
 
 .breakout-leaderboard h3 {
-  margin: 0 0 0.4rem 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  margin: 0 0 0.3rem 0;
+  font-size: 0.75rem;
+  color: #a855f7;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.1em;
   text-align: center;
+  text-transform: uppercase;
 }
 
 .breakout-leaderboard ul {
@@ -207,25 +227,25 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .breakout-leaderboard li {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.3rem 0.5rem;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.85);
+  padding: 0.2rem 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  color: #ccc;
+  font-family: 'Courier New', monospace;
 }
 
 .breakout-leaderboard li .lb-rank {
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 600;
-  margin-right: 0.5rem;
-  min-width: 1.2rem;
+  color: #666;
+  font-weight: 700;
+  margin-right: 0.4rem;
+  min-width: 1rem;
 }
 
 .breakout-leaderboard li .lb-name {
@@ -233,27 +253,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .breakout-leaderboard li .lb-score {
   font-weight: 700;
-  color: #a78bfa;
-  margin-left: 0.5rem;
+  color: #fff;
+  margin-left: 0.4rem;
 }
 
 @media (max-width: 600px) {
   .breakout-header {
-    padding: 1rem;
+    padding: 0.75rem;
     gap: 0.5rem;
   }
 
   .breakout-header-info h1 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
   }
 
   .breakout-scores {
-    font-size: 0.8rem;
-    gap: 0.6rem;
+    font-size: 0.7rem;
+    gap: 0.5rem;
   }
 
   .breakout-body {
@@ -265,10 +286,10 @@
   }
 
   .breakout-overlay h2 {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
   }
 
   .breakout-final-score {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 }

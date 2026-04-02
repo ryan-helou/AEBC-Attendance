@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AttendanceEntry } from '../types';
+import type { DisplayEntry } from '../types';
 import './AttendanceTable.css';
 
 interface AttendanceTableProps {
-  entries: AttendanceEntry[];
-  onRemove: (recordId: string) => void;
+  entries: DisplayEntry[];
+  onRemove: (id: string, isGuest: boolean) => void;
   onUpdateTime?: (recordId: string, newMarkedAt: string) => void;
+  onUpdateGuestTime?: (guestId: string, newMarkedAt: string) => void;
+  onToggleFirstTime?: (id: string, isGuest: boolean) => void;
 }
 
 function formatTime(isoString: string) {
@@ -23,7 +25,7 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, onRemove, onUpdateTime }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
   const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    prevIdsRef.current = new Set(entries.map(e => e.id));
+    prevIdsRef.current = new Set(entries.map(e => e.entry.id));
   });
 
   useEffect(() => {
@@ -41,14 +43,18 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
     }
   }, [editingId]);
 
-  function startEdit(entry: AttendanceEntry) {
-    if (!onUpdateTime) return;
-    setEditingId(entry.id);
-    setEditValue(toTimeInputValue(entry.marked_at));
+  function canEditTime(item: DisplayEntry) {
+    return item.type === 'guest' ? !!onUpdateGuestTime : !!onUpdateTime;
   }
 
-  function commitEdit(entry: AttendanceEntry) {
-    if (!onUpdateTime || !editValue) {
+  function startEdit(item: DisplayEntry) {
+    if (!canEditTime(item)) return;
+    setEditingId(item.entry.id);
+    setEditValue(toTimeInputValue(item.entry.marked_at));
+  }
+
+  function commitEdit(item: DisplayEntry) {
+    if (!editValue) {
       setEditingId(null);
       return;
     }
@@ -57,11 +63,13 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
       setEditingId(null);
       return;
     }
-    // Use the meeting date as the base, not the original marked_at date
-    // (handles retroactively added entries whose marked_at is on a different day)
-    const d = new Date(entry.date + 'T00:00:00');
+    const d = new Date(item.entry.date + 'T00:00:00');
     d.setHours(h, m, 0, 0);
-    onUpdateTime(entry.id, d.toISOString());
+    if (item.type === 'guest') {
+      onUpdateGuestTime?.(item.entry.id, d.toISOString());
+    } else {
+      onUpdateTime?.(item.entry.id, d.toISOString());
+    }
     setEditingId(null);
   }
 
@@ -76,54 +84,71 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime }: Att
           <tr>
             <th className="col-num">#</th>
             <th className="col-name">Name</th>
+            <th className="col-first">1st</th>
             <th className="col-time">Time</th>
             <th className="col-action"></th>
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, i) => {
-            const isNew = !prevIdsRef.current.has(entry.id);
+          {entries.map((item, i) => {
+            const isNew = !prevIdsRef.current.has(item.entry.id);
+            const isGuest = item.type === 'guest';
             return (
               <tr
-                key={entry.id}
-                className={isNew ? 'new-row' : ''}
+                key={item.entry.id}
+                className={`${isNew ? 'new-row' : ''} ${isGuest ? 'guest-row' : ''}`}
               >
                 <td className="col-num">{entries.length - i}</td>
                 <td className="col-name">
-                  <span className="name-tap" onClick={() => navigate(`/person/${entry.person_id}`)}>
-                    {entry.person.full_name}
-                  </span>
-                  {entry.person.notes && (
-                    <span className="person-note"> — {entry.person.notes}</span>
+                  {isGuest ? (
+                    <span className="guest-name">Guest {item.entry.guest_number}</span>
+                  ) : (
+                    <>
+                      <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
+                        {item.entry.person.full_name}
+                      </span>
+                      {item.entry.person.notes && (
+                        <span className="person-note"> — {item.entry.person.notes}</span>
+                      )}
+                    </>
                   )}
                 </td>
+                <td className="col-first">
+                  <button
+                    className={`first-time-btn${item.entry.first_time ? ' is-first' : ''}`}
+                    onClick={() => onToggleFirstTime?.(item.entry.id, isGuest)}
+                    title={item.entry.first_time ? 'Remove first-time mark' : 'Mark as first time'}
+                  >
+                    {item.entry.first_time ? '\u2713' : ''}
+                  </button>
+                </td>
                 <td className="col-time">
-                  {editingId === entry.id ? (
+                  {editingId === item.entry.id ? (
                     <input
                       ref={editInputRef}
                       type="time"
                       className="time-edit-input"
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => commitEdit(entry)}
+                      onBlur={() => commitEdit(item)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') commitEdit(entry);
+                        if (e.key === 'Enter') commitEdit(item);
                         if (e.key === 'Escape') setEditingId(null);
                       }}
                     />
                   ) : (
                     <span
-                      className={onUpdateTime ? 'time-tap' : ''}
-                      onClick={() => startEdit(entry)}
+                      className={canEditTime(item) ? 'time-tap' : ''}
+                      onClick={() => startEdit(item)}
                     >
-                      {formatTime(entry.marked_at)}
+                      {formatTime(item.entry.marked_at)}
                     </span>
                   )}
                 </td>
                 <td className="col-action">
                   <button
                     className="remove-btn"
-                    onClick={() => onRemove(entry.id)}
+                    onClick={() => onRemove(item.entry.id, isGuest)}
                     title="Remove"
                   >
                     &times;
