@@ -78,7 +78,7 @@ export default function BreakoutPage() {
     setSubmitting(false);
   };
 
-  const initBricks = useCallback((cw: number, ch: number): Brick[] => {
+  const initBricks = useCallback((cw: number, _ch: number): Brick[] => {
     const brickTop = 40;
     const brickH = 16;
     const totalGapX = BRICK_GAP * (COLS + 1);
