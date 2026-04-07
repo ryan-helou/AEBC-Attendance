@@ -68,6 +68,13 @@ interface StreakLeader {
   streak: number;
 }
 
+interface OnTimeLeader {
+  person_id: string;
+  person_name: string;
+  avgTime: string;
+  timesAttended: number;
+}
+
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -130,6 +137,8 @@ export default function HistoryPage() {
   const [topLoading, setTopLoading] = useState(false);
   const [streakLeaders, setStreakLeaders] = useState<StreakLeader[]>([]);
   const [streakLoading, setStreakLoading] = useState(true);
+  const [onTimeLeaders, setOnTimeLeaders] = useState<OnTimeLeader[]>([]);
+  const [onTimeLoading, setOnTimeLoading] = useState(true);
 
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
@@ -238,6 +247,49 @@ export default function HistoryPage() {
     setStreakLoading(false);
   }
 
+  async function loadOnTimeLeaders() {
+    setOnTimeLoading(true);
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('person_id, marked_at, person:people(full_name)');
+    if (data) {
+      const personStats = new Map<string, { name: string; times: number[]; count: number }>();
+      for (const r of data as Array<Record<string, unknown>>) {
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const markedAt = new Date(r.marked_at as string);
+        const minutesSinceMidnight = markedAt.getHours() * 60 + markedAt.getMinutes();
+
+        if (!personStats.has(pid)) {
+          personStats.set(pid, { name, times: [], count: 0 });
+        }
+        const stats = personStats.get(pid)!;
+        stats.times.push(minutesSinceMidnight);
+        stats.count++;
+      }
+
+      const leaders: OnTimeLeader[] = [];
+      for (const [pid, stats] of personStats.entries()) {
+        if (stats.count < 3) continue; // Only include people with 3+ attendances
+        const avgMinutes = Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
+        const hours = Math.floor(avgMinutes / 60);
+        const mins = avgMinutes % 60;
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const avgTime = `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+        leaders.push({ person_id: pid, person_name: stats.name, avgTime, timesAttended: stats.count });
+      }
+
+      leaders.sort((a, b) => {
+        const aMinutes = parseInt(a.avgTime.split(':')[0]) * 60 + parseInt(a.avgTime.split(':')[1]);
+        const bMinutes = parseInt(b.avgTime.split(':')[0]) * 60 + parseInt(b.avgTime.split(':')[1]);
+        return aMinutes - bMinutes;
+      });
+      setOnTimeLeaders(leaders.slice(0, 15));
+    }
+    setOnTimeLoading(false);
+  }
+
   async function loadTopAttendees(timeframe: Timeframe) {
     setTopLoading(true);
     const today = getTodayDate();
@@ -291,6 +343,7 @@ export default function HistoryPage() {
         loadCompareData(compareTimeframe, data);
       }
       loadStreakLeaders();
+      loadOnTimeLeaders();
       setLoading(false);
     }
     load();
@@ -693,6 +746,51 @@ export default function HistoryPage() {
                 ))}
               </tbody>
             </table>
+            </div>
+          )}
+        </section>
+
+        {/* Most On Time Leaderboard */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>⏰ Most On Time</h2>
+          {onTimeLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : onTimeLeaders.length === 0 ? (
+            <p className="history-empty">Not enough data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Avg Time</th>
+                    <th className="lb-col-count">Attendances</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {onTimeLeaders.map((leader, i) => (
+                    <tr
+                      key={leader.person_id}
+                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      onClick={() => navigate(`/person/${leader.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {i < 3 ? (
+                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        ) : (
+                          <span className="lb-rank-num">{i + 1}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{leader.person_name}</span>
+                      </td>
+                      <td className="lb-col-count">{leader.avgTime}</td>
+                      <td className="lb-col-count"><AnimatedNumber value={leader.timesAttended} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
