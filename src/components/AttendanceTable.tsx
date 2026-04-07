@@ -12,7 +12,7 @@ const SHABIBEH_LEADERS = [
   'Michael Nasrallah',
 ];
 
-const ATTENDANCE_MINISTRY = ['Holy', 'Aly', 'Julia'];
+const ATTENDANCE_MINISTRY = ['Holy', 'Aly', 'Julia', 'Ryan', 'Jona'];
 
 interface AttendanceTableProps {
   entries: DisplayEntry[];
