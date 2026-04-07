@@ -226,12 +226,16 @@
   font-size: 0.7rem;
   font-weight: 700;
   padding: 0.25em 0.6em;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #78350f;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
   border-radius: 3px;
   letter-spacing: 0.05em;
   display: inline-block;
   vertical-align: text-bottom;
+}
+
+.profile-themed .profile-shabibeh-leader {
+  background: linear-gradient(135deg, var(--ryan-accent), var(--ryan-accent-hover));
 }
 
 .profile-jona {

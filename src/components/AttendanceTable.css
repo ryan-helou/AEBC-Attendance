@@ -126,8 +126,8 @@
   font-size: 0.65rem;
   font-weight: 700;
   padding: 0.2em 0.5em;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  color: #78350f;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
   border-radius: 3px;
   letter-spacing: 0.05em;
   display: inline-block;
