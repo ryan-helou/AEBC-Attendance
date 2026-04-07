@@ -295,7 +295,7 @@ export default function HistoryPage() {
       for (const [pid, stats] of personStats.entries()) {
         // Calculate attendance rate for this person
         let totalPossible = 0;
-        for (const [meetingId, dates] of stats.datesByMeeting.entries()) {
+        for (const meetingId of stats.datesByMeeting.keys()) {
           const meeting = meetingMap.get(meetingId);
           if (!meeting) continue;
           const meetingDay = getMeetingDay(meeting.name);
