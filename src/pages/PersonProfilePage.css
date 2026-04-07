@@ -359,6 +359,10 @@
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--color-primary);
+}
+
+.profile-stat-value-text {
+  font-size: 0.9375rem;
   line-height: 1;
 }
 
