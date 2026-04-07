@@ -68,15 +68,18 @@ export function useAttendance(meetingId: string, date: string) {
   }, [meetingId, date, fetchAttendance]);
 
   const markAttendance = useCallback(
-    async (personId: string, person: AttendanceEntry['person']): Promise<boolean> => {
+    async (personId: string, person: AttendanceEntry['person'], markedAt?: string, firstTime?: boolean): Promise<boolean> => {
       const tempId = `temp-${Date.now()}`;
+      const finalMarkedAt = markedAt ?? new Date().toISOString();
+      const finalFirstTime = firstTime ?? false;
+
       const tempEntry: AttendanceEntry = {
         id: tempId,
         meeting_id: meetingId,
         person_id: personId,
         date,
-        marked_at: new Date().toISOString(),
-        first_time: false,
+        marked_at: finalMarkedAt,
+        first_time: finalFirstTime,
         person,
       };
 
@@ -89,6 +92,8 @@ export function useAttendance(meetingId: string, date: string) {
           meeting_id: meetingId,
           person_id: personId,
           date,
+          marked_at: finalMarkedAt,
+          first_time: finalFirstTime,
         })
         .select('*, person:people(*)')
         .single();

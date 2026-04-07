@@ -18,6 +18,7 @@ interface AttendanceTableProps {
   onUpdateTime?: (recordId: string, newMarkedAt: string) => void;
   onUpdateGuestTime?: (guestId: string, newMarkedAt: string) => void;
   onToggleFirstTime?: (id: string, isGuest: boolean) => void;
+  onConvertGuest?: (guestId: string, guestEntry: any, name: string) => Promise<void>;
 }
 
 function formatTime(isoString: string) {
@@ -34,12 +35,15 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
+  const [guestNameValue, setGuestNameValue] = useState('');
+  const guestNameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     prevIdsRef.current = new Set(entries.map(e => e.entry.id));
@@ -51,6 +55,13 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
       editInputRef.current.select();
     }
   }, [editingId]);
+
+  useEffect(() => {
+    if (editingGuestId && guestNameInputRef.current) {
+      guestNameInputRef.current.focus();
+      guestNameInputRef.current.select();
+    }
+  }, [editingGuestId]);
 
   function canEditTime(item: DisplayEntry) {
     return item.type === 'guest' ? !!onUpdateGuestTime : !!onUpdateTime;
@@ -82,6 +93,21 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
     setEditingId(null);
   }
 
+  function startEditGuestName(guestId: string) {
+    setEditingGuestId(guestId);
+    setGuestNameValue('');
+  }
+
+  async function commitGuestConversion(item: DisplayEntry) {
+    const trimmedName = guestNameValue.trim();
+    if (!trimmedName) {
+      setEditingGuestId(null);
+      return;
+    }
+    setEditingGuestId(null);
+    await onConvertGuest?.(item.entry.id, item.entry, trimmedName);
+  }
+
   if (entries.length === 0) {
     return <div className="attendance-empty">No one marked yet</div>;
   }
@@ -110,7 +136,23 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                 <td className="col-num">{entries.length - i}</td>
                 <td className="col-name">
                   {isGuest ? (
-                    <span className="guest-name">Guest {item.entry.guest_number}</span>
+                    editingGuestId === item.entry.id ? (
+                      <input
+                        ref={guestNameInputRef}
+                        type="text"
+                        className="guest-name-edit-input"
+                        placeholder="Enter name…"
+                        value={guestNameValue}
+                        onChange={e => setGuestNameValue(e.target.value)}
+                        onBlur={() => commitGuestConversion(item)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitGuestConversion(item);
+                          if (e.key === 'Escape') setEditingGuestId(null);
+                        }}
+                      />
+                    ) : (
+                      <span className="guest-name-tap" onClick={() => startEditGuestName(item.entry.id)}>Guest {item.entry.guest_number}</span>
+                    )
                   ) : (
                     <>
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
