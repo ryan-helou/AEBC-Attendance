@@ -37,6 +37,7 @@ interface MeetingStat {
   longestStreak: number;
   currentStreak: number;
   attendanceRate: number;
+  avgArrivalTime: string;
 }
 
 interface StreakBadge {
@@ -211,7 +212,19 @@ export default function PersonProfilePage() {
           }
         }
 
-        stats.push({ meeting, timesAttended, longestStreak, currentStreak, attendanceRate });
+        // Compute average arrival time (time-of-day only)
+        const times = meetingRecords.map(r => {
+          const d = new Date(r.marked_at);
+          return d.getHours() * 60 + d.getMinutes();
+        });
+        const avgMinutes = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+        const avgH = Math.floor(avgMinutes / 60);
+        const avgM = avgMinutes % 60;
+        const period = avgH >= 12 ? 'PM' : 'AM';
+        const displayH = avgH % 12 || 12;
+        const avgArrivalTime = `${displayH}:${avgM.toString().padStart(2, '0')} ${period}`;
+
+        stats.push({ meeting, timesAttended, longestStreak, currentStreak, attendanceRate, avgArrivalTime });
       }
       setMeetingStats(stats);
       setLoading(false);
@@ -423,6 +436,11 @@ export default function PersonProfilePage() {
             <div className="profile-stat-item">
               <span className="profile-stat-value"><AnimatedNumber value={stat.attendanceRate} suffix="%" /></span>
               <span className="profile-stat-label">Rate</span>
+            </div>
+            <div className="profile-stat-divider" />
+            <div className="profile-stat-item">
+              <span className="profile-stat-value profile-stat-value-text">{stat.avgArrivalTime}</span>
+              <span className="profile-stat-label">Avg Time</span>
             </div>
           </div>
         </div>
