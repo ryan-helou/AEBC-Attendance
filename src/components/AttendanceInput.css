@@ -73,3 +73,15 @@
   user-select: none;
   pointer-events: none;
 }
+
+.sixty-seven-item {
+  position: absolute;
+  bottom: -3rem;
+  color: #f97316;
+  font-weight: 800;
+  opacity: 0;
+  text-shadow: 0 0 15px rgba(249, 115, 22, 0.7);
+  animation: floatUpCross linear forwards;
+  user-select: none;
+  pointer-events: none;
+}

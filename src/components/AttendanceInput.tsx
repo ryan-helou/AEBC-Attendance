@@ -35,9 +35,11 @@ export default function AttendanceInput({
   const [flash, setFlash] = useState(false);
   const [crosses, setCrosses] = useState<CrossItem[]>([]);
   const [lebrons, setLebrons] = useState<CrossItem[]>([]);
+  const [sixtySevenItems, setSixtySevenItems] = useState<CrossItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const crossTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lebronTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sixtySevenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Redirect keystrokes to the input even when it's not focused
   useEffect(() => {
@@ -94,6 +96,20 @@ export default function AttendanceInput({
     lebronTimerRef.current = setTimeout(() => setLebrons([]), 7000);
   }
 
+  function triggerSixtySevenShower() {
+    if (sixtySevenTimerRef.current) clearTimeout(sixtySevenTimerRef.current);
+    const items: CrossItem[] = Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      left: 5 + Math.random() * 90,
+      size: 2 + Math.random() * 3,
+      delay: Math.random() * 2,
+      duration: 3.5 + Math.random() * 2,
+      wobble: (Math.random() - 0.5) * 70,
+    }));
+    setSixtySevenItems(items);
+    sixtySevenTimerRef.current = setTimeout(() => setSixtySevenItems([]), 7000);
+  }
+
   function handleChange(value: string) {
     if (value.toLowerCase() === 'amen') {
       triggerCrossShower();
@@ -104,6 +120,13 @@ export default function AttendanceInput({
     }
     if (value.toLowerCase() === 'lebron') {
       triggerLebronShower();
+      setQuery('');
+      setResults([]);
+      setShowDropdown(false);
+      return;
+    }
+    if (value === '67') {
+      triggerSixtySevenShower();
       setQuery('');
       setResults([]);
       setShowDropdown(false);
@@ -201,6 +224,25 @@ export default function AttendanceInput({
                 '--wobble': `${l.wobble}px`,
               } as React.CSSProperties}
             />
+          ))}
+        </div>
+      )}
+      {sixtySevenItems.length > 0 && (
+        <div className="cross-shower-overlay" aria-hidden="true">
+          {sixtySevenItems.map(item => (
+            <span
+              key={item.id}
+              className="sixty-seven-item"
+              style={{
+                left: `${item.left}%`,
+                fontSize: `${item.size}rem`,
+                animationDelay: `${item.delay}s`,
+                animationDuration: `${item.duration}s`,
+                '--wobble': `${item.wobble}px`,
+              } as React.CSSProperties}
+            >
+              67
+            </span>
           ))}
         </div>
       )}
