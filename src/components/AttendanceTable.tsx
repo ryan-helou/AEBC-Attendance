@@ -117,7 +117,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && (
-                        <span className="shabibeh-leader-badge" title="Shabibeh Leader">👑</span>
+                        <span className="shabibeh-leader-badge" title="Shabibeh Leader">LEADER</span>
                       )}
                       {item.entry.person.notes && (
                         <span className="person-note"> — {item.entry.person.notes}</span>
