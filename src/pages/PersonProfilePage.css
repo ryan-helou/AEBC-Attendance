@@ -221,6 +221,12 @@
   font-style: normal;
 }
 
+.profile-shabibeh-leader {
+  margin-left: 0.35rem;
+  font-size: 1.1rem;
+  vertical-align: baseline;
+}
+
 .profile-jona {
   position: relative;
   overflow: hidden;

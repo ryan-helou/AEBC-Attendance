@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry } from '../types';
 import './AttendanceTable.css';
 
+const SHABIBEH_LEADERS = [
+  'Andrew Helou',
+  'Shayla Achkar',
+  'Chloe Nasrallah',
+  'James Helou',
+  'Jessica Sebali',
+  'Michael Nasrallah',
+];
+
 interface AttendanceTableProps {
   entries: DisplayEntry[];
   onRemove: (id: string, isGuest: boolean) => void;
@@ -107,6 +116,9 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
                         {item.entry.person.full_name}
                       </span>
+                      {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && (
+                        <span className="shabibeh-leader-badge" title="Shabibeh Leader">👑</span>
+                      )}
                       {item.entry.person.notes && (
                         <span className="person-note"> — {item.entry.person.notes}</span>
                       )}
