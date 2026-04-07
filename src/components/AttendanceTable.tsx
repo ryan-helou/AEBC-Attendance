@@ -12,6 +12,8 @@ const SHABIBEH_LEADERS = [
   'Michael Nasrallah',
 ];
 
+const ATTENDANCE_MINISTRY = ['Holy', 'Aly', 'Julia'];
+
 interface AttendanceTableProps {
   entries: DisplayEntry[];
   onRemove: (id: string, isGuest: boolean) => void;
@@ -156,6 +158,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                   ) : (
                     <>
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
+                        {ATTENDANCE_MINISTRY.some(n => item.entry.person.full_name.startsWith(n)) && <span className="attendance-ministry-emoji">⭐ </span>}
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && (
