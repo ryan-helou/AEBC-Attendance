@@ -249,35 +249,84 @@ export default function HistoryPage() {
 
   async function loadOnTimeLeaders() {
     setOnTimeLoading(true);
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('person_id, marked_at, person:people(full_name)');
-    if (data) {
-      const personStats = new Map<string, { name: string; times: number[]; count: number }>();
-      for (const r of data as Array<Record<string, unknown>>) {
+    const APP_START_DATE = '2026-03-14';
+
+    // Fetch all data we need
+    const [{ data: attendanceData }, { data: meetingsData }] = await Promise.all([
+      supabase.from('attendance_records').select('person_id, marked_at, date, meeting_id, person:people(full_name)'),
+      supabase.from('meetings').select('id, name')
+    ]);
+
+    if (attendanceData && meetingsData) {
+      const meetings = meetingsData as Array<{ id: string; name: string }>;
+      const meetingMap = new Map(meetings.map(m => [m.id, m]));
+
+      // Build person stats
+      const personStats = new Map<string, {
+        name: string;
+        times: number[];
+        attendances: number;
+        datesByMeeting: Map<string, Set<string>>;
+      }>();
+
+      for (const r of attendanceData as Array<Record<string, unknown>>) {
         const pid = r.person_id as string;
         const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
         const markedAt = new Date(r.marked_at as string);
         const minutesSinceMidnight = markedAt.getHours() * 60 + markedAt.getMinutes();
+        const date = r.date as string;
+        const meetingId = r.meeting_id as string;
 
         if (!personStats.has(pid)) {
-          personStats.set(pid, { name, times: [], count: 0 });
+          personStats.set(pid, { name, times: [], attendances: 0, datesByMeeting: new Map() });
         }
         const stats = personStats.get(pid)!;
         stats.times.push(minutesSinceMidnight);
-        stats.count++;
+        stats.attendances++;
+
+        if (!stats.datesByMeeting.has(meetingId)) {
+          stats.datesByMeeting.set(meetingId, new Set());
+        }
+        stats.datesByMeeting.get(meetingId)!.add(date);
       }
 
+      // Calculate leaders with 75%+ attendance rate
       const leaders: OnTimeLeader[] = [];
       for (const [pid, stats] of personStats.entries()) {
-        if (stats.count < 3) continue; // Only include people with 3+ attendances
+        // Calculate attendance rate for this person
+        let totalPossible = 0;
+        for (const [meetingId, dates] of stats.datesByMeeting.entries()) {
+          const meeting = meetingMap.get(meetingId);
+          if (!meeting) continue;
+          const meetingDay = getMeetingDay(meeting.name);
+          if (meetingDay === null) continue;
+
+          // Count possible occurrences since app start
+          const start = new Date(APP_START_DATE + 'T00:00:00');
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          let count = 0;
+          const d = new Date(start);
+          while (d.getDay() !== meetingDay) {
+            d.setDate(d.getDate() + 1);
+          }
+          while (d <= today) {
+            count++;
+            d.setDate(d.getDate() + 7);
+          }
+          totalPossible += count;
+        }
+
+        const attendanceRate = totalPossible > 0 ? (stats.attendances / totalPossible) * 100 : 0;
+        if (attendanceRate < 75) continue; // Only include 75%+ attendance rate
+
         const avgMinutes = Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
         const hours = Math.floor(avgMinutes / 60);
         const mins = avgMinutes % 60;
         const period = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         const avgTime = `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
-        leaders.push({ person_id: pid, person_name: stats.name, avgTime, timesAttended: stats.count });
+        leaders.push({ person_id: pid, person_name: stats.name, avgTime, timesAttended: stats.attendances });
       }
 
       leaders.sort((a, b) => {
