@@ -61,6 +61,7 @@ const SHABIBEH_LEADERS = [
   'James Helou',
   'Jessica Sebali',
   'Michael Nasrallah',
+  'Patricia Mangalo',
 ];
 
 function getStreakBadge(streak: number): StreakBadge | null {
@@ -351,7 +352,7 @@ export default function PersonProfilePage() {
             <span className="profile-name-tap" onClick={startEditName}>
               {person.full_name}
               {SHABIBEH_LEADERS.includes(person.full_name) && (
-                <span className="profile-shabibeh-leader" title="Shabibeh Leader">LEADER</span>
+                <span className="profile-shabibeh-leader" title="Shabibeh Committee">COMITEE</span>
               )}
             </span>
           )}
