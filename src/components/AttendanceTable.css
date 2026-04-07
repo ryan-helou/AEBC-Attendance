@@ -121,6 +121,12 @@
   color: var(--color-text-muted);
 }
 
+.shabibeh-leader-badge {
+  margin-left: 0.35rem;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
 .col-time {
   width: 5.5rem;
   color: var(--color-text-secondary);

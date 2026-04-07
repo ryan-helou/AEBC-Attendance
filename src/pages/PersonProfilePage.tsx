@@ -54,6 +54,15 @@ const STREAK_BADGES: StreakBadge[] = [
   { emoji: '🔥', label: 'On Fire',   minWeeks: 2 },
 ];
 
+const SHABIBEH_LEADERS = [
+  'Andrew Helou',
+  'Shayla Achkar',
+  'Chloe Nasrallah',
+  'James Helou',
+  'Jessica Sebali',
+  'Michael Nasrallah',
+];
+
 function getStreakBadge(streak: number): StreakBadge | null {
   return STREAK_BADGES.find(b => streak >= b.minWeeks) ?? null;
 }
@@ -341,6 +350,9 @@ export default function PersonProfilePage() {
           ) : (
             <span className="profile-name-tap" onClick={startEditName}>
               {person.full_name}
+              {SHABIBEH_LEADERS.includes(person.full_name) && (
+                <span className="profile-shabibeh-leader" title="Shabibeh Leader">👑</span>
+              )}
             </span>
           )}
         </h1>
