@@ -290,7 +290,7 @@ export default function HistoryPage() {
         stats.datesByMeeting.get(meetingId)!.add(date);
       }
 
-      // Calculate leaders with 75%+ attendance rate
+      // Calculate leaders with 65%+ attendance rate
       const leaders: OnTimeLeader[] = [];
       for (const [pid, stats] of personStats.entries()) {
         // Calculate attendance rate for this person
@@ -318,7 +318,7 @@ export default function HistoryPage() {
         }
 
         const attendanceRate = totalPossible > 0 ? (stats.attendances / totalPossible) * 100 : 0;
-        if (attendanceRate < 75) continue; // Only include 75%+ attendance rate
+        if (attendanceRate < 65) continue; // Only include 65%+ attendance rate
 
         const avgMinutes = Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
         const hours = Math.floor(avgMinutes / 60);
