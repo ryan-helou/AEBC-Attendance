@@ -198,6 +198,21 @@ export default function AttendancePage() {
     [toggleFirstTime, toggleGuestFirstTime]
   );
 
+  const handleConvertGuest = useCallback(
+    async (guestId: string, guestEntry: any, name: string) => {
+      // Create new person
+      const newPerson = await addPerson(name);
+      if (!newPerson) return;
+
+      // Mark the new person with the guest's marked_at time and first_time status
+      await markAttendance(newPerson.id, newPerson, guestEntry.marked_at, guestEntry.first_time);
+
+      // Remove the guest
+      await removeGuest(guestId);
+    },
+    [addPerson, markAttendance, removeGuest]
+  );
+
   function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
     const newDate = e.target.value;
     if (!newDate) return;
@@ -274,6 +289,7 @@ export default function AttendancePage() {
           onUpdateTime={updateMarkedAt}
           onUpdateGuestTime={updateGuestMarkedAt}
           onToggleFirstTime={handleToggleFirstTime}
+          onConvertGuest={handleConvertGuest}
         />
 
         <div className="attendance-footer-fields">
