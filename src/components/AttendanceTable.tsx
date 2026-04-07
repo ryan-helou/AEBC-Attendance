@@ -14,6 +14,12 @@ const SHABIBEH_LEADERS = [
 
 const ATTENDANCE_MINISTRY = ['Holy', 'Aly', 'Julia', 'Ryan', 'Jona'];
 
+function isAttendanceMinistryName(fullName: string) {
+  return ATTENDANCE_MINISTRY.some(n =>
+    n === 'Jona' ? fullName === 'Jona Safadi' : fullName.startsWith(n)
+  );
+}
+
 interface AttendanceTableProps {
   entries: DisplayEntry[];
   onRemove: (id: string, isGuest: boolean) => void;
@@ -158,7 +164,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                   ) : (
                     <>
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
-                        {ATTENDANCE_MINISTRY.some(n => item.entry.person.full_name.startsWith(n)) && <span className="attendance-ministry-emoji">⭐ </span>}
+                        {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && (
