@@ -85,7 +85,7 @@ export default function AttendancePage() {
   useEffect(() => {
     const MILESTONES = [25, 50, 75, 100];
     const count = totalCount;
-    if (count > prevCountRef.current && MILESTONES.includes(count)) {
+    if (prevCountRef.current > 0 && count > prevCountRef.current && MILESTONES.includes(count)) {
       if (milestoneRef.current) clearTimeout(milestoneRef.current);
       setMilestone({ count });
       milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
