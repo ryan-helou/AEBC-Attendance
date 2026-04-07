@@ -215,6 +215,30 @@
   color: var(--color-text-muted);
 }
 
+.manual-count-input {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.manual-count-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.manual-count-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .service-notes-input {
   display: block;
   width: 100%;
