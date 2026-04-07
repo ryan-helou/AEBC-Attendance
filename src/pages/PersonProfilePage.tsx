@@ -333,7 +333,7 @@ export default function PersonProfilePage() {
           {isRyan && <span className="profile-crown">👑</span>}
           {isJona && <span className="profile-crown">🤡</span>}
           {isGeorge && <img src="/lebron.png" alt="LeBron" className="profile-lebron" />}
-          {isAttendanceMinistry && <span className="profile-crown">🕵️</span>}
+          {isAttendanceMinistry && <span className="profile-crown">⭐</span>}
           {editingName ? (
             <input
               ref={nameInputRef}

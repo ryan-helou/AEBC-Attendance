@@ -138,6 +138,10 @@
   font-weight: 500;
 }
 
+.attendance-ministry-emoji {
+  margin-right: 0.2rem;
+}
+
 .name-tap {
   cursor: pointer;
 }
