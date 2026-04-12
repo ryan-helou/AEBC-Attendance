@@ -81,6 +81,25 @@ export default function AttendancePage() {
     [displayEntries]
   );
 
+  const onTimePercent = useMemo(() => {
+    if (!meeting) return null;
+    const lower = meeting.name.toLowerCase();
+    let cutoffMinutes: number | null = null;
+    if (lower.includes('english') || lower.includes('sunday')) cutoffMinutes = 10 * 60 + 30; // 10:30 AM
+    else if (lower.includes('saturday') || lower.includes('shabibeh')) cutoffMinutes = 19 * 60 + 30; // 7:30 PM
+    if (cutoffMinutes === null || totalCount === 0) return null;
+
+    const onTimeEntries = entries.filter(e => {
+      const d = new Date(e.marked_at);
+      return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
+    });
+    const onTimeGuests = guests.filter(g => {
+      const d = new Date(g.marked_at);
+      return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
+    });
+    return Math.round(((onTimeEntries.length + onTimeGuests.length) / totalCount) * 100);
+  }, [meeting, entries, guests, totalCount]);
+
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialLoadDone = useRef(false);
 
@@ -291,6 +310,9 @@ export default function AttendancePage() {
           <AnimatedNumber value={totalCount} /> present
           {firstTimerCount > 0 && (
             <span className="first-timer-count"> · <AnimatedNumber value={firstTimerCount} /> new</span>
+          )}
+          {onTimePercent !== null && (
+            <span className="on-time-count"> · <AnimatedNumber value={onTimePercent} suffix="%" /> on time</span>
           )}
         </div>
 

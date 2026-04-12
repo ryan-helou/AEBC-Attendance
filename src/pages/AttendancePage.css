@@ -326,6 +326,10 @@
   opacity: 0.85;
 }
 
+.on-time-count {
+  opacity: 0.85;
+}
+
 @media (max-width: 600px) {
   .attendance-header {
     flex-wrap: wrap;
