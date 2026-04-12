@@ -285,6 +285,7 @@ export default function AttendancePage() {
 
         <AttendanceTable
           entries={filteredEntries}
+          meetingName={meeting?.name}
           onRemove={handleRemove}
           onUpdateTime={updateMarkedAt}
           onUpdateGuestTime={updateGuestMarkedAt}
