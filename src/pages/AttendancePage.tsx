@@ -82,17 +82,28 @@ export default function AttendancePage() {
   );
 
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
+    if (attendanceLoading || guestsLoading) return;
+
     const MILESTONES = [25, 50, 75, 100];
     const count = totalCount;
-    if (prevCountRef.current > 0 && count > prevCountRef.current && MILESTONES.includes(count)) {
+
+    if (!initialLoadDone.current) {
+      // Both hooks just finished loading — seed prevCount without firing confetti
+      prevCountRef.current = count;
+      initialLoadDone.current = true;
+      return;
+    }
+
+    if (count > prevCountRef.current && MILESTONES.includes(count)) {
       if (milestoneRef.current) clearTimeout(milestoneRef.current);
       setMilestone({ count });
       milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
     }
     prevCountRef.current = count;
-  }, [totalCount]);
+  }, [totalCount, attendanceLoading, guestsLoading]);
 
   useEffect(() => {
     async function load() {
