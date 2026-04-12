@@ -53,7 +53,9 @@ create table meeting_notes (
   id uuid default gen_random_uuid() primary key,
   meeting_id uuid not null references meetings(id) on delete cascade,
   date date not null,
-  note text not null default '',
+  note text,
+  taken_by text,
+  manual_count integer,
   created_at timestamptz default now(),
   constraint unique_meeting_note unique (meeting_id, date)
 );
