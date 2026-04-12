@@ -251,14 +251,11 @@ export default function HistoryPage() {
     setOnTimeLoading(true);
 
     // Fetch all data we need
-    const [{ data: attendanceData }, { data: meetingsData }] = await Promise.all([
-      supabase.from('attendance_records').select('person_id, marked_at, date, meeting_id, person:people(full_name)'),
-      supabase.from('meetings').select('id, name')
-    ]);
+    const { data: attendanceData } = await supabase
+      .from('attendance_records')
+      .select('person_id, marked_at, date, meeting_id, person:people(full_name)');
 
-    if (attendanceData && meetingsData) {
-      const meetings = meetingsData as Array<{ id: string; name: string }>;
-      const meetingMap = new Map(meetings.map(m => [m.id, m]));
+    if (attendanceData) {
 
       // Build active dates per meeting (only weeks where attendance was actually taken)
       const activeDatesByMeeting = new Map<string, Set<string>>();
