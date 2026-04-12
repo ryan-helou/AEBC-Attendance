@@ -134,7 +134,7 @@ export default function AttendancePage() {
       await supabase.from('meeting_notes').delete().eq('meeting_id', meetingId!).eq('date', date!);
     } else {
       await supabase.from('meeting_notes').upsert(
-        { meeting_id: meetingId, date, note: trimmedNote || null, taken_by: trimmedTakenBy || null, manual_count: parsedManualCount },
+        { meeting_id: meetingId, date, note: trimmedNote || '', taken_by: trimmedTakenBy || null, manual_count: parsedManualCount },
         { onConflict: 'meeting_id,date' }
       );
     }
