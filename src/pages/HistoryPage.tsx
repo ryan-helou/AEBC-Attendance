@@ -249,7 +249,6 @@ export default function HistoryPage() {
 
   async function loadOnTimeLeaders() {
     setOnTimeLoading(true);
-    const APP_START_DATE = '2026-03-14';
 
     // Fetch all data we need
     const [{ data: attendanceData }, { data: meetingsData }] = await Promise.all([
@@ -260,6 +259,15 @@ export default function HistoryPage() {
     if (attendanceData && meetingsData) {
       const meetings = meetingsData as Array<{ id: string; name: string }>;
       const meetingMap = new Map(meetings.map(m => [m.id, m]));
+
+      // Build active dates per meeting (only weeks where attendance was actually taken)
+      const activeDatesByMeeting = new Map<string, Set<string>>();
+      for (const r of attendanceData as Array<Record<string, unknown>>) {
+        const meetingId = r.meeting_id as string;
+        const date = r.date as string;
+        if (!activeDatesByMeeting.has(meetingId)) activeDatesByMeeting.set(meetingId, new Set());
+        activeDatesByMeeting.get(meetingId)!.add(date);
+      }
 
       // Build person stats
       const personStats = new Map<string, {
@@ -293,28 +301,11 @@ export default function HistoryPage() {
       // Calculate leaders with 65%+ attendance rate
       const leaders: OnTimeLeader[] = [];
       for (const [pid, stats] of personStats.entries()) {
-        // Calculate attendance rate for this person
+        // Calculate attendance rate: attended dates / active dates (weeks where attendance was taken)
         let totalPossible = 0;
         for (const meetingId of stats.datesByMeeting.keys()) {
-          const meeting = meetingMap.get(meetingId);
-          if (!meeting) continue;
-          const meetingDay = getMeetingDay(meeting.name);
-          if (meetingDay === null) continue;
-
-          // Count possible occurrences since app start
-          const start = new Date(APP_START_DATE + 'T00:00:00');
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          let count = 0;
-          const d = new Date(start);
-          while (d.getDay() !== meetingDay) {
-            d.setDate(d.getDate() + 1);
-          }
-          while (d <= today) {
-            count++;
-            d.setDate(d.getDate() + 7);
-          }
-          totalPossible += count;
+          const activeDates = activeDatesByMeeting.get(meetingId);
+          if (activeDates) totalPossible += activeDates.size;
         }
 
         const attendanceRate = totalPossible > 0 ? (stats.attendances / totalPossible) * 100 : 0;
