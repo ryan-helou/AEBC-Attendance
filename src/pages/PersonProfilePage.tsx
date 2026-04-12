@@ -120,26 +120,6 @@ function computeCurrentStreak(dates: string[], meetingDay: number | null): numbe
   return streak;
 }
 
-function countOccurrencesSince(earliest: string, meetingDay: number | null, latest: string): number {
-  if (meetingDay === null) return 0;
-  const start = new Date(earliest + 'T00:00:00');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  // Use whichever is later: today or the latest attendance date (handles future-dated records)
-  const latestDate = new Date(latest + 'T00:00:00');
-  const end = latestDate > today ? latestDate : today;
-  let count = 0;
-  const d = new Date(start);
-  // Snap to the first matching day on or after start
-  while (d.getDay() !== meetingDay) {
-    d.setDate(d.getDate() + 1);
-  }
-  while (d <= end) {
-    count++;
-    d.setDate(d.getDate() + 7);
-  }
-  return count;
-}
 
 export default function PersonProfilePage() {
   const { personId } = useParams<{ personId: string }>();
@@ -168,7 +148,7 @@ export default function PersonProfilePage() {
     if (!personId) return;
 
     async function load() {
-      const [personRes, meetingsRes, recordsRes] = await Promise.all([
+      const [personRes, meetingsRes, recordsRes, allDatesRes] = await Promise.all([
         supabase.from('people').select('*').eq('id', personId).single(),
         supabase.from('meetings').select('*').order('display_order'),
         supabase
@@ -176,11 +156,21 @@ export default function PersonProfilePage() {
           .select('id, meeting_id, date, marked_at')
           .eq('person_id', personId)
           .order('date', { ascending: false }),
+        supabase
+          .from('attendance_records')
+          .select('meeting_id, date'),
       ]);
 
       const personData = personRes.data as Person | null;
       const meetings = (meetingsRes.data ?? []) as Meeting[];
       const records = (recordsRes.data ?? []) as AttendanceRow[];
+
+      // Build active dates per meeting (all dates where any attendance was taken)
+      const activeDatesByMeeting = new Map<string, Set<string>>();
+      for (const r of (allDatesRes.data ?? []) as Array<{ meeting_id: string; date: string }>) {
+        if (!activeDatesByMeeting.has(r.meeting_id)) activeDatesByMeeting.set(r.meeting_id, new Set());
+        activeDatesByMeeting.get(r.meeting_id)!.add(r.date);
+      }
 
       setPerson(personData);
       setNotes(personData?.notes ?? '');
@@ -211,12 +201,11 @@ export default function PersonProfilePage() {
         const longestStreak = computeLongestStreak(dates);
         const day = getMeetingDay(meeting.name);
         const currentStreak = computeCurrentStreak(dates, day);
-        const latestMeetingDate = [...dates].sort().at(-1)!;
 
         let attendanceRate = 0;
         {
-          const APP_START_DATE = '2026-03-14';
-          const totalOccurrences = countOccurrencesSince(APP_START_DATE, day, latestMeetingDate);
+          const activeDates = activeDatesByMeeting.get(meeting.id);
+          const totalOccurrences = activeDates?.size ?? 0;
           if (totalOccurrences > 0) {
             attendanceRate = Math.round((timesAttended / totalOccurrences) * 100);
           }
