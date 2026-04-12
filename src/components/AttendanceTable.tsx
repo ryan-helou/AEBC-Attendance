@@ -13,12 +13,16 @@ const SHABIBEH_LEADERS = [
   'Patricia Mangalo',
 ];
 
-const ATTENDANCE_MINISTRY = ['Holy', 'Aly', 'Julia', 'Ryan', 'Jona'];
+const ATTENDANCE_MINISTRY = [
+  'Julia Sebali',
+  'Aly Achkar',
+  'Holy Abdelmassih',
+  'Ryan Helou',
+  'Jona Safadi',
+];
 
 function isAttendanceMinistryName(fullName: string) {
-  return ATTENDANCE_MINISTRY.some(n =>
-    n === 'Jona' ? fullName === 'Jona Safadi' : fullName.startsWith(n)
-  );
+  return ATTENDANCE_MINISTRY.includes(fullName);
 }
 
 interface AttendanceTableProps {
