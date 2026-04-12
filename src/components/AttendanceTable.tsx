@@ -27,6 +27,7 @@ function isAttendanceMinistryName(fullName: string) {
 
 interface AttendanceTableProps {
   entries: DisplayEntry[];
+  meetingName?: string;
   onRemove: (id: string, isGuest: boolean) => void;
   onUpdateTime?: (recordId: string, newMarkedAt: string) => void;
   onUpdateGuestTime?: (guestId: string, newMarkedAt: string) => void;
@@ -48,7 +49,7 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -172,7 +173,7 @@ export default function AttendanceTable({ entries, onRemove, onUpdateTime, onUpd
                         {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
                         {item.entry.person.full_name}
                       </span>
-                      {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && (
+                      {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
                         <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMITEE</span>
                       )}
                       {item.entry.person.notes && (
