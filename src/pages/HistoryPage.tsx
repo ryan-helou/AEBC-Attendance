@@ -72,6 +72,7 @@ interface OnTimeLeader {
   person_id: string;
   person_name: string;
   avgTime: string;
+  avgMinutes: number;
   timesAttended: number;
 }
 
@@ -139,6 +140,7 @@ export default function HistoryPage() {
   const [streakLoading, setStreakLoading] = useState(true);
   const [onTimeLeaders, setOnTimeLeaders] = useState<OnTimeLeader[]>([]);
   const [onTimeLoading, setOnTimeLoading] = useState(true);
+  const [onTimeMeetingId, setOnTimeMeetingId] = useState('');
 
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
@@ -247,13 +249,16 @@ export default function HistoryPage() {
     setStreakLoading(false);
   }
 
-  async function loadOnTimeLeaders() {
+  async function loadOnTimeLeaders(meetingId?: string) {
+    const targetMeetingId = meetingId ?? onTimeMeetingId;
+    if (!targetMeetingId) return;
     setOnTimeLoading(true);
 
     // Fetch all data we need
     const { data: attendanceData } = await supabase
       .from('attendance_records')
-      .select('person_id, marked_at, date, meeting_id, person:people(full_name)');
+      .select('person_id, marked_at, date, meeting_id, person:people(full_name)')
+      .eq('meeting_id', targetMeetingId);
 
     if (attendanceData) {
 
@@ -314,14 +319,10 @@ export default function HistoryPage() {
         const period = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
         const avgTime = `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
-        leaders.push({ person_id: pid, person_name: stats.name, avgTime, timesAttended: stats.attendances });
+        leaders.push({ person_id: pid, person_name: stats.name, avgTime, avgMinutes, timesAttended: stats.attendances });
       }
 
-      leaders.sort((a, b) => {
-        const aMinutes = parseInt(a.avgTime.split(':')[0]) * 60 + parseInt(a.avgTime.split(':')[1]);
-        const bMinutes = parseInt(b.avgTime.split(':')[0]) * 60 + parseInt(b.avgTime.split(':')[1]);
-        return aMinutes - bMinutes;
-      });
+      leaders.sort((a, b) => a.avgMinutes - b.avgMinutes);
       setOnTimeLeaders(leaders.slice(0, 15));
     }
     setOnTimeLoading(false);
@@ -372,6 +373,7 @@ export default function HistoryPage() {
         if (data.length > 0) {
           setDateMeetingId(data[0].id);
           setAllTimeMeetingId(data[0].id);
+          setOnTimeMeetingId(data[0].id);
           const day = getMeetingDay(data[0].name);
           setSelectedDate(snapToValidDate(today, day));
         }
@@ -380,7 +382,7 @@ export default function HistoryPage() {
         loadCompareData(compareTimeframe, data);
       }
       loadStreakLeaders();
-      loadOnTimeLeaders();
+      loadOnTimeLeaders(data?.[0]?.id);
       setLoading(false);
     }
     load();
@@ -790,6 +792,19 @@ export default function HistoryPage() {
         {/* Most On Time Leaderboard */}
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>⏰ Most On Time</h2>
+          <div className="history-controls">
+            <select
+              value={onTimeMeetingId}
+              onChange={e => {
+                setOnTimeMeetingId(e.target.value);
+                loadOnTimeLeaders(e.target.value);
+              }}
+            >
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
           {onTimeLoading ? (
             <p className="history-empty">Loading...</p>
           ) : onTimeLeaders.length === 0 ? (
