@@ -323,7 +323,7 @@ export default function HistoryPage() {
       }
 
       leaders.sort((a, b) => a.avgMinutes - b.avgMinutes);
-      setOnTimeLeaders(leaders.slice(0, 15));
+      setOnTimeLeaders(leaders);
     }
     setOnTimeLoading(false);
   }
