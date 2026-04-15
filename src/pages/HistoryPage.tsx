@@ -311,7 +311,7 @@ export default function HistoryPage() {
         }
 
         const attendanceRate = totalPossible > 0 ? (stats.attendances / totalPossible) * 100 : 0;
-        if (attendanceRate < 65) continue; // Only include 65%+ attendance rate
+        if (attendanceRate < 50) continue; // Only include 50%+ attendance rate
 
         const avgMinutes = Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
         const hours = Math.floor(avgMinutes / 60);
