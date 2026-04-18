@@ -23,6 +23,7 @@ export default function IdeasPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [showDone, setShowDone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,11 +92,6 @@ export default function IdeasPage() {
       <div className={`ideas-header${scrolled ? ' header-compact' : ''}`}>
         <button className="back-btn" onClick={() => navigate(-1)}>&larr;</button>
         <h1>Ideas {!loading && `(${openIdeas.length})`}</h1>
-        {doneIdeas.length > 0 && (
-          <button className="ideas-clear-done" onClick={clearDone}>
-            Clear done
-          </button>
-        )}
       </div>
 
       <div className="ideas-body">
@@ -116,36 +112,54 @@ export default function IdeasPage() {
         {loading ? (
           <p className="ideas-empty">Loading...</p>
         ) : ideas.length === 0 ? null : (
-          <ul className="ideas-list">
-            {openIdeas.map(idea => (
-              <li key={idea.id} className="ideas-item">
-                <button className="ideas-check" onClick={() => toggleIdea(idea.id)} />
-                {editingId === idea.id ? (
-                  <input
-                    className="ideas-edit-input"
-                    value={editText}
-                    onChange={e => setEditText(e.target.value)}
-                    onBlur={() => saveEdit(idea.id)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') saveEdit(idea.id);
-                      if (e.key === 'Escape') setEditingId(null);
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <span className="ideas-text" onClick={() => startEdit(idea)}>{idea.text}</span>
+          <>
+            <ul className="ideas-list">
+              {openIdeas.map(idea => (
+                <li key={idea.id} className="ideas-item">
+                  <button className="ideas-check" onClick={() => toggleIdea(idea.id)} />
+                  {editingId === idea.id ? (
+                    <input
+                      className="ideas-edit-input"
+                      value={editText}
+                      onChange={e => setEditText(e.target.value)}
+                      onBlur={() => saveEdit(idea.id)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') saveEdit(idea.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="ideas-text" onClick={() => startEdit(idea)}>{idea.text}</span>
+                  )}
+                  <button className="ideas-remove" onClick={() => setConfirmDelete(idea.id)}>&times;</button>
+                </li>
+              ))}
+            </ul>
+
+            {doneIdeas.length > 0 && (
+              <div className="ideas-done-section">
+                <button className="ideas-done-toggle" onClick={() => setShowDone(prev => !prev)}>
+                  <span className={`ideas-done-arrow${showDone ? ' open' : ''}`}>&#9654;</span>
+                  Completed ({doneIdeas.length})
+                </button>
+                {showDone && (
+                  <>
+                    <ul className="ideas-list">
+                      {doneIdeas.map(idea => (
+                        <li key={idea.id} className="ideas-item ideas-item-done">
+                          <button className="ideas-check ideas-check-done" onClick={() => toggleIdea(idea.id)}>&#10003;</button>
+                          <span className="ideas-text">{idea.text}</span>
+                          <button className="ideas-remove" onClick={() => setConfirmDelete(idea.id)}>&times;</button>
+                        </li>
+                      ))}
+                    </ul>
+                    <button className="ideas-clear-all" onClick={clearDone}>Clear all completed</button>
+                  </>
                 )}
-                <button className="ideas-remove" onClick={() => setConfirmDelete(idea.id)}>&times;</button>
-              </li>
-            ))}
-            {doneIdeas.map(idea => (
-              <li key={idea.id} className="ideas-item ideas-item-done">
-                <button className="ideas-check ideas-check-done" onClick={() => toggleIdea(idea.id)}>✓</button>
-                <span className="ideas-text">{idea.text}</span>
-                <button className="ideas-remove" onClick={() => setConfirmDelete(idea.id)}>&times;</button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
 

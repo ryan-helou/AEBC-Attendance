@@ -204,3 +204,56 @@
   background: transparent;
   border: none;
 }
+
+.ideas-done-section {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+
+.ideas-done-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.ideas-done-toggle:hover {
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+}
+
+.ideas-done-arrow {
+  display: inline-block;
+  font-size: 0.65rem;
+  transition: transform 0.2s ease;
+}
+
+.ideas-done-arrow.open {
+  transform: rotate(90deg);
+}
+
+.ideas-clear-all {
+  display: block;
+  margin: 0.75rem auto 0;
+  font-size: 0.8rem;
+  padding: 0.4em 1em;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  border-radius: var(--radius);
+}
+
+.ideas-clear-all:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: transparent;
+}
