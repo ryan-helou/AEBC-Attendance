@@ -58,10 +58,12 @@ export default function DataPage() {
   async function saveEdit(id: string) {
     if (!editValues.full_name.trim()) return;
     const nameExists = people.some(
-      p => p.id !== id && p.full_name.toLowerCase() === editValues.full_name.trim().toLowerCase()
+      p => p.id !== id &&
+           p.full_name.toLowerCase() === editValues.full_name.trim().toLowerCase() &&
+           (p.notes?.toLowerCase() || '') === (editValues.notes.trim().toLowerCase() || '')
     );
     if (nameExists) {
-      alert('A person with this name already exists.');
+      alert('A person with this name and notes already exists.');
       return;
     }
     setSaving(true);

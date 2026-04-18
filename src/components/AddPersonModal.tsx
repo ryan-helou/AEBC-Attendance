@@ -5,7 +5,7 @@ interface AddPersonModalProps {
   initialName: string;
   onSave: (name: string, notes?: string) => Promise<void>;
   onCancel: () => void;
-  isDuplicate?: (name: string) => boolean;
+  isDuplicate?: (name: string, notes?: string) => boolean;
 }
 
 export default function AddPersonModal({ initialName, onSave, onCancel, isDuplicate }: AddPersonModalProps) {
@@ -13,7 +13,7 @@ export default function AddPersonModal({ initialName, onSave, onCancel, isDuplic
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const duplicate = isDuplicate ? isDuplicate(name) : false;
+  const duplicate = isDuplicate ? isDuplicate(name, notes) : false;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

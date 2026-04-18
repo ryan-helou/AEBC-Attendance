@@ -230,17 +230,22 @@ export default function AttendancePage() {
 
   const handleConvertGuest = useCallback(
     async (guestId: string, guestEntry: any, name: string) => {
-      // Create new person
-      const newPerson = await addPerson(name);
-      if (!newPerson) return;
+      // Try to find existing person first, otherwise create new
+      let person: Person | null | undefined = people.find(
+        p => p.full_name.toLowerCase() === name.trim().toLowerCase()
+      );
+      if (!person) {
+        person = await addPerson(name);
+      }
+      if (!person) return;
 
-      // Mark the new person with the guest's marked_at time and first_time status
-      await markAttendance(newPerson.id, newPerson, guestEntry.marked_at, guestEntry.first_time);
+      // Mark the person with the guest's marked_at time and first_time status
+      await markAttendance(person.id, person, guestEntry.marked_at, guestEntry.first_time);
 
       // Remove the guest
       await removeGuest(guestId);
     },
-    [addPerson, markAttendance, removeGuest]
+    [people, addPerson, markAttendance, removeGuest]
   );
 
   function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {

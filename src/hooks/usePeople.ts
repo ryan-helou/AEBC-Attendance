@@ -121,14 +121,18 @@ export function usePeople() {
     []
   );
 
-  const isDuplicate = useCallback((name: string): boolean => {
+  const isDuplicate = useCallback((name: string, notes?: string): boolean => {
     const normalized = name.trim().toLowerCase();
-    return peopleRef.current.some(p => p.full_name.toLowerCase() === normalized);
+    const normalizedNotes = notes?.trim().toLowerCase() || '';
+    return peopleRef.current.some(
+      p => p.full_name.toLowerCase() === normalized &&
+           (p.notes?.toLowerCase() || '') === normalizedNotes
+    );
   }, []);
 
   const addPerson = useCallback(
     async (fullName: string, notes?: string): Promise<Person | null> => {
-      if (isDuplicate(fullName)) return null;
+      if (isDuplicate(fullName, notes)) return null;
 
       const { data, error } = await supabase
         .from('people')
