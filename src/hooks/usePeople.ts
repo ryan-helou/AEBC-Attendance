@@ -15,6 +15,39 @@ const SEARCH_ALIASES: Record<string, string[]> = {
   'wickham': ['jona safadi'],
 };
 
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[] = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = temp;
+    }
+  }
+  return dp[n];
+}
+
+function fuzzyScore(name: string, query: string): number {
+  const words = name.split(/\s+/);
+  let best = Infinity;
+  for (const word of words) {
+    // Compare against word prefix of same length as query
+    const prefix = word.substring(0, query.length);
+    best = Math.min(best, levenshtein(prefix, query));
+    // Also check full word if query is longer
+    if (query.length >= word.length) {
+      best = Math.min(best, levenshtein(word, query));
+    }
+  }
+  // Allow 1 typo for queries 3-5 chars, 2 typos for 6+
+  const maxDist = query.length >= 6 ? 2 : query.length >= 3 ? 1 : 0;
+  if (best <= maxDist && best > 0) return 40 - best * 5;
+  return 0;
+}
+
 function aliasScore(person: Person, query: string): number {
   const q = query.toLowerCase();
   const name = person.full_name.toLowerCase();
@@ -45,6 +78,9 @@ function scorePerson(person: Person, query: string): number {
   if (name.includes(q)) return 70;
 
   if (person.notes?.toLowerCase().includes(q)) return 50;
+
+  const fuzzy = fuzzyScore(name, q);
+  if (fuzzy > 0) return fuzzy;
 
   return 0;
 }
