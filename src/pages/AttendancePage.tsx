@@ -116,12 +116,17 @@ export default function AttendancePage() {
       return;
     }
 
-    if (count > prevCountRef.current && MILESTONES.includes(count)) {
-      if (milestoneRef.current) clearTimeout(milestoneRef.current);
-      setMilestone({ count });
-      milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
-    }
+    const prev = prevCountRef.current;
     prevCountRef.current = count;
+    // Only fire when crossing a milestone (e.g. 99→100), not on page load
+    if (count > prev) {
+      const crossed = MILESTONES.find(m => prev < m && count >= m);
+      if (crossed) {
+        if (milestoneRef.current) clearTimeout(milestoneRef.current);
+        setMilestone({ count: crossed });
+        milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
+      }
+    }
   }, [totalCount, attendanceLoading, guestsLoading]);
 
   useEffect(() => {
