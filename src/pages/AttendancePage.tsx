@@ -30,7 +30,7 @@ export default function AttendancePage() {
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
   const prevCountRef = useRef(0);
 
-  const { searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
+  const { people, searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
     entries,
     markedPersonIds,
