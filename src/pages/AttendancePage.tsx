@@ -28,7 +28,6 @@ export default function AttendancePage() {
   const [manualCount, setManualCount] = useState('');
   const [filterQuery, setFilterQuery] = useState('');
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
-  const prevCountRef = useRef(0);
 
   const { people, searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
@@ -101,33 +100,16 @@ export default function AttendancePage() {
   }, [meeting, entries, guests, totalCount]);
 
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialLoadDone = useRef(false);
+  const MILESTONES = [25, 50, 75, 100];
 
-  useEffect(() => {
-    if (attendanceLoading || guestsLoading) return;
-
-    const MILESTONES = [25, 50, 75, 100];
-    const count = totalCount;
-
-    if (!initialLoadDone.current) {
-      // Both hooks just finished loading — seed prevCount without firing confetti
-      prevCountRef.current = count;
-      initialLoadDone.current = true;
-      return;
+  const checkMilestone = useCallback((newCount: number) => {
+    const crossed = MILESTONES.find(m => m === newCount);
+    if (crossed) {
+      if (milestoneRef.current) clearTimeout(milestoneRef.current);
+      setMilestone({ count: crossed });
+      milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
     }
-
-    const prev = prevCountRef.current;
-    prevCountRef.current = count;
-    // Only fire when crossing a milestone (e.g. 99→100), not on page load
-    if (count > prev) {
-      const crossed = MILESTONES.find(m => prev < m && count >= m);
-      if (crossed) {
-        if (milestoneRef.current) clearTimeout(milestoneRef.current);
-        setMilestone({ count: crossed });
-        milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
-      }
-    }
-  }, [totalCount, attendanceLoading, guestsLoading]);
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -191,9 +173,11 @@ export default function AttendancePage() {
 
   const handleMark = useCallback(
     async (person: Person) => {
-      return markAttendance(person.id, person);
+      const success = await markAttendance(person.id, person);
+      if (success) checkMilestone(totalCount + 1);
+      return success;
     },
-    [markAttendance]
+    [markAttendance, checkMilestone, totalCount]
   );
 
   const handleAddNew = useCallback((name: string) => {
@@ -204,11 +188,12 @@ export default function AttendancePage() {
     async (name: string, notes?: string) => {
       const person = await addPerson(name, notes);
       if (person) {
-        await markAttendance(person.id, person);
+        const success = await markAttendance(person.id, person);
+        if (success) checkMilestone(totalCount + 1);
       }
       setAddModalName(null);
     },
-    [addPerson, markAttendance]
+    [addPerson, markAttendance, checkMilestone, totalCount]
   );
 
   const handleRemove = useCallback(
@@ -311,7 +296,7 @@ export default function AttendancePage() {
             onAddNew={handleAddNew}
             onQueryChange={setFilterQuery}
           />
-          <button className="add-guest-btn" onClick={addGuest} title="Add guest">
+          <button className="add-guest-btn" onClick={() => { addGuest(); checkMilestone(totalCount + 1); }} title="Add guest">
             + Guest
           </button>
         </div>
