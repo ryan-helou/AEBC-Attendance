@@ -80,6 +80,10 @@
   color: var(--color-text);
 }
 
+.guest-name-edit-wrapper {
+  position: relative;
+}
+
 .guest-name-edit-input {
   font-size: 0.9375rem;
   font-family: inherit;
@@ -91,6 +95,15 @@
   outline: none;
   width: 100%;
   max-width: 12rem;
+}
+
+.guest-name-edit-wrapper .suggestion-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 15rem;
+  z-index: 100;
 }
 
 .col-num {

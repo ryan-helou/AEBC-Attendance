@@ -329,6 +329,8 @@ export default function AttendancePage() {
           onUpdateGuestTime={updateGuestMarkedAt}
           onToggleFirstTime={handleToggleFirstTime}
           onConvertGuest={handleConvertGuest}
+          searchPeople={searchPeople}
+          markedPersonIds={markedPersonIds}
         />
 
         <div className="attendance-footer-fields">

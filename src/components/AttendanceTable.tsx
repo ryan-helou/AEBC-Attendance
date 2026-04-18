@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry } from '../types';
+import type { SearchResult } from '../hooks/usePeople';
+import SuggestionList from './SuggestionList';
 import './AttendanceTable.css';
 
 const SHABIBEH_LEADERS = [
@@ -33,6 +35,8 @@ interface AttendanceTableProps {
   onUpdateGuestTime?: (guestId: string, newMarkedAt: string) => void;
   onToggleFirstTime?: (id: string, isGuest: boolean) => void;
   onConvertGuest?: (guestId: string, guestEntry: any, name: string) => Promise<void>;
+  searchPeople?: (query: string, markedIds: Set<string>) => SearchResult[];
+  markedPersonIds?: Set<string>;
 }
 
 function formatTime(isoString: string) {
@@ -49,7 +53,7 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -57,6 +61,9 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   const editInputRef = useRef<HTMLInputElement>(null);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [guestNameValue, setGuestNameValue] = useState('');
+  const [guestSuggestions, setGuestSuggestions] = useState<SearchResult[]>([]);
+  const [guestHighlightedIndex, setGuestHighlightedIndex] = useState(0);
+  const [showGuestSuggestions, setShowGuestSuggestions] = useState(false);
   const guestNameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -110,15 +117,43 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   function startEditGuestName(guestId: string) {
     setEditingGuestId(guestId);
     setGuestNameValue('');
+    setGuestSuggestions([]);
+    setGuestHighlightedIndex(0);
+    setShowGuestSuggestions(false);
   }
+
+  function handleGuestNameChange(value: string) {
+    setGuestNameValue(value);
+    if (searchPeople && markedPersonIds && value.trim()) {
+      const results = searchPeople(value, markedPersonIds);
+      setGuestSuggestions(results);
+      setGuestHighlightedIndex(0);
+      setShowGuestSuggestions(true);
+    } else {
+      setGuestSuggestions([]);
+      setShowGuestSuggestions(false);
+    }
+  }
+
+  const selectGuestSuggestion = useCallback(
+    async (result: SearchResult, item: DisplayEntry) => {
+      if (result.alreadyMarked) return;
+      setEditingGuestId(null);
+      setShowGuestSuggestions(false);
+      await onConvertGuest?.(item.entry.id, item.entry, result.person.full_name);
+    },
+    [onConvertGuest]
+  );
 
   async function commitGuestConversion(item: DisplayEntry) {
     const trimmedName = guestNameValue.trim();
     if (!trimmedName) {
       setEditingGuestId(null);
+      setShowGuestSuggestions(false);
       return;
     }
     setEditingGuestId(null);
+    setShowGuestSuggestions(false);
     await onConvertGuest?.(item.entry.id, item.entry, trimmedName);
   }
 
@@ -151,19 +186,63 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                 <td className="col-name">
                   {isGuest ? (
                     editingGuestId === item.entry.id ? (
-                      <input
-                        ref={guestNameInputRef}
-                        type="text"
-                        className="guest-name-edit-input"
-                        placeholder="Enter name…"
-                        value={guestNameValue}
-                        onChange={e => setGuestNameValue(e.target.value)}
-                        onBlur={() => commitGuestConversion(item)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') commitGuestConversion(item);
-                          if (e.key === 'Escape') setEditingGuestId(null);
-                        }}
-                      />
+                      <div className="guest-name-edit-wrapper">
+                        <input
+                          ref={guestNameInputRef}
+                          type="text"
+                          className="guest-name-edit-input"
+                          placeholder="Enter name…"
+                          value={guestNameValue}
+                          onChange={e => handleGuestNameChange(e.target.value)}
+                          onBlur={() => {
+                            setTimeout(() => {
+                              setShowGuestSuggestions(false);
+                              commitGuestConversion(item);
+                            }, 150);
+                          }}
+                          onKeyDown={e => {
+                            if (showGuestSuggestions && guestSuggestions.length > 0) {
+                              const totalItems = guestSuggestions.length + (guestNameValue.trim() ? 1 : 0);
+                              if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setGuestHighlightedIndex(prev => (prev + 1) % totalItems);
+                                return;
+                              }
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setGuestHighlightedIndex(prev => (prev - 1 + totalItems) % totalItems);
+                                return;
+                              }
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (guestHighlightedIndex < guestSuggestions.length) {
+                                  selectGuestSuggestion(guestSuggestions[guestHighlightedIndex], item);
+                                } else {
+                                  commitGuestConversion(item);
+                                }
+                                return;
+                              }
+                            } else if (e.key === 'Enter') {
+                              commitGuestConversion(item);
+                              return;
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingGuestId(null);
+                              setShowGuestSuggestions(false);
+                            }
+                          }}
+                          autoComplete="off"
+                        />
+                        {showGuestSuggestions && (
+                          <SuggestionList
+                            results={guestSuggestions}
+                            highlightedIndex={guestHighlightedIndex}
+                            onSelect={(result) => selectGuestSuggestion(result, item)}
+                            query={guestNameValue}
+                            onAddNew={() => commitGuestConversion(item)}
+                          />
+                        )}
+                      </div>
                     ) : (
                       <span className="guest-name-tap" onClick={() => startEditGuestName(item.entry.id)}>Guest {item.entry.guest_number}</span>
                     )
