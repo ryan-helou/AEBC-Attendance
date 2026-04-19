@@ -259,6 +259,98 @@
   }
 }
 
+.name-cell-wrapper {
+  position: relative;
+}
+
+.musician-role-badge {
+  margin-left: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.15em 0.5em;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  border-radius: 3px;
+  letter-spacing: 0.03em;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.musician-role-badge:hover {
+  filter: brightness(1.15);
+}
+
+.musician-role-add {
+  margin-left: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.2rem;
+  height: 1.2rem;
+  line-height: 1.2rem;
+  text-align: center;
+  border-radius: 3px;
+}
+
+.attendance-table tbody tr:hover .musician-role-add {
+  opacity: 1;
+}
+
+.musician-role-add:hover {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.role-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.15));
+  padding: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 12rem;
+  max-width: 18rem;
+  margin-top: 0.25rem;
+}
+
+.role-picker-item {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.35em 0.65em;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 3px;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.role-picker-item:hover {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.4);
+  color: var(--color-text);
+  transform: none;
+  box-shadow: none;
+}
+
+.role-picker-item.active {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  border-color: #7c3aed;
+}
+
 @media (max-width: 600px) {
   .attendance-table {
     font-size: 0.8125rem;

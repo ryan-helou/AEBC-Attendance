@@ -90,3 +90,18 @@ create policy "Allow all on guest_attendance" on guest_attendance for all using 
 -- Or run:
 alter publication supabase_realtime add table attendance_records;
 alter publication supabase_realtime add table guest_attendance;
+
+-- 7. Musician roles (who played what per service date)
+create table musician_roles (
+  id uuid default gen_random_uuid() primary key,
+  meeting_id uuid not null references meetings(id) on delete cascade,
+  person_id uuid not null references people(id) on delete cascade,
+  date date not null,
+  role text not null,
+  constraint unique_musician_role unique (meeting_id, person_id, date)
+);
+
+create index idx_musician_roles_meeting_date on musician_roles (meeting_id, date);
+
+alter table musician_roles enable row level security;
+create policy "Allow all on musician_roles" on musician_roles for all using (true) with check (true);

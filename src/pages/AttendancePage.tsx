@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
+import { useMusicianRoles } from '../hooks/useMusicianRoles';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
 import type { Meeting, Person, DisplayEntry } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
@@ -51,6 +52,8 @@ export default function AttendancePage() {
     updateGuestMarkedAt,
     toggleGuestFirstTime,
   } = useGuestAttendance(meetingId!, date!);
+
+  const { getRole, setRole, removeRole } = useMusicianRoles(meetingId!, date!);
 
   // Merge person entries and guest entries into a single sorted list
   const displayEntries: DisplayEntry[] = useMemo(() => {
@@ -321,6 +324,9 @@ export default function AttendancePage() {
           onConvertGuest={handleConvertGuest}
           searchPeople={searchPeople}
           markedPersonIds={markedPersonIds}
+          getMusicianRole={getRole}
+          onSetMusicianRole={setRole}
+          onRemoveMusicianRole={removeRole}
         />
 
         <div className="attendance-footer-fields">

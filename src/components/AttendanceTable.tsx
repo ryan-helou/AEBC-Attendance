@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry } from '../types';
 import type { SearchResult } from '../hooks/usePeople';
+import { MUSICIAN_ROLES, type MusicianRole } from '../hooks/useMusicianRoles';
 import SuggestionList from './SuggestionList';
 import './AttendanceTable.css';
 
@@ -37,6 +38,9 @@ interface AttendanceTableProps {
   onConvertGuest?: (guestId: string, guestEntry: any, name: string) => Promise<void>;
   searchPeople?: (query: string, markedIds: Set<string>) => SearchResult[];
   markedPersonIds?: Set<string>;
+  getMusicianRole?: (personId: string) => MusicianRole | null;
+  onSetMusicianRole?: (personId: string, role: MusicianRole) => void;
+  onRemoveMusicianRole?: (personId: string) => void;
 }
 
 function formatTime(isoString: string) {
@@ -53,7 +57,7 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRole, onSetMusicianRole, onRemoveMusicianRole }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -65,6 +69,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   const [guestHighlightedIndex, setGuestHighlightedIndex] = useState(0);
   const [showGuestSuggestions, setShowGuestSuggestions] = useState(false);
   const guestNameInputRef = useRef<HTMLInputElement>(null);
+  const [rolePickerPersonId, setRolePickerPersonId] = useState<string | null>(null);
 
   useEffect(() => {
     prevIdsRef.current = new Set(entries.map(e => e.entry.id));
@@ -247,7 +252,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       <span className="guest-name-tap" onClick={() => startEditGuestName(item.entry.id)}>Guest {item.entry.guest_number}</span>
                     )
                   ) : (
-                    <>
+                    <div className="name-cell-wrapper">
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
                         {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
                         {item.entry.person.full_name}
@@ -258,7 +263,44 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       {item.entry.person.notes && (
                         <span className="person-note"> — {item.entry.person.notes}</span>
                       )}
-                    </>
+                      {getMusicianRole?.(item.entry.person_id) ? (
+                        <span
+                          className="musician-role-badge"
+                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                        >
+                          {getMusicianRole(item.entry.person_id)}
+                        </span>
+                      ) : (
+                        <span
+                          className="musician-role-add"
+                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                          title="Assign musician role"
+                        >
+                          +
+                        </span>
+                      )}
+                      {rolePickerPersonId === item.entry.person_id && (
+                        <div className="role-picker">
+                          {MUSICIAN_ROLES.map(role => (
+                            <button
+                              key={role}
+                              className={`role-picker-item${getMusicianRole?.(item.entry.person_id) === role ? ' active' : ''}`}
+                              onMouseDown={e => {
+                                e.preventDefault();
+                                if (getMusicianRole?.(item.entry.person_id) === role) {
+                                  onRemoveMusicianRole?.(item.entry.person_id);
+                                } else {
+                                  onSetMusicianRole?.(item.entry.person_id, role);
+                                }
+                                setRolePickerPersonId(null);
+                              }}
+                            >
+                              {role}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="col-first">
