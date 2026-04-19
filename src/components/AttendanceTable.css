@@ -263,25 +263,10 @@
 
 .name-cell-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.name-cell-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.name-cell-right {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
 }
 
 .musician-role-badge {
+  margin-left: 0.4rem;
   font-size: 0.65rem;
   font-weight: 600;
   padding: 0.15em 0.5em;
