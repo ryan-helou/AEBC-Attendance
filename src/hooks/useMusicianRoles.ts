@@ -10,6 +10,7 @@ export const MUSICIAN_ROLES = [
   'Violin',
   'Singer',
   'Backup Singer',
+  'Sound',
 ] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
