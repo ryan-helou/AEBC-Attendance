@@ -53,7 +53,7 @@ export default function AttendancePage() {
     toggleGuestFirstTime,
   } = useGuestAttendance(meetingId!, date!);
 
-  const { getRole, setRole, removeRole } = useMusicianRoles(meetingId!, date!);
+  const { getRoles, toggleRole } = useMusicianRoles(meetingId!, date!);
 
   // Merge person entries and guest entries into a single sorted list
   const displayEntries: DisplayEntry[] = useMemo(() => {
@@ -324,9 +324,8 @@ export default function AttendancePage() {
           onConvertGuest={handleConvertGuest}
           searchPeople={searchPeople}
           markedPersonIds={markedPersonIds}
-          getMusicianRole={getRole}
-          onSetMusicianRole={setRole}
-          onRemoveMusicianRole={removeRole}
+          getMusicianRoles={getRoles}
+          onToggleMusicianRole={toggleRole}
         />
 
         <div className="attendance-footer-fields">

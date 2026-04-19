@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry } from '../types';
 import type { SearchResult } from '../hooks/usePeople';
-import { MUSICIAN_ROLES, type MusicianRole } from '../hooks/useMusicianRoles';
+import { MUSICIAN_ROLES } from '../hooks/useMusicianRoles';
+import type { MusicianRole } from '../hooks/useMusicianRoles';
 import SuggestionList from './SuggestionList';
 import './AttendanceTable.css';
 
@@ -38,9 +39,8 @@ interface AttendanceTableProps {
   onConvertGuest?: (guestId: string, guestEntry: any, name: string) => Promise<void>;
   searchPeople?: (query: string, markedIds: Set<string>) => SearchResult[];
   markedPersonIds?: Set<string>;
-  getMusicianRole?: (personId: string) => MusicianRole | null;
-  onSetMusicianRole?: (personId: string, role: MusicianRole) => void;
-  onRemoveMusicianRole?: (personId: string) => void;
+  getMusicianRoles?: (personId: string) => MusicianRole[];
+  onToggleMusicianRole?: (personId: string, role: MusicianRole) => void;
 }
 
 function formatTime(isoString: string) {
@@ -57,7 +57,7 @@ function toTimeInputValue(isoString: string) {
   return `${h}:${m}`;
 }
 
-export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRole, onSetMusicianRole, onRemoveMusicianRole }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -270,36 +270,31 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       {item.entry.person.notes && (
                         <span className="person-note"> — {item.entry.person.notes}</span>
                       )}
-                      {getMusicianRole?.(item.entry.person_id) ? (
+                      {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
                         <span
-                          className={`musician-role-badge${getMusicianRole(item.entry.person_id) === 'Attendance' ? ' role-attendance' : ''}`}
+                          key={role}
+                          className={`musician-role-badge${role === 'Attendance' ? ' role-attendance' : ''}`}
                           onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
                         >
-                          {getMusicianRole(item.entry.person_id)}
+                          {role}
                         </span>
-                      ) : (
-                        <span
-                          className="musician-role-add"
-                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
-                          title="Assign musician role"
-                        >
-                          +
-                        </span>
-                      )}
+                      ))}
+                      <span
+                        className="musician-role-add"
+                        onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                        title="Assign role"
+                      >
+                        +
+                      </span>
                       {rolePickerPersonId === item.entry.person_id && (
-                        <div className="role-picker">
+                        <div className="role-picker" onClick={e => e.stopPropagation()}>
                           {MUSICIAN_ROLES.map(role => (
                             <button
                               key={role}
-                              className={`role-picker-item${getMusicianRole?.(item.entry.person_id) === role ? ' active' : ''}`}
+                              className={`role-picker-item${(getMusicianRoles?.(item.entry.person_id) || []).includes(role) ? ' active' : ''}`}
                               onClick={e => {
                                 e.stopPropagation();
-                                if (getMusicianRole?.(item.entry.person_id) === role) {
-                                  onRemoveMusicianRole?.(item.entry.person_id);
-                                } else {
-                                  onSetMusicianRole?.(item.entry.person_id, role);
-                                }
-                                setRolePickerPersonId(null);
+                                onToggleMusicianRole?.(item.entry.person_id, role);
                               }}
                             >
                               {role}
