@@ -18,7 +18,7 @@ const SHABIBEH_LEADERS = [
 const ATTENDANCE_MINISTRY = [
   'Julia Sebali',
   'Aly Achkar',
-  'Holy Abdelmassih',
+  'Holy Abdelmessih',
   'Ryan Helou',
   'Jona Safadi',
 ];
