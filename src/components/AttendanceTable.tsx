@@ -272,7 +272,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       )}
                       {getMusicianRole?.(item.entry.person_id) ? (
                         <span
-                          className="musician-role-badge"
+                          className={`musician-role-badge${getMusicianRole(item.entry.person_id) === 'Attendance' ? ' role-attendance' : ''}`}
                           onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
                         >
                           {getMusicianRole(item.entry.person_id)}

@@ -331,13 +331,6 @@ export default function AttendancePage() {
 
         <div className="attendance-footer-fields">
           <input
-            className="taken-by-input"
-            placeholder="Taken by…"
-            value={takenBy}
-            onChange={e => setTakenBy(e.target.value)}
-            onBlur={saveNoteFields}
-          />
-          <input
             className="manual-count-input"
             type="number"
             placeholder="Manual count…"
