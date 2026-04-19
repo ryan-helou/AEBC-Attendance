@@ -11,6 +11,7 @@ export const MUSICIAN_ROLES = [
   'Singer',
   'Backup Singer',
   'Sound',
+  'Attendance',
 ] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
