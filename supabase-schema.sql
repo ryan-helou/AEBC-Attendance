@@ -98,7 +98,7 @@ create table musician_roles (
   person_id uuid not null references people(id) on delete cascade,
   date date not null,
   role text not null,
-  constraint unique_musician_role unique (meeting_id, person_id, date)
+  constraint unique_musician_person_role unique (meeting_id, person_id, date, role)
 );
 
 create index idx_musician_roles_meeting_date on musician_roles (meeting_id, date);

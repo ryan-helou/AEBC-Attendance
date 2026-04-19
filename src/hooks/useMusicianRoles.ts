@@ -23,8 +23,9 @@ interface MusicianRoleEntry {
 }
 
 export function useMusicianRoles(meetingId: string, date: string) {
-  const [roles, setRoles] = useState<Map<string, MusicianRoleEntry>>(new Map());
-  const rolesRef = useRef<Map<string, MusicianRoleEntry>>(new Map());
+  // Map<personId, MusicianRoleEntry[]>
+  const [roles, setRoles] = useState<Map<string, MusicianRoleEntry[]>>(new Map());
+  const rolesRef = useRef<Map<string, MusicianRoleEntry[]>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,9 +37,12 @@ export function useMusicianRoles(meetingId: string, date: string) {
         .eq('date', date);
 
       if (data) {
-        const map = new Map<string, MusicianRoleEntry>();
+        const map = new Map<string, MusicianRoleEntry[]>();
         for (const row of data) {
-          map.set(row.person_id, row as MusicianRoleEntry);
+          const entry = row as MusicianRoleEntry;
+          const list = map.get(entry.person_id) || [];
+          list.push(entry);
+          map.set(entry.person_id, list);
         }
         rolesRef.current = map;
         setRoles(map);
@@ -48,31 +52,37 @@ export function useMusicianRoles(meetingId: string, date: string) {
     load();
   }, [meetingId, date]);
 
-  const setRole = useCallback(
+  const toggleRole = useCallback(
     async (personId: string, role: MusicianRole) => {
-      const existing = rolesRef.current.get(personId);
+      const entries = rolesRef.current.get(personId) || [];
+      const existing = entries.find(e => e.role === role);
+
       if (existing) {
-        await supabase.from('musician_roles').update({ role }).eq('id', existing.id);
-        const entry = { ...existing, role };
+        // Remove this role
+        await supabase.from('musician_roles').delete().eq('id', existing.id);
         setRoles(prev => {
           const next = new Map(prev);
-          next.set(personId, entry);
+          const updated = (next.get(personId) || []).filter(e => e.id !== existing.id);
+          if (updated.length === 0) {
+            next.delete(personId);
+          } else {
+            next.set(personId, updated);
+          }
           rolesRef.current = next;
           return next;
         });
       } else {
+        // Add this role
         const { data } = await supabase
           .from('musician_roles')
-          .upsert(
-            { meeting_id: meetingId, person_id: personId, date, role },
-            { onConflict: 'meeting_id,person_id,date' }
-          )
+          .insert({ meeting_id: meetingId, person_id: personId, date, role })
           .select('id, person_id, role')
           .single();
         if (data) {
           setRoles(prev => {
             const next = new Map(prev);
-            next.set(personId, data as MusicianRoleEntry);
+            const list = [...(next.get(personId) || []), data as MusicianRoleEntry];
+            next.set(personId, list);
             rolesRef.current = next;
             return next;
           });
@@ -82,27 +92,12 @@ export function useMusicianRoles(meetingId: string, date: string) {
     [meetingId, date]
   );
 
-  const removeRole = useCallback(
-    async (personId: string) => {
-      const existing = rolesRef.current.get(personId);
-      if (!existing) return;
-      await supabase.from('musician_roles').delete().eq('id', existing.id);
-      setRoles(prev => {
-        const next = new Map(prev);
-        next.delete(personId);
-        rolesRef.current = next;
-        return next;
-      });
-    },
-    []
-  );
-
-  const getRole = useCallback(
-    (personId: string): MusicianRole | null => {
-      return roles.get(personId)?.role ?? null;
+  const getRoles = useCallback(
+    (personId: string): MusicianRole[] => {
+      return (roles.get(personId) || []).map(e => e.role);
     },
     [roles]
   );
 
-  return { roles, loading, setRole, removeRole, getRole };
+  return { roles, loading, toggleRole, getRoles };
 }
