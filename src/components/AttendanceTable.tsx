@@ -72,6 +72,13 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   const [rolePickerPersonId, setRolePickerPersonId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!rolePickerPersonId) return;
+    function handleClick() { setRolePickerPersonId(null); }
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [rolePickerPersonId]);
+
+  useEffect(() => {
     prevIdsRef.current = new Set(entries.map(e => e.entry.id));
   });
 
@@ -285,8 +292,8 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                             <button
                               key={role}
                               className={`role-picker-item${getMusicianRole?.(item.entry.person_id) === role ? ' active' : ''}`}
-                              onMouseDown={e => {
-                                e.preventDefault();
+                              onClick={e => {
+                                e.stopPropagation();
                                 if (getMusicianRole?.(item.entry.person_id) === role) {
                                   onRemoveMusicianRole?.(item.entry.person_id);
                                 } else {
