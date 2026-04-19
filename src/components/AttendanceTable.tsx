@@ -260,32 +260,36 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                     )
                   ) : (
                     <div className="name-cell-wrapper">
-                      <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
-                        {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
-                        {item.entry.person.full_name}
-                      </span>
-                      {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
-                        <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMITEE</span>
-                      )}
-                      {item.entry.person.notes && (
-                        <div className="person-note">{item.entry.person.notes}</div>
-                      )}
-                      {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
-                        <span
-                          key={role}
-                          className={`musician-role-badge${role === 'Attendance' ? ' role-attendance' : role === 'Preacher' ? ' role-preacher' : ''}`}
-                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
-                        >
-                          {role}
+                      <div className="name-cell-left">
+                        <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
+                          {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
+                          {item.entry.person.full_name}
                         </span>
-                      ))}
-                      <span
-                        className="musician-role-add"
-                        onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
-                        title="Assign role"
-                      >
-                        +
-                      </span>
+                        {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
+                          <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMITEE</span>
+                        )}
+                        {item.entry.person.notes && (
+                          <div className="person-note">{item.entry.person.notes}</div>
+                        )}
+                      </div>
+                      <div className="name-cell-right">
+                        {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
+                          <span
+                            key={role}
+                            className={`musician-role-badge${role === 'Attendance' ? ' role-attendance' : role === 'Preacher' ? ' role-preacher' : ''}`}
+                            onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                          >
+                            {role}
+                          </span>
+                        ))}
+                        <span
+                          className="musician-role-add"
+                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                          title="Assign role"
+                        >
+                          +
+                        </span>
+                      </div>
                       {rolePickerPersonId === item.entry.person_id && (
                         <div className="role-picker" onClick={e => e.stopPropagation()}>
                           {MUSICIAN_ROLES.map(role => (
