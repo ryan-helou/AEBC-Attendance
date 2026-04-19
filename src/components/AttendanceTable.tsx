@@ -273,7 +273,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
                         <span
                           key={role}
-                          className={`musician-role-badge${role === 'Attendance' ? ' role-attendance' : ''}`}
+                          className={`musician-role-badge${role === 'Attendance' ? ' role-attendance' : role === 'Preacher' ? ' role-preacher' : ''}`}
                           onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
                         >
                           {role}
