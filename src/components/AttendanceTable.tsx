@@ -268,7 +268,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                         <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMITEE</span>
                       )}
                       {item.entry.person.notes && (
-                        <span className="person-note"> — {item.entry.person.notes}</span>
+                        <div className="person-note">{item.entry.person.notes}</div>
                       )}
                       {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
                         <span
