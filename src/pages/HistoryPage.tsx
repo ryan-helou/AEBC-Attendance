@@ -971,7 +971,7 @@ export default function HistoryPage() {
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
                 <XAxis
                   dataKey="label"
                   tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
@@ -1006,6 +1006,9 @@ export default function HistoryPage() {
                     fill={`url(#grad-${i})`}
                     dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
                     activeDot={{ r: 6, strokeWidth: 0 }}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                    animationBegin={200}
                   />
                 ))}
                 <Area
@@ -1017,6 +1020,9 @@ export default function HistoryPage() {
                   fill="url(#grad-firsttimers)"
                   dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
                   activeDot={{ r: 5, strokeWidth: 0 }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                  animationBegin={400}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -1086,7 +1092,7 @@ export default function HistoryPage() {
                     labelStyle={{ fontWeight: 600, marginBottom: '2px', color: 'var(--color-text)' }}
                     itemStyle={{ color: 'var(--color-text-secondary)' }}
                   />
-                  <Bar dataKey="Attendance" radius={[8, 8, 3, 3]} maxBarSize={68}>
+                  <Bar dataKey="Attendance" radius={[8, 8, 3, 3]} maxBarSize={68} animationDuration={800} animationEasing="ease-out" animationBegin={200}>
                     <LabelList
                       dataKey="Attendance"
                       position="top"

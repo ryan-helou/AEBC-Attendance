@@ -104,14 +104,14 @@
   font-size: 0.8rem;
   padding: 0.45em 1.1em;
   color: #fff;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   border: none;
   font-weight: 600;
   border-radius: var(--radius);
 }
 
 .import-submit-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  background: linear-gradient(135deg, var(--color-primary-hover), #1e40af);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
