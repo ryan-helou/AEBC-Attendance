@@ -200,6 +200,9 @@ export default function HistoryPage() {
       }
       for (const r of guestRecords) {
         const week = weekOf(r.date);
+        if (!weekCounts.has(week)) weekCounts.set(week, new Map());
+        const mc = weekCounts.get(week)!;
+        mc.set(r.meeting_id, (mc.get(r.meeting_id) || 0) + 1);
         if (r.first_time) weekFirstTimers.set(week, (weekFirstTimers.get(week) || 0) + 1);
       }
       const allWeeks = Array.from(weekCounts.keys()).sort();
