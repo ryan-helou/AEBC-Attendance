@@ -76,6 +76,20 @@ interface OnTimeLeader {
   timesAttended: number;
 }
 
+interface ConsistencyLeader {
+  person_id: string;
+  person_name: string;
+  rate: number;
+  attended: number;
+  possible: number;
+}
+
+interface RecordEntry {
+  label: string;
+  value: string;
+  detail: string;
+}
+
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -141,6 +155,11 @@ export default function HistoryPage() {
   const [onTimeLeaders, setOnTimeLeaders] = useState<OnTimeLeader[]>([]);
   const [onTimeLoading, setOnTimeLoading] = useState(true);
   const [onTimeMeetingId, setOnTimeMeetingId] = useState('');
+  const [consistencyLeaders, setConsistencyLeaders] = useState<ConsistencyLeader[]>([]);
+  const [consistencyLoading, setConsistencyLoading] = useState(true);
+  const [consistencyMeetingId, setConsistencyMeetingId] = useState('');
+  const [records, setRecords] = useState<RecordEntry[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(true);
 
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
@@ -360,6 +379,165 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function loadConsistencyLeaders(meetingId?: string) {
+    const targetId = meetingId ?? consistencyMeetingId;
+    if (!targetId) return;
+    setConsistencyLoading(true);
+
+    const cutoff = shiftDate(getTodayDate(), -84); // last 12 weeks
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('person_id, date, person:people(full_name)')
+      .eq('meeting_id', targetId)
+      .gte('date', cutoff);
+
+    if (data) {
+      const rows = data as Array<Record<string, unknown>>;
+      const activeDates = new Set<string>();
+      const personMap = new Map<string, { name: string; dates: Set<string> }>();
+
+      for (const r of rows) {
+        const date = r.date as string;
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        activeDates.add(date);
+        if (!personMap.has(pid)) personMap.set(pid, { name, dates: new Set() });
+        personMap.get(pid)!.dates.add(date);
+      }
+
+      const totalDates = activeDates.size;
+      if (totalDates === 0) { setConsistencyLeaders([]); setConsistencyLoading(false); return; }
+
+      const leaders: ConsistencyLeader[] = [];
+      for (const [pid, stats] of personMap.entries()) {
+        const rate = Math.round((stats.dates.size / totalDates) * 100);
+        if (stats.dates.size >= 2) {
+          leaders.push({ person_id: pid, person_name: stats.name, rate, attended: stats.dates.size, possible: totalDates });
+        }
+      }
+      leaders.sort((a, b) => b.rate - a.rate || b.attended - a.attended);
+      setConsistencyLeaders(leaders.slice(0, 15));
+    }
+    setConsistencyLoading(false);
+  }
+
+  async function loadRecords(meetingsList: Meeting[]) {
+    setRecordsLoading(true);
+    const entries: RecordEntry[] = [];
+
+    // Fetch all attendance + guest data
+    const [{ data: attData }, { data: guestData }] = await Promise.all([
+      supabase.from('attendance_records').select('meeting_id, date, person_id, first_time, person:people(full_name)'),
+      supabase.from('guest_attendance').select('meeting_id, date, first_time'),
+    ]);
+
+    if (attData && guestData) {
+      const attRows = attData as Array<Record<string, unknown>>;
+      const guestRows = guestData as Array<Record<string, unknown>>;
+
+      // 1. Highest attendance per meeting date
+      const dateCounts = new Map<string, { count: number; date: string; meetingName: string }>();
+      for (const r of attRows) {
+        const key = `${r.meeting_id}|${r.date}`;
+        if (!dateCounts.has(key)) {
+          const meeting = meetingsList.find(m => m.id === r.meeting_id);
+          dateCounts.set(key, { count: 0, date: r.date as string, meetingName: meeting?.name || '' });
+        }
+        dateCounts.get(key)!.count++;
+      }
+      for (const r of guestRows) {
+        const key = `${r.meeting_id}|${r.date}`;
+        if (!dateCounts.has(key)) {
+          const meeting = meetingsList.find(m => m.id === r.meeting_id);
+          dateCounts.set(key, { count: 0, date: r.date as string, meetingName: meeting?.name || '' });
+        }
+        dateCounts.get(key)!.count++;
+      }
+      let highest = { count: 0, date: '', meetingName: '' };
+      for (const entry of dateCounts.values()) {
+        if (entry.count > highest.count) highest = entry;
+      }
+      if (highest.count > 0) {
+        const d = new Date(highest.date + 'T00:00:00');
+        entries.push({
+          label: 'Highest Attendance',
+          value: String(highest.count),
+          detail: `${highest.meetingName} — ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+        });
+      }
+
+      // 2. Longest streak ever
+      const streakGroups = new Map<string, { name: string; meeting: string; dates: string[] }>();
+      for (const r of attRows) {
+        const key = `${r.person_id}|${r.meeting_id}`;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const meeting = meetingsList.find(m => m.id === r.meeting_id)?.name || '';
+        if (!streakGroups.has(key)) streakGroups.set(key, { name, meeting, dates: [] });
+        streakGroups.get(key)!.dates.push(r.date as string);
+      }
+      let longestStreak = { count: 0, name: '', meeting: '' };
+      for (const g of streakGroups.values()) {
+        const s = computeLongestStreak(g.dates);
+        if (s > longestStreak.count) longestStreak = { count: s, name: g.name, meeting: g.meeting };
+      }
+      if (longestStreak.count > 0) {
+        entries.push({
+          label: 'Longest Streak Ever',
+          value: `${longestStreak.count} weeks`,
+          detail: `${longestStreak.name} — ${longestStreak.meeting}`,
+        });
+      }
+
+      // 3. Most first-timers in a single week
+      const weekFirstTimers = new Map<string, { count: number; date: string }>();
+      for (const r of [...attRows, ...guestRows]) {
+        if (!(r.first_time as boolean)) continue;
+        const date = r.date as string;
+        const d = new Date(date + 'T00:00:00');
+        const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        d.setDate(d.getDate() - daysBack);
+        const week = d.toISOString().slice(0, 10);
+        if (!weekFirstTimers.has(week)) weekFirstTimers.set(week, { count: 0, date });
+        weekFirstTimers.get(week)!.count++;
+      }
+      let mostFirstTimers = { count: 0, date: '' };
+      for (const entry of weekFirstTimers.values()) {
+        if (entry.count > mostFirstTimers.count) mostFirstTimers = entry;
+      }
+      if (mostFirstTimers.count > 0) {
+        const d = new Date(mostFirstTimers.date + 'T00:00:00');
+        entries.push({
+          label: 'Most First-Timers (1 Week)',
+          value: String(mostFirstTimers.count),
+          detail: `Week of ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+        });
+      }
+
+      // 4. Most attended person ever
+      const personCounts = new Map<string, { name: string; count: number }>();
+      for (const r of attRows) {
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        if (!personCounts.has(pid)) personCounts.set(pid, { name, count: 0 });
+        personCounts.get(pid)!.count++;
+      }
+      let topPerson = { name: '', count: 0 };
+      for (const p of personCounts.values()) {
+        if (p.count > topPerson.count) topPerson = p;
+      }
+      if (topPerson.count > 0) {
+        entries.push({
+          label: 'Most Attended (All Time)',
+          value: `${topPerson.count} times`,
+          detail: topPerson.name,
+        });
+      }
+    }
+
+    setRecords(entries);
+    setRecordsLoading(false);
+  }
+
   useEffect(() => {
     async function load() {
       const today = getTodayDate();
@@ -374,6 +552,7 @@ export default function HistoryPage() {
           setDateMeetingId(data[0].id);
           setAllTimeMeetingId(data[0].id);
           setOnTimeMeetingId(data[0].id);
+          setConsistencyMeetingId(data[0].id);
           const day = getMeetingDay(data[0].name);
           setSelectedDate(snapToValidDate(today, day));
         }
@@ -383,6 +562,8 @@ export default function HistoryPage() {
       }
       loadStreakLeaders();
       loadOnTimeLeaders(data?.[0]?.id);
+      loadConsistencyLeaders(data?.[0]?.id);
+      if (data) loadRecords(data);
       setLoading(false);
     }
     load();
@@ -889,6 +1070,87 @@ export default function HistoryPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Consistency & Records side by side */}
+        <div className="leaderboard-pair">
+        {/* Consistency Leaderboard */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Consistency (12w)</h2>
+          <div className="history-controls">
+            <select
+              value={consistencyMeetingId}
+              onChange={e => {
+                setConsistencyMeetingId(e.target.value);
+                loadConsistencyLeaders(e.target.value);
+              }}
+            >
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+          {consistencyLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : consistencyLeaders.length === 0 ? (
+            <p className="history-empty">Not enough data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Rate</th>
+                    <th className="lb-col-count">Attended</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consistencyLeaders.map((leader, i) => (
+                    <tr
+                      key={leader.person_id}
+                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      onClick={() => navigate(`/person/${leader.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {i < 3 ? (
+                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        ) : (
+                          <span className="lb-rank-num">{i + 1}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{leader.person_name}</span>
+                      </td>
+                      <td className="lb-col-count">{leader.rate}%</td>
+                      <td className="lb-col-count">{leader.attended}/{leader.possible}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Record Breakers */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Record Breakers</h2>
+          {recordsLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : records.length === 0 ? (
+            <p className="history-empty">Not enough data yet.</p>
+          ) : (
+            <div className="records-grid">
+              {records.map(record => (
+                <div key={record.label} className="record-card">
+                  <div className="record-label">{record.label}</div>
+                  <div className="record-value">{record.value}</div>
+                  <div className="record-detail">{record.detail}</div>
+                </div>
+              ))}
             </div>
           )}
         </section>
