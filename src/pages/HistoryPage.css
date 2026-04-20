@@ -117,20 +117,6 @@
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .cal-day-labels,
-[data-theme="dark"] .cal-month-labels,
-[data-theme="dark"] .cal-legend,
-[data-theme="dark"] .heatmap-col-label,
-[data-theme="dark"] .heatmap-row-label {
-  color: var(--color-text-muted);
-}
-
-[data-theme="dark"] .calendar-meeting-select {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
-}
-
 .history-section h2 {
   font-size: 1rem;
   font-weight: 600;
@@ -632,116 +618,6 @@
   color: var(--color-text-muted);
 }
 
-/* Calendar Heatmap */
-.calendar-section {
-  overflow-x: auto;
-}
-
-.calendar-meeting-select {
-  border-radius: var(--radius);
-  border: 1px solid var(--color-border);
-  padding: 0.3em 0.5em;
-  font-size: 0.75rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-bg);
-}
-
-.cal-heatmap-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.cal-heatmap-wrapper .cal-grid-area {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  overflow-x: auto;
-}
-
-.cal-day-labels {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  font-size: 0.6rem;
-  color: var(--color-text-muted);
-  width: 2rem;
-  flex-shrink: 0;
-  padding-top: 1rem;
-}
-
-.cal-day-labels span {
-  height: 13px;
-  line-height: 13px;
-}
-
-.cal-day-labels span:nth-child(1) { margin-top: 0; }
-.cal-day-labels span:nth-child(2) { margin-top: 13px; }
-.cal-day-labels span:nth-child(3) { margin-top: 13px; }
-
-.cal-heatmap-wrapper {
-  display: flex;
-  flex-direction: row;
-  gap: 0.25rem;
-}
-
-.cal-heatmap-wrapper > .cal-grid-area {
-  flex: 1;
-  min-width: 0;
-}
-
-.cal-month-labels {
-  display: grid;
-  font-size: 0.625rem;
-  color: var(--color-text-muted);
-  height: 1rem;
-  align-items: end;
-}
-
-.cal-month-labels span {
-  white-space: nowrap;
-}
-
-.cal-grid {
-  display: grid;
-  gap: 2px;
-}
-
-.cal-week {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.cal-cell {
-  width: 13px;
-  height: 13px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.cal-today {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -1px;
-}
-
-
-.cal-legend {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  justify-content: flex-end;
-  font-size: 0.625rem;
-  color: var(--color-text-muted);
-  padding-top: 0.25rem;
-}
-
-.cal-legend .cal-cell {
-  width: 11px;
-  height: 11px;
-}
-
 /* Weeks-since badge */
 .weeks-badge {
   font-size: 0.7rem;
@@ -768,56 +644,6 @@
   background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
   border-left-color: #dc2626;
-}
-
-/* Arrival Heatmap */
-.heatmap-grid-wrapper {
-  overflow-x: auto;
-}
-
-.heatmap-grid {
-  display: grid;
-  gap: 3px;
-  grid-template-columns: auto repeat(var(--heatmap-cols, 12), 1fr);
-  min-width: fit-content;
-}
-
-.heatmap-corner {
-  width: 4.5rem;
-}
-
-.heatmap-col-label {
-  font-size: 0.6rem;
-  color: var(--color-text-muted);
-  text-align: center;
-  white-space: nowrap;
-  padding-bottom: 0.25rem;
-}
-
-.heatmap-row-label {
-  font-size: 0.65rem;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  padding-right: 0.5rem;
-}
-
-.heatmap-cell {
-  min-width: 2rem;
-  height: 2rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 600;
-  font-feature-settings: 'tnum';
-  transition: transform 0.1s ease;
-}
-
-.heatmap-cell:hover {
-  transform: scale(1.15);
 }
 
 /* Musician role pills */

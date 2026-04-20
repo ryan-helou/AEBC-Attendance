@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
@@ -112,17 +112,6 @@ interface MusicianCount {
   topRoles: string[];
 }
 
-interface CalendarDay {
-  date: string;
-  count: number;
-}
-
-interface HeatmapCell {
-  week: string;
-  timeSlot: string;
-  count: number;
-}
-
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -199,13 +188,6 @@ export default function HistoryPage() {
   const [risingStarsLoading, setRisingStarsLoading] = useState(true);
   const [topMusicians, setTopMusicians] = useState<MusicianCount[]>([]);
   const [musiciansLoading, setMusiciansLoading] = useState(true);
-  const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
-  const [calendarLoading, setCalendarLoading] = useState(true);
-  const [calendarMeetingId, setCalendarMeetingId] = useState('');
-  const [heatmapData, setHeatmapData] = useState<HeatmapCell[]>([]);
-  const [heatmapLoading, setHeatmapLoading] = useState(true);
-  const [heatmapMeetingId, setHeatmapMeetingId] = useState('');
-
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
@@ -669,64 +651,6 @@ export default function HistoryPage() {
     setMusiciansLoading(false);
   }
 
-  async function loadCalendarData(meetingId?: string) {
-    const targetId = meetingId ?? calendarMeetingId;
-    setCalendarLoading(true);
-    let attQuery = supabase.from('attendance_records').select('date');
-    let guestQuery = supabase.from('guest_attendance').select('date');
-    if (targetId) {
-      attQuery = attQuery.eq('meeting_id', targetId);
-      guestQuery = guestQuery.eq('meeting_id', targetId);
-    }
-    const [{ data: attData }, { data: guestData }] = await Promise.all([attQuery, guestQuery]);
-    const counts = new Map<string, number>();
-    if (attData) for (const r of attData) counts.set(r.date, (counts.get(r.date) || 0) + 1);
-    if (guestData) for (const r of guestData) counts.set(r.date, (counts.get(r.date) || 0) + 1);
-    const days: CalendarDay[] = Array.from(counts.entries())
-      .map(([date, count]) => ({ date, count }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-    setCalendarData(days);
-    setCalendarLoading(false);
-  }
-
-  async function loadHeatmapData(meetingId?: string) {
-    const targetId = meetingId ?? heatmapMeetingId;
-    if (!targetId) return;
-    setHeatmapLoading(true);
-    const cutoff = shiftDate(getTodayDate(), -84);
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('marked_at, date')
-      .eq('meeting_id', targetId)
-      .gte('date', cutoff);
-    if (data) {
-      const cells = new Map<string, number>();
-      for (const r of data) {
-        const d = new Date(r.marked_at);
-        const mins = d.getHours() * 60 + d.getMinutes();
-        const slotMins = Math.floor(mins / 30) * 30;
-        const slotH = Math.floor(slotMins / 60);
-        const slotM = slotMins % 60;
-        const period = slotH >= 12 ? 'PM' : 'AM';
-        const displayH = slotH % 12 || 12;
-        const timeSlot = `${displayH}:${slotM.toString().padStart(2, '0')} ${period}`;
-        const dateD = new Date(r.date + 'T00:00:00');
-        const daysBack = dateD.getDay() === 0 ? 6 : dateD.getDay() - 1;
-        dateD.setDate(dateD.getDate() - daysBack);
-        const week = dateD.toISOString().slice(0, 10);
-        const key = `${week}|${timeSlot}`;
-        cells.set(key, (cells.get(key) || 0) + 1);
-      }
-      const result: HeatmapCell[] = [];
-      for (const [key, count] of cells.entries()) {
-        const [week, timeSlot] = key.split('|');
-        result.push({ week, timeSlot, count });
-      }
-      setHeatmapData(result);
-    }
-    setHeatmapLoading(false);
-  }
-
   useEffect(() => {
     async function load() {
       const today = getTodayDate();
@@ -748,8 +672,6 @@ export default function HistoryPage() {
 
         loadChartData(chartTimeframe, data);
         loadCompareData(compareTimeframe, data);
-        setHeatmapMeetingId(data[0].id);
-        setCalendarMeetingId(data[0].id);
       }
       loadStreakLeaders();
       loadOnTimeLeaders(data?.[0]?.id);
@@ -757,8 +679,6 @@ export default function HistoryPage() {
       if (data) loadRecords(data);
       loadPeopleInsights();
       loadTopMusicians();
-      loadCalendarData(data?.[0]?.id);
-      loadHeatmapData(data?.[0]?.id);
       setLoading(false);
     }
     load();
@@ -1359,114 +1279,6 @@ export default function HistoryPage() {
         </section>
         </div>
 
-        {/* Attendance Calendar — full width */}
-        <section className="history-section calendar-section" style={{ gridColumn: '1 / -1' }}>
-          <div className="section-header-row">
-            <h2>Attendance Calendar</h2>
-            <select
-              className="calendar-meeting-select"
-              value={calendarMeetingId}
-              onChange={e => {
-                setCalendarMeetingId(e.target.value);
-                loadCalendarData(e.target.value);
-              }}
-            >
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-          {calendarLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : calendarData.length === 0 ? (
-            <p className="history-empty">No attendance data yet.</p>
-          ) : (() => {
-            const maxCal = Math.max(...calendarData.map(d => d.count));
-            const calMap = new Map(calendarData.map(d => [d.date, d.count]));
-            // Build last 6 months of weeks
-            const today = new Date(getTodayDate() + 'T00:00:00');
-            const startDate = new Date(today);
-            startDate.setDate(startDate.getDate() - 182); // ~26 weeks
-            // Snap to Monday
-            const dayOfWeek = startDate.getDay();
-            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-            startDate.setDate(startDate.getDate() + mondayOffset);
-            const weeks: Array<Array<{ date: string; count: number; isToday: boolean }>> = [];
-            const currentDate = new Date(startDate);
-            while (currentDate <= today) {
-              const week: Array<{ date: string; count: number; isToday: boolean }> = [];
-              for (let d = 0; d < 7; d++) {
-                const dateStr = currentDate.toISOString().slice(0, 10);
-                week.push({
-                  date: dateStr,
-                  count: calMap.get(dateStr) || 0,
-                  isToday: dateStr === getTodayDate(),
-                });
-                currentDate.setDate(currentDate.getDate() + 1);
-              }
-              weeks.push(week);
-            }
-            // Month labels
-            const monthLabels: Array<{ label: string; colStart: number }> = [];
-            let lastMonth = -1;
-            weeks.forEach((week, i) => {
-              const firstDay = new Date(week[0].date + 'T00:00:00');
-              if (firstDay.getMonth() !== lastMonth) {
-                lastMonth = firstDay.getMonth();
-                monthLabels.push({
-                  label: firstDay.toLocaleDateString('en-US', { month: 'short' }),
-                  colStart: i,
-                });
-              }
-            });
-
-            function calHeatColor(count: number): string {
-              if (count === 0) return 'var(--cal-empty)';
-              const ratio = count / maxCal;
-              if (ratio <= 0.25) return '#9be9a8';
-              if (ratio <= 0.5) return '#40c463';
-              if (ratio <= 0.75) return '#30a14e';
-              return '#216e39';
-            }
-
-            return (
-              <div className="cal-heatmap-wrapper">
-                <div className="cal-day-labels">
-                  <span>Mon</span><span>Wed</span><span>Fri</span>
-                </div>
-                <div className="cal-grid-area">
-                  <div className="cal-month-labels">
-                    {monthLabels.map((ml, i) => (
-                      <span key={i} style={{ gridColumnStart: ml.colStart + 1 }}>{ml.label}</span>
-                    ))}
-                  </div>
-                  <div className="cal-grid" style={{ gridTemplateColumns: `repeat(${weeks.length}, 1fr)` }}>
-                    {weeks.map((week, wi) => (
-                      <div key={wi} className="cal-week">
-                        {week.map((day) => (
-                          <div
-                            key={day.date}
-                            className={`cal-cell${day.isToday ? ' cal-today' : ''}`}
-                            style={{ background: calHeatColor(day.count) }}
-                            title={`${day.date}: ${day.count} attendees`}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="cal-legend">
-                  <span>Less</span>
-                  {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
-                    <div key={i} className="cal-cell" style={{ background: calHeatColor(r === 0 ? 0 : Math.ceil(r * maxCal)) }} />
-                  ))}
-                  <span>More</span>
-                </div>
-              </div>
-            );
-          })()}
-        </section>
-
         {/* Inactive Watchlist + Rising Stars */}
         <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
@@ -1548,87 +1360,7 @@ export default function HistoryPage() {
         </section>
         </div>
 
-        {/* Arrival Time Heatmap + Most Common Musicians */}
-        <div className="leaderboard-pair">
-        <section className="history-section streak-lb-section">
-          <div className="section-header-row">
-            <h2>Arrival Heatmap</h2>
-            <select
-              className="calendar-meeting-select"
-              value={heatmapMeetingId}
-              onChange={e => {
-                setHeatmapMeetingId(e.target.value);
-                loadHeatmapData(e.target.value);
-              }}
-            >
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-          {heatmapLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : heatmapData.length === 0 ? (
-            <p className="history-empty">No arrival data yet.</p>
-          ) : (() => {
-            const allWeeks = Array.from(new Set(heatmapData.map(c => c.week))).sort();
-            const allSlots = Array.from(new Set(heatmapData.map(c => c.timeSlot)));
-            // Sort time slots by minutes
-            allSlots.sort((a, b) => {
-              const toMins = (s: string) => {
-                const [time, period] = s.split(' ');
-                let [h, m] = time.split(':').map(Number);
-                if (period === 'PM' && h !== 12) h += 12;
-                if (period === 'AM' && h === 12) h = 0;
-                return h * 60 + m;
-              };
-              return toMins(a) - toMins(b);
-            });
-            const heatMax = Math.max(...heatmapData.map(c => c.count));
-            const cellMap = new Map(heatmapData.map(c => [`${c.week}|${c.timeSlot}`, c.count]));
-
-            function heatStyle(count: number): { background: string; color: string } {
-              if (count === 0) return { background: 'var(--cal-empty)', color: 'transparent' };
-              const ratio = count / heatMax;
-              if (ratio <= 0.25) return { background: '#93c5fd', color: '#1e3a5f' };
-              if (ratio <= 0.5) return { background: '#3b82f6', color: '#fff' };
-              if (ratio <= 0.75) return { background: '#2563eb', color: '#fff' };
-              return { background: '#1e40af', color: '#fff' };
-            }
-
-            return (
-              <div className="heatmap-grid-wrapper">
-                <div className="heatmap-grid" style={{ gridTemplateColumns: `auto repeat(${allWeeks.length}, 1fr)` }}>
-                  <div className="heatmap-corner" />
-                  {allWeeks.map(w => {
-                    const d = new Date(w + 'T00:00:00');
-                    return <div key={w} className="heatmap-col-label">{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>;
-                  })}
-                  {allSlots.map(slot => (
-                    <Fragment key={slot}>
-                      <div className="heatmap-row-label">{slot}</div>
-                      {allWeeks.map(w => {
-                        const count = cellMap.get(`${w}|${slot}`) || 0;
-                        const style = heatStyle(count);
-                        return (
-                          <div
-                            key={`${w}|${slot}`}
-                            className="heatmap-cell"
-                            style={{ background: style.background, color: style.color }}
-                            title={`${slot}, week of ${w}: ${count} people`}
-                          >
-                            {count > 0 ? count : ''}
-                          </div>
-                        );
-                      })}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </section>
-
+        {/* Top Musicians */}
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Top Musicians</h2>
           {musiciansLoading ? (
@@ -1678,7 +1410,6 @@ export default function HistoryPage() {
             </div>
           )}
         </section>
-        </div>
 
         {/* Date lookup section */}
         <section className="history-section">
