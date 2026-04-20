@@ -974,13 +974,13 @@ export default function HistoryPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
                   tickLine={false}
                   axisLine={{ stroke: 'var(--color-border)' }}
                 />
                 <YAxis
                   allowDecimals={false}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
                   tickLine={false}
                   axisLine={false}
                   width={30}
@@ -991,6 +991,8 @@ export default function HistoryPage() {
                     border: '1px solid var(--color-border)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                     fontSize: '0.8125rem',
+                    background: 'var(--color-surface)',
+                    color: 'var(--color-text)',
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '0.5rem' }} />
@@ -1413,7 +1415,7 @@ export default function HistoryPage() {
             });
 
             function calHeatColor(count: number): string {
-              if (count === 0) return 'var(--cal-empty, #ebedf0)';
+              if (count === 0) return 'var(--cal-empty)';
               const ratio = count / maxCal;
               if (ratio <= 0.25) return '#9be9a8';
               if (ratio <= 0.5) return '#40c463';
@@ -1579,13 +1581,13 @@ export default function HistoryPage() {
             const heatMax = Math.max(...heatmapData.map(c => c.count));
             const cellMap = new Map(heatmapData.map(c => [`${c.week}|${c.timeSlot}`, c.count]));
 
-            function heatColor(count: number): string {
-              if (count === 0) return 'var(--cal-empty, #ebedf0)';
+            function heatStyle(count: number): { background: string; color: string } {
+              if (count === 0) return { background: 'var(--cal-empty)', color: 'transparent' };
               const ratio = count / heatMax;
-              if (ratio <= 0.25) return '#bfdbfe';
-              if (ratio <= 0.5) return '#60a5fa';
-              if (ratio <= 0.75) return '#2563eb';
-              return '#1e40af';
+              if (ratio <= 0.25) return { background: '#93c5fd', color: '#1e3a5f' };
+              if (ratio <= 0.5) return { background: '#3b82f6', color: '#fff' };
+              if (ratio <= 0.75) return { background: '#2563eb', color: '#fff' };
+              return { background: '#1e40af', color: '#fff' };
             }
 
             return (
@@ -1601,11 +1603,12 @@ export default function HistoryPage() {
                       <div className="heatmap-row-label">{slot}</div>
                       {allWeeks.map(w => {
                         const count = cellMap.get(`${w}|${slot}`) || 0;
+                        const style = heatStyle(count);
                         return (
                           <div
                             key={`${w}|${slot}`}
                             className="heatmap-cell"
-                            style={{ background: heatColor(count) }}
+                            style={{ background: style.background, color: style.color }}
                             title={`${slot}, week of ${w}: ${count} people`}
                           >
                             {count > 0 ? count : ''}
