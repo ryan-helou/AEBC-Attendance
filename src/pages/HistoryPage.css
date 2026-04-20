@@ -512,6 +512,23 @@
   grid-column: 1 / -1;
 }
 
+.leaderboard-pair {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.leaderboard-pair .streak-lb-section {
+  grid-column: auto;
+}
+
+@media (max-width: 768px) {
+  .leaderboard-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
 .streak-lb-meeting {
   font-size: 0.8125rem;
   color: var(--color-text-muted);

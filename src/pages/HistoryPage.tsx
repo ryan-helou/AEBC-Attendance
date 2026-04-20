@@ -789,6 +789,7 @@ export default function HistoryPage() {
           )}
         </section>
 
+        <div className="leaderboard-pair">
         {/* Most On Time Leaderboard */}
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>⏰ Most On Time</h2>
@@ -891,6 +892,7 @@ export default function HistoryPage() {
             </div>
           )}
         </section>
+        </div>
 
         {/* Date lookup section */}
         <section className="history-section">
