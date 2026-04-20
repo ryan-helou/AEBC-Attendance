@@ -153,6 +153,13 @@
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: #fff;
+  animation: checkBounce 0.2s ease;
+}
+
+@keyframes checkBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .ideas-text {
@@ -170,6 +177,7 @@
   text-decoration: line-through;
   color: var(--color-text-muted);
   cursor: default;
+  opacity: 0.55;
 }
 
 .ideas-item-done .ideas-text:hover {

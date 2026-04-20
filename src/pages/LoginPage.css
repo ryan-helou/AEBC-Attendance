@@ -1,9 +1,42 @@
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes logoEntrance {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
 .login-page {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   padding: 1rem;
+  background: linear-gradient(-45deg, #f1f5f9, #dbeafe, #f0fdf4, #fef3c7);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+[data-theme="dark"] .login-page {
+  background: linear-gradient(-45deg, #18181b, #1e1b4b, #132517, #422006);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
 }
 
 .login-card {
@@ -17,6 +50,7 @@
   width: 100%;
   max-width: 400px;
   text-align: center;
+  animation: cardEntrance 0.4s ease-out;
 }
 
 .login-logo {
@@ -25,6 +59,9 @@
   object-fit: contain;
   margin-bottom: 0.75rem;
   border-radius: 16px;
+  animation: logoEntrance 0.4s ease-out;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
 }
 
 .login-card h1 {
@@ -53,14 +90,14 @@
   padding: 0.8em;
   font-size: 1rem;
   font-weight: 600;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   color: white;
   border: none;
   border-radius: var(--radius);
 }
 
 .login-card button:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  background: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary-hover));
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
@@ -77,4 +114,5 @@
   padding: 0.5em 0.75em;
   background: rgba(220, 38, 38, 0.06);
   border-radius: var(--radius);
+  animation: shake 0.4s ease;
 }

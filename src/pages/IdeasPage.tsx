@@ -111,11 +111,17 @@ export default function IdeasPage() {
 
         {loading ? (
           <p className="ideas-empty">Loading...</p>
-        ) : ideas.length === 0 ? null : (
+        ) : ideas.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-state-icon">💡</span>
+            <p className="empty-state-title">No ideas yet</p>
+            <p className="empty-state-desc">Add your first idea above</p>
+          </div>
+        ) : (
           <>
             <ul className="ideas-list">
-              {openIdeas.map(idea => (
-                <li key={idea.id} className="ideas-item">
+              {openIdeas.map((idea, index) => (
+                <li key={idea.id} className="ideas-item stagger-item" style={{ '--i': Math.min(index, 15) } as React.CSSProperties}>
                   <button className="ideas-check" onClick={() => toggleIdea(idea.id)} />
                   {editingId === idea.id ? (
                     <input

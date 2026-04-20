@@ -16,13 +16,14 @@
   --radius: 10px;
   --radius-lg: 14px;
   --cal-empty: #ebedf0;
+  --color-row-stripe: rgba(0, 0, 0, 0.015);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
   --transition-fast: 0.15s ease;
   --transition-normal: 0.2s ease;
 
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--color-text);
@@ -32,6 +33,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 *,
@@ -75,6 +80,7 @@ button:hover {
   border-color: var(--color-text-muted);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+  will-change: transform;
 }
 
 button:focus-visible {
@@ -103,6 +109,7 @@ input:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  background-color: var(--color-surface);
 }
 
 input::placeholder {
@@ -132,7 +139,7 @@ input::placeholder {
 }
 
 [data-theme="dark"] body {
-  background: linear-gradient(135deg, #18181b 0%, #232326 50%, #18181b 100%);
+  background: linear-gradient(135deg, #18181b 0%, #1a1a2e 50%, #18181b 100%);
 }
 
 .header-compact {
@@ -149,6 +156,61 @@ input::placeholder {
 .header-compact .back-btn {
   font-size: 1rem;
   padding: 0.25rem 0.45rem;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-item {
+  animation: fadeInUp 0.3s ease both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.4;
+  display: block;
+}
+
+.empty-state-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.25rem;
+}
+
+.empty-state-desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* Mobile touch targets */
+@media (pointer: coarse) {
+  button, [role="button"], a {
+    min-height: 44px;
+  }
+
+  .timeframe-pill {
+    padding: 0.4em 0.75em;
+    min-height: 36px;
+  }
+}
+
+/* Dark mode card edge highlights */
+[data-theme="dark"] .history-section,
+[data-theme="dark"] .meeting-card,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .confirm-dialog {
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 @media print {

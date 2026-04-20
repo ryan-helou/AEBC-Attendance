@@ -170,7 +170,13 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   }
 
   if (entries.length === 0) {
-    return <div className="attendance-empty">No one marked yet</div>;
+    return (
+      <div className="empty-state">
+        <span className="empty-state-icon">📋</span>
+        <p className="empty-state-title">No one marked yet</p>
+        <p className="empty-state-desc">Start typing a name above to mark attendance</p>
+      </div>
+    );
   }
 
   return (
@@ -192,7 +198,8 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
             return (
               <tr
                 key={item.entry.id}
-                className={`${isNew ? 'new-row' : ''} ${isGuest ? 'guest-row' : ''}`}
+                className={`${isNew ? 'new-row' : 'stagger-item'} ${isGuest ? 'guest-row' : ''}`}
+                style={{ '--i': Math.min(i, 15) } as React.CSSProperties}
               >
                 <td className="col-num">{entries.length - i}</td>
                 <td className="col-name">

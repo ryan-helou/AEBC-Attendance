@@ -127,7 +127,7 @@
   background: var(--color-header);
   color: #fff;
   padding: 0.65rem 1rem;
-  border-radius: var(--radius);
+  border-radius: 999px;
   box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
