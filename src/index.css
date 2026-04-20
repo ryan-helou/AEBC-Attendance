@@ -15,6 +15,7 @@
   --color-header: #0f172a;
   --radius: 10px;
   --radius-lg: 14px;
+  --cal-empty: #ebedf0;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
@@ -123,6 +124,7 @@ input::placeholder {
   --color-text-secondary: #a1a1aa;
   --color-text-muted: #71717a;
   --color-header: #fafafa;
+  --cal-empty: #161b22;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2);
