@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
@@ -90,6 +90,39 @@ interface RecordEntry {
   detail: string;
 }
 
+interface InactivePerson {
+  person_id: string;
+  person_name: string;
+  totalAttendances: number;
+  lastSeenDate: string;
+  weeksSinceLast: number;
+}
+
+interface RisingStar {
+  person_id: string;
+  person_name: string;
+  firstDate: string;
+  attendanceCount: number;
+}
+
+interface MusicianCount {
+  person_id: string;
+  person_name: string;
+  totalAppearances: number;
+  topRoles: string[];
+}
+
+interface CalendarDay {
+  date: string;
+  count: number;
+}
+
+interface HeatmapCell {
+  week: string;
+  timeSlot: string;
+  count: number;
+}
+
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -160,6 +193,18 @@ export default function HistoryPage() {
   const [consistencyMeetingId, setConsistencyMeetingId] = useState('');
   const [records, setRecords] = useState<RecordEntry[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
+  const [inactiveList, setInactiveList] = useState<InactivePerson[]>([]);
+  const [inactiveLoading, setInactiveLoading] = useState(true);
+  const [risingStars, setRisingStars] = useState<RisingStar[]>([]);
+  const [risingStarsLoading, setRisingStarsLoading] = useState(true);
+  const [topMusicians, setTopMusicians] = useState<MusicianCount[]>([]);
+  const [musiciansLoading, setMusiciansLoading] = useState(true);
+  const [calendarData, setCalendarData] = useState<CalendarDay[]>([]);
+  const [calendarLoading, setCalendarLoading] = useState(true);
+  const [calendarMeetingId, setCalendarMeetingId] = useState('');
+  const [heatmapData, setHeatmapData] = useState<HeatmapCell[]>([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(true);
+  const [heatmapMeetingId, setHeatmapMeetingId] = useState('');
 
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
@@ -541,6 +586,147 @@ export default function HistoryPage() {
     setRecordsLoading(false);
   }
 
+  async function loadPeopleInsights() {
+    setInactiveLoading(true);
+    setRisingStarsLoading(true);
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('person_id, date, person:people(full_name)');
+    if (data) {
+      const rows = data as Array<Record<string, unknown>>;
+      const personMap = new Map<string, { name: string; dates: string[] }>();
+      for (const r of rows) {
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const date = r.date as string;
+        if (!personMap.has(pid)) personMap.set(pid, { name, dates: [] });
+        personMap.get(pid)!.dates.push(date);
+      }
+
+      const today = new Date(getTodayDate() + 'T00:00:00');
+
+      // Inactive: attended 3+ times, last seen 3+ weeks ago
+      const inactive: InactivePerson[] = [];
+      for (const [pid, stats] of personMap.entries()) {
+        if (stats.dates.length < 3) continue;
+        const sorted = [...stats.dates].sort();
+        const lastDate = sorted[sorted.length - 1];
+        const last = new Date(lastDate + 'T00:00:00');
+        const weeksSince = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24 * 7));
+        if (weeksSince >= 3) {
+          inactive.push({ person_id: pid, person_name: stats.name, totalAttendances: stats.dates.length, lastSeenDate: lastDate, weeksSinceLast: weeksSince });
+        }
+      }
+      inactive.sort((a, b) => b.weeksSinceLast - a.weeksSinceLast);
+      setInactiveList(inactive.slice(0, 15));
+
+      // Rising Stars: first attendance within 8 weeks, attended 3+ times
+      const cutoff = shiftDate(getTodayDate(), -56);
+      const rising: RisingStar[] = [];
+      for (const [pid, stats] of personMap.entries()) {
+        const sorted = [...stats.dates].sort();
+        const firstDate = sorted[0];
+        if (firstDate >= cutoff && stats.dates.length >= 3) {
+          rising.push({ person_id: pid, person_name: stats.name, firstDate, attendanceCount: stats.dates.length });
+        }
+      }
+      rising.sort((a, b) => b.attendanceCount - a.attendanceCount);
+      setRisingStars(rising.slice(0, 15));
+    }
+    setInactiveLoading(false);
+    setRisingStarsLoading(false);
+  }
+
+  async function loadTopMusicians() {
+    setMusiciansLoading(true);
+    const { data } = await supabase
+      .from('musician_roles')
+      .select('person_id, role, date, person:people(full_name)');
+    if (data) {
+      const rows = data as Array<Record<string, unknown>>;
+      const personMap = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
+      for (const r of rows) {
+        const pid = r.person_id as string;
+        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+        const role = r.role as string;
+        const date = r.date as string;
+        if (!personMap.has(pid)) personMap.set(pid, { name, dates: new Set(), roleCounts: new Map() });
+        const stats = personMap.get(pid)!;
+        stats.dates.add(date);
+        stats.roleCounts.set(role, (stats.roleCounts.get(role) || 0) + 1);
+      }
+      const musicians: MusicianCount[] = [];
+      for (const [pid, stats] of personMap.entries()) {
+        const sortedRoles = Array.from(stats.roleCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([role]) => role);
+        musicians.push({ person_id: pid, person_name: stats.name, totalAppearances: stats.dates.size, topRoles: sortedRoles });
+      }
+      musicians.sort((a, b) => b.totalAppearances - a.totalAppearances);
+      setTopMusicians(musicians.slice(0, 15));
+    }
+    setMusiciansLoading(false);
+  }
+
+  async function loadCalendarData(meetingId?: string) {
+    const targetId = meetingId ?? calendarMeetingId;
+    setCalendarLoading(true);
+    let attQuery = supabase.from('attendance_records').select('date');
+    let guestQuery = supabase.from('guest_attendance').select('date');
+    if (targetId) {
+      attQuery = attQuery.eq('meeting_id', targetId);
+      guestQuery = guestQuery.eq('meeting_id', targetId);
+    }
+    const [{ data: attData }, { data: guestData }] = await Promise.all([attQuery, guestQuery]);
+    const counts = new Map<string, number>();
+    if (attData) for (const r of attData) counts.set(r.date, (counts.get(r.date) || 0) + 1);
+    if (guestData) for (const r of guestData) counts.set(r.date, (counts.get(r.date) || 0) + 1);
+    const days: CalendarDay[] = Array.from(counts.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    setCalendarData(days);
+    setCalendarLoading(false);
+  }
+
+  async function loadHeatmapData(meetingId?: string) {
+    const targetId = meetingId ?? heatmapMeetingId;
+    if (!targetId) return;
+    setHeatmapLoading(true);
+    const cutoff = shiftDate(getTodayDate(), -84);
+    const { data } = await supabase
+      .from('attendance_records')
+      .select('marked_at, date')
+      .eq('meeting_id', targetId)
+      .gte('date', cutoff);
+    if (data) {
+      const cells = new Map<string, number>();
+      for (const r of data) {
+        const d = new Date(r.marked_at);
+        const mins = d.getHours() * 60 + d.getMinutes();
+        const slotMins = Math.floor(mins / 30) * 30;
+        const slotH = Math.floor(slotMins / 60);
+        const slotM = slotMins % 60;
+        const period = slotH >= 12 ? 'PM' : 'AM';
+        const displayH = slotH % 12 || 12;
+        const timeSlot = `${displayH}:${slotM.toString().padStart(2, '0')} ${period}`;
+        const dateD = new Date(r.date + 'T00:00:00');
+        const daysBack = dateD.getDay() === 0 ? 6 : dateD.getDay() - 1;
+        dateD.setDate(dateD.getDate() - daysBack);
+        const week = dateD.toISOString().slice(0, 10);
+        const key = `${week}|${timeSlot}`;
+        cells.set(key, (cells.get(key) || 0) + 1);
+      }
+      const result: HeatmapCell[] = [];
+      for (const [key, count] of cells.entries()) {
+        const [week, timeSlot] = key.split('|');
+        result.push({ week, timeSlot, count });
+      }
+      setHeatmapData(result);
+    }
+    setHeatmapLoading(false);
+  }
+
   useEffect(() => {
     async function load() {
       const today = getTodayDate();
@@ -562,11 +748,17 @@ export default function HistoryPage() {
 
         loadChartData(chartTimeframe, data);
         loadCompareData(compareTimeframe, data);
+        setHeatmapMeetingId(data[0].id);
+        setCalendarMeetingId(data[0].id);
       }
       loadStreakLeaders();
       loadOnTimeLeaders(data?.[0]?.id);
       loadConsistencyLeaders(data?.[0]?.id);
       if (data) loadRecords(data);
+      loadPeopleInsights();
+      loadTopMusicians();
+      loadCalendarData(data?.[0]?.id);
+      loadHeatmapData(data?.[0]?.id);
       setLoading(false);
     }
     load();
@@ -1154,6 +1346,326 @@ export default function HistoryPage() {
                   <div className="record-detail">{record.detail}</div>
                 </div>
               ))}
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Attendance Calendar — full width */}
+        <section className="history-section calendar-section" style={{ gridColumn: '1 / -1' }}>
+          <div className="section-header-row">
+            <h2>Attendance Calendar</h2>
+            <select
+              className="calendar-meeting-select"
+              value={calendarMeetingId}
+              onChange={e => {
+                setCalendarMeetingId(e.target.value);
+                loadCalendarData(e.target.value);
+              }}
+            >
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+          {calendarLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : calendarData.length === 0 ? (
+            <p className="history-empty">No attendance data yet.</p>
+          ) : (() => {
+            const maxCal = Math.max(...calendarData.map(d => d.count));
+            const calMap = new Map(calendarData.map(d => [d.date, d.count]));
+            // Build last 6 months of weeks
+            const today = new Date(getTodayDate() + 'T00:00:00');
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 182); // ~26 weeks
+            // Snap to Monday
+            const dayOfWeek = startDate.getDay();
+            const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            startDate.setDate(startDate.getDate() + mondayOffset);
+            const weeks: Array<Array<{ date: string; count: number; isToday: boolean }>> = [];
+            const currentDate = new Date(startDate);
+            while (currentDate <= today) {
+              const week: Array<{ date: string; count: number; isToday: boolean }> = [];
+              for (let d = 0; d < 7; d++) {
+                const dateStr = currentDate.toISOString().slice(0, 10);
+                week.push({
+                  date: dateStr,
+                  count: calMap.get(dateStr) || 0,
+                  isToday: dateStr === getTodayDate(),
+                });
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+              weeks.push(week);
+            }
+            // Month labels
+            const monthLabels: Array<{ label: string; colStart: number }> = [];
+            let lastMonth = -1;
+            weeks.forEach((week, i) => {
+              const firstDay = new Date(week[0].date + 'T00:00:00');
+              if (firstDay.getMonth() !== lastMonth) {
+                lastMonth = firstDay.getMonth();
+                monthLabels.push({
+                  label: firstDay.toLocaleDateString('en-US', { month: 'short' }),
+                  colStart: i,
+                });
+              }
+            });
+
+            function calHeatColor(count: number): string {
+              if (count === 0) return 'var(--cal-empty, #ebedf0)';
+              const ratio = count / maxCal;
+              if (ratio <= 0.25) return '#9be9a8';
+              if (ratio <= 0.5) return '#40c463';
+              if (ratio <= 0.75) return '#30a14e';
+              return '#216e39';
+            }
+
+            return (
+              <div className="cal-heatmap-wrapper">
+                <div className="cal-day-labels">
+                  <span>Mon</span><span>Wed</span><span>Fri</span>
+                </div>
+                <div className="cal-grid-area">
+                  <div className="cal-month-labels">
+                    {monthLabels.map((ml, i) => (
+                      <span key={i} style={{ gridColumnStart: ml.colStart + 1 }}>{ml.label}</span>
+                    ))}
+                  </div>
+                  <div className="cal-grid" style={{ gridTemplateColumns: `repeat(${weeks.length}, 1fr)` }}>
+                    {weeks.map((week, wi) => (
+                      <div key={wi} className="cal-week">
+                        {week.map((day) => (
+                          <div
+                            key={day.date}
+                            className={`cal-cell${day.isToday ? ' cal-today' : ''}`}
+                            style={{ background: calHeatColor(day.count) }}
+                            title={`${day.date}: ${day.count} attendees`}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="cal-legend">
+                  <span>Less</span>
+                  {[0, 0.25, 0.5, 0.75, 1].map((r, i) => (
+                    <div key={i} className="cal-cell" style={{ background: calHeatColor(r === 0 ? 0 : Math.ceil(r * maxCal)) }} />
+                  ))}
+                  <span>More</span>
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+
+        {/* Inactive Watchlist + Rising Stars */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Inactive Watchlist</h2>
+          {inactiveLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : inactiveList.length === 0 ? (
+            <p className="history-empty">Everyone is active!</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th className="lb-col-count">Last Seen</th>
+                    <th className="lb-col-count">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inactiveList.map(person => (
+                    <tr
+                      key={person.person_id}
+                      className="lb-row"
+                      onClick={() => navigate(`/person/${person.person_id}`)}
+                    >
+                      <td className="lb-col-name">
+                        <span className="person-link">{person.person_name}</span>
+                      </td>
+                      <td className="lb-col-count">
+                        <span className={`weeks-badge weeks-${person.weeksSinceLast >= 8 ? 'danger' : person.weeksSinceLast >= 5 ? 'warn' : 'info'}`}>
+                          {person.weeksSinceLast}w ago
+                        </span>
+                      </td>
+                      <td className="lb-col-count">{person.totalAttendances}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Rising Stars</h2>
+          {risingStarsLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : risingStars.length === 0 ? (
+            <p className="history-empty">No rising stars yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th className="lb-col-count">Since</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {risingStars.map(star => (
+                    <tr
+                      key={star.person_id}
+                      className="lb-row"
+                      onClick={() => navigate(`/person/${star.person_id}`)}
+                    >
+                      <td className="lb-col-name">
+                        <span className="person-link">{star.person_name}</span>
+                      </td>
+                      <td className="lb-col-count" style={{ fontSize: '0.75rem' }}>
+                        {new Date(star.firstDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="lb-col-count">{star.attendanceCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Arrival Time Heatmap + Most Common Musicians */}
+        <div className="leaderboard-pair">
+        <section className="history-section streak-lb-section">
+          <div className="section-header-row">
+            <h2>Arrival Heatmap</h2>
+            <select
+              className="calendar-meeting-select"
+              value={heatmapMeetingId}
+              onChange={e => {
+                setHeatmapMeetingId(e.target.value);
+                loadHeatmapData(e.target.value);
+              }}
+            >
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+          {heatmapLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : heatmapData.length === 0 ? (
+            <p className="history-empty">No arrival data yet.</p>
+          ) : (() => {
+            const allWeeks = Array.from(new Set(heatmapData.map(c => c.week))).sort();
+            const allSlots = Array.from(new Set(heatmapData.map(c => c.timeSlot)));
+            // Sort time slots by minutes
+            allSlots.sort((a, b) => {
+              const toMins = (s: string) => {
+                const [time, period] = s.split(' ');
+                let [h, m] = time.split(':').map(Number);
+                if (period === 'PM' && h !== 12) h += 12;
+                if (period === 'AM' && h === 12) h = 0;
+                return h * 60 + m;
+              };
+              return toMins(a) - toMins(b);
+            });
+            const heatMax = Math.max(...heatmapData.map(c => c.count));
+            const cellMap = new Map(heatmapData.map(c => [`${c.week}|${c.timeSlot}`, c.count]));
+
+            function heatColor(count: number): string {
+              if (count === 0) return 'var(--cal-empty, #ebedf0)';
+              const ratio = count / heatMax;
+              if (ratio <= 0.25) return '#bfdbfe';
+              if (ratio <= 0.5) return '#60a5fa';
+              if (ratio <= 0.75) return '#2563eb';
+              return '#1e40af';
+            }
+
+            return (
+              <div className="heatmap-grid-wrapper">
+                <div className="heatmap-grid" style={{ gridTemplateColumns: `auto repeat(${allWeeks.length}, 1fr)` }}>
+                  <div className="heatmap-corner" />
+                  {allWeeks.map(w => {
+                    const d = new Date(w + 'T00:00:00');
+                    return <div key={w} className="heatmap-col-label">{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>;
+                  })}
+                  {allSlots.map(slot => (
+                    <Fragment key={slot}>
+                      <div className="heatmap-row-label">{slot}</div>
+                      {allWeeks.map(w => {
+                        const count = cellMap.get(`${w}|${slot}`) || 0;
+                        return (
+                          <div
+                            key={`${w}|${slot}`}
+                            className="heatmap-cell"
+                            style={{ background: heatColor(count) }}
+                            title={`${slot}, week of ${w}: ${count} people`}
+                          >
+                            {count > 0 ? count : ''}
+                          </div>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Top Musicians</h2>
+          {musiciansLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topMusicians.length === 0 ? (
+            <p className="history-empty">No musician data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th>Roles</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topMusicians.map((musician, i) => (
+                    <tr
+                      key={musician.person_id}
+                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      onClick={() => navigate(`/person/${musician.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {i < 3 ? (
+                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        ) : (
+                          <span className="lb-rank-num">{i + 1}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{musician.person_name}</span>
+                      </td>
+                      <td>
+                        <div className="musician-role-pills">
+                          {musician.topRoles.map(role => (
+                            <span key={role} className="musician-role-pill">{role}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={musician.totalAppearances} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
