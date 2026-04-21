@@ -157,6 +157,12 @@ interface MusicianCount {
   topRoles: string[];
 }
 
+interface RoleCount {
+  person_id: string;
+  person_name: string;
+  totalAppearances: number;
+}
+
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -233,6 +239,10 @@ export default function HistoryPage() {
   const [risingStarsLoading, setRisingStarsLoading] = useState(true);
   const [topMusicians, setTopMusicians] = useState<MusicianCount[]>([]);
   const [musiciansLoading, setMusiciansLoading] = useState(true);
+  const [topPreachers, setTopPreachers] = useState<RoleCount[]>([]);
+  const [preachersLoading, setPreachersLoading] = useState(true);
+  const [topAttendanceTakers, setTopAttendanceTakers] = useState<RoleCount[]>([]);
+  const [attendanceTakersLoading, setAttendanceTakersLoading] = useState(true);
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
@@ -664,26 +674,45 @@ export default function HistoryPage() {
     setRisingStarsLoading(false);
   }
 
-  async function loadTopMusicians() {
+  async function loadRoleLeaderboards() {
     setMusiciansLoading(true);
+    setPreachersLoading(true);
+    setAttendanceTakersLoading(true);
     const { data } = await supabase
       .from('musician_roles')
       .select('person_id, role, date, person:people(full_name)');
     if (data) {
       const rows = data as Array<Record<string, unknown>>;
-      const personMap = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
+      const PLAYING = new Set([
+        'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer', 'Sound',
+      ]);
+
+      const musicianMap = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
+      const preacherMap = new Map<string, { name: string; dates: Set<string> }>();
+      const attendanceMap = new Map<string, { name: string; dates: Set<string> }>();
+
       for (const r of rows) {
         const pid = r.person_id as string;
         const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
         const role = r.role as string;
         const date = r.date as string;
-        if (!personMap.has(pid)) personMap.set(pid, { name, dates: new Set(), roleCounts: new Map() });
-        const stats = personMap.get(pid)!;
-        stats.dates.add(date);
-        stats.roleCounts.set(role, (stats.roleCounts.get(role) || 0) + 1);
+
+        if (PLAYING.has(role)) {
+          if (!musicianMap.has(pid)) musicianMap.set(pid, { name, dates: new Set(), roleCounts: new Map() });
+          const stats = musicianMap.get(pid)!;
+          stats.dates.add(date);
+          stats.roleCounts.set(role, (stats.roleCounts.get(role) || 0) + 1);
+        } else if (role === 'Preacher') {
+          if (!preacherMap.has(pid)) preacherMap.set(pid, { name, dates: new Set() });
+          preacherMap.get(pid)!.dates.add(date);
+        } else if (role === 'Attendance') {
+          if (!attendanceMap.has(pid)) attendanceMap.set(pid, { name, dates: new Set() });
+          attendanceMap.get(pid)!.dates.add(date);
+        }
       }
+
       const musicians: MusicianCount[] = [];
-      for (const [pid, stats] of personMap.entries()) {
+      for (const [pid, stats] of musicianMap.entries()) {
         const sortedRoles = Array.from(stats.roleCounts.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 3)
@@ -692,8 +721,22 @@ export default function HistoryPage() {
       }
       musicians.sort((a, b) => b.totalAppearances - a.totalAppearances);
       setTopMusicians(musicians.slice(0, 15));
+
+      const preachers: RoleCount[] = Array.from(preacherMap.entries())
+        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+        .sort((a, b) => b.totalAppearances - a.totalAppearances)
+        .slice(0, 15);
+      setTopPreachers(preachers);
+
+      const takers: RoleCount[] = Array.from(attendanceMap.entries())
+        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+        .sort((a, b) => b.totalAppearances - a.totalAppearances)
+        .slice(0, 15);
+      setTopAttendanceTakers(takers);
     }
     setMusiciansLoading(false);
+    setPreachersLoading(false);
+    setAttendanceTakersLoading(false);
   }
 
   useEffect(() => {
@@ -723,7 +766,7 @@ export default function HistoryPage() {
       loadConsistencyLeaders(data?.[0]?.id);
       if (data) loadRecords(data);
       loadPeopleInsights();
-      loadTopMusicians();
+      loadRoleLeaderboards();
       setLoading(false);
     }
     load();
@@ -1414,6 +1457,99 @@ export default function HistoryPage() {
                       <td className="lb-col-count">{star.attendanceCount}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Top Preachers + Top Attendance Takers pair */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Top Preachers</h2>
+          {preachersLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topPreachers.length === 0 ? (
+            <p className="history-empty">No preacher data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPreachers.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Top Attendance Takers</h2>
+          {attendanceTakersLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topAttendanceTakers.length === 0 ? (
+            <p className="history-empty">No attendance-taker data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topAttendanceTakers.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

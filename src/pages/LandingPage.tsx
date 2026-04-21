@@ -182,6 +182,7 @@ export default function LandingPage() {
           <p className="verse-ref">{verses[verseIndex].ref}</p>
         </div>
       </div>
+      <div className="app-version">v{__APP_VERSION__}</div>
     </div>
   );
 }

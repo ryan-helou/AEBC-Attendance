@@ -4,6 +4,17 @@
   flex-direction: column;
 }
 
+.app-version {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  opacity: 0.65;
+  font-feature-settings: 'tnum';
+}
+
 .landing-header {
   background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   padding: 0 1rem;
