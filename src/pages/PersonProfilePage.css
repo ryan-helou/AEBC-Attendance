@@ -36,8 +36,11 @@
 
 .profile-header h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.02em;
   color: #fff;
   min-width: 0;
   flex: 1;
@@ -302,10 +305,13 @@
 }
 
 .profile-total-number {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.02em;
   line-height: 1;
-  font-feature-settings: 'tnum';
+  font-feature-settings: 'tnum', 'lnum';
 }
 
 .profile-total-label {
@@ -316,6 +322,7 @@
 
 /* Meeting cards */
 .profile-meeting-card {
+  position: relative;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -324,6 +331,18 @@
   padding: 1rem 1.25rem;
   margin-bottom: 0.5rem;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.profile-meeting-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-gold) 0%, transparent 70%);
+  opacity: 0.55;
 }
 
 [data-theme="dark"] .profile-jona .phil-bg {
@@ -344,9 +363,12 @@
 }
 
 .profile-meeting-name {
-  font-size: 0.8125rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 600;
-  color: var(--color-text);
+  font-style: italic;
+  letter-spacing: -0.01em;
+  color: var(--color-header);
 }
 
 .profile-streak-badge {
@@ -375,9 +397,14 @@
 }
 
 .profile-stat-value {
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.02em;
   color: var(--color-primary);
+  font-feature-settings: 'tnum', 'lnum';
+  line-height: 1.1;
 }
 
 .profile-stat-value-text {
