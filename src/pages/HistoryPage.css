@@ -34,11 +34,8 @@
 
 .history-header h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-style: italic;
+  font-size: 1.25rem;
+  font-weight: 700;
   flex: 1;
   color: #fff;
 }
@@ -109,12 +106,10 @@
 }
 
 .masthead-title {
-  font-family: var(--font-display);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
   margin: 0;
   color: var(--color-header);
   background: linear-gradient(135deg, var(--color-header) 0%, var(--color-text-secondary) 100%);
@@ -124,11 +119,9 @@
 }
 
 .masthead-sub {
-  margin: 0.85rem auto 0;
+  margin: 0.75rem auto 0;
   max-width: 520px;
-  font-family: var(--font-display);
-  font-size: 0.975rem;
-  font-style: italic;
+  font-size: 0.9rem;
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
@@ -189,11 +182,9 @@
 }
 
 .history-section h2 {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.015em;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
   margin: 0 0 1rem;
   color: var(--color-header);
   display: flex;
@@ -560,25 +551,21 @@
 }
 
 .lb-rank-num {
-  font-family: var(--font-display);
   color: var(--color-text-muted);
-  font-size: 1rem;
-  font-style: italic;
+  font-size: 0.8125rem;
   font-weight: 500;
-  font-feature-settings: 'tnum', 'lnum';
+  font-feature-settings: 'tnum';
 }
 
 .lb-medal {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
-  font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  font-style: italic;
   color: #fff;
   position: relative;
 }
@@ -646,13 +633,10 @@
 .lb-col-count {
   width: 4rem;
   text-align: center !important;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-style: italic;
-  color: var(--color-text);
-  font-size: 1.125rem;
-  letter-spacing: -0.01em;
-  font-feature-settings: 'tnum', 'lnum';
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.9375rem;
+  font-feature-settings: 'tnum';
 }
 
 .lb-top-1 .lb-col-count {
@@ -758,17 +742,15 @@
 }
 
 .record-value {
-  font-family: var(--font-display);
-  font-size: 2.25rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.03em;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   background: linear-gradient(135deg, var(--record-accent), var(--color-text));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  line-height: 1.05;
-  font-feature-settings: 'tnum', 'lnum';
+  line-height: 1.15;
+  font-feature-settings: 'tnum';
 }
 
 .record-detail {
