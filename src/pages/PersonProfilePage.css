@@ -36,11 +36,8 @@
 
 .profile-header h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #fff;
   min-width: 0;
   flex: 1;
@@ -305,13 +302,10 @@
 }
 
 .profile-total-number {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 800;
   line-height: 1;
-  font-feature-settings: 'tnum', 'lnum';
+  font-feature-settings: 'tnum';
 }
 
 .profile-total-label {
@@ -363,12 +357,9 @@
 }
 
 .profile-meeting-name {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.01em;
-  color: var(--color-header);
+  color: var(--color-text);
 }
 
 .profile-streak-badge {
@@ -397,14 +388,10 @@
 }
 
 .profile-stat-value {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.02em;
+  font-size: 1.125rem;
+  font-weight: 700;
   color: var(--color-primary);
-  font-feature-settings: 'tnum', 'lnum';
-  line-height: 1.1;
+  font-feature-settings: 'tnum';
 }
 
 .profile-stat-value-text {

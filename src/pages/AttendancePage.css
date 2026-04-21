@@ -38,11 +38,8 @@
 
 .attendance-header-info h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  font-style: italic;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #ffffff;
 }
 
