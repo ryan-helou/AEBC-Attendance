@@ -900,18 +900,6 @@ export default function HistoryPage() {
       </div>
 
       <div className="history-body">
-      <div className="page-masthead">
-        <div className="masthead-eyebrow">
-          <span>Ch. I</span>
-          <span className="masthead-rule" aria-hidden="true" />
-          <span>The Ledger</span>
-        </div>
-        <h1 className="masthead-title">Hall of Records</h1>
-        <p className="masthead-sub">
-          A chronicle of gatherings, streaks, and the quiet devotion of a congregation.
-        </p>
-      </div>
-
       {/* Attendance Over Time — full width */}
       <section className="history-section">
         <div className="section-header-row">
@@ -1117,17 +1105,19 @@ export default function HistoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {topAttendees.map((person, i) => (
+                {topAttendees.map((person, _i, arr) => {
+                  const rank = arr.findIndex(p => p.count === person.count) + 1;
+                  return (
                   <tr
                     key={person.person_id}
-                    className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                    className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
                     onClick={() => navigate(`/person/${person.person_id}`)}
                   >
                     <td className="lb-col-rank">
-                      {i < 3 ? (
-                        <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                      {rank <= 3 ? (
+                        <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
                       ) : (
-                        <span className="lb-rank-num">{i + 1}</span>
+                        <span className="lb-rank-num">{rank}</span>
                       )}
                     </td>
                     <td className="lb-col-name">
@@ -1143,7 +1133,8 @@ export default function HistoryPage() {
                     </td>
                     <td className="lb-col-count"><AnimatedNumber value={person.count} /></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             </div>
@@ -1183,17 +1174,19 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {onTimeLeaders.map((leader, i) => (
+                  {onTimeLeaders.map((leader, _i, arr) => {
+                    const rank = arr.findIndex(l => l.avgMinutes === leader.avgMinutes) + 1;
+                    return (
                     <tr
                       key={leader.person_id}
-                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
                       onClick={() => navigate(`/person/${leader.person_id}`)}
                     >
                       <td className="lb-col-rank">
-                        {i < 3 ? (
-                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
                         ) : (
-                          <span className="lb-rank-num">{i + 1}</span>
+                          <span className="lb-rank-num">{rank}</span>
                         )}
                       </td>
                       <td className="lb-col-name">
@@ -1202,7 +1195,8 @@ export default function HistoryPage() {
                       <td className="lb-col-count">{leader.avgTime}</td>
                       <td className="lb-col-count"><AnimatedNumber value={leader.timesAttended} /></td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1228,17 +1222,19 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {streakLeaders.map((leader, i) => (
+                  {streakLeaders.map((leader, _i, arr) => {
+                    const rank = arr.findIndex(l => l.streak === leader.streak) + 1;
+                    return (
                     <tr
                       key={leader.person_id + leader.meeting_name}
-                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
                       onClick={() => navigate(`/person/${leader.person_id}`)}
                     >
                       <td className="lb-col-rank">
-                        {i < 3 ? (
-                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
                         ) : (
-                          <span className="lb-rank-num">{i + 1}</span>
+                          <span className="lb-rank-num">{rank}</span>
                         )}
                       </td>
                       <td className="lb-col-name">
@@ -1247,7 +1243,8 @@ export default function HistoryPage() {
                       <td className="streak-lb-meeting">{leader.meeting_name}</td>
                       <td className="lb-col-count"><AnimatedNumber value={leader.streak} prefix="🔥 " /></td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1289,17 +1286,19 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {consistencyLeaders.map((leader, i) => (
+                  {consistencyLeaders.map((leader, _i, arr) => {
+                    const rank = arr.findIndex(l => l.rate === leader.rate) + 1;
+                    return (
                     <tr
                       key={leader.person_id}
-                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
                       onClick={() => navigate(`/person/${leader.person_id}`)}
                     >
                       <td className="lb-col-rank">
-                        {i < 3 ? (
-                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
                         ) : (
-                          <span className="lb-rank-num">{i + 1}</span>
+                          <span className="lb-rank-num">{rank}</span>
                         )}
                       </td>
                       <td className="lb-col-name">
@@ -1308,7 +1307,8 @@ export default function HistoryPage() {
                       <td className="lb-col-count">{leader.rate}%</td>
                       <td className="lb-col-count">{leader.attended}/{leader.possible}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1440,17 +1440,19 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {topMusicians.map((musician, i) => (
+                  {topMusicians.map((musician, _i, arr) => {
+                    const rank = arr.findIndex(m => m.totalAppearances === musician.totalAppearances) + 1;
+                    return (
                     <tr
                       key={musician.person_id}
-                      className={`lb-row ${i < 3 ? `lb-top-${i + 1}` : ''}`}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
                       onClick={() => navigate(`/person/${musician.person_id}`)}
                     >
                       <td className="lb-col-rank">
-                        {i < 3 ? (
-                          <span className={`lb-medal lb-medal-${i + 1}`}>{i + 1}</span>
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
                         ) : (
-                          <span className="lb-rank-num">{i + 1}</span>
+                          <span className="lb-rank-num">{rank}</span>
                         )}
                       </td>
                       <td className="lb-col-name">
@@ -1465,7 +1467,8 @@ export default function HistoryPage() {
                       </td>
                       <td className="lb-col-count"><AnimatedNumber value={musician.totalAppearances} /></td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1566,14 +1569,16 @@ export default function HistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allTimeResults.map((row, i) => (
+                  {allTimeResults.map((row, _i, arr) => {
+                    const rank = arr.findIndex(r => r.count === row.count) + 1;
+                    return (
                     <>
                       <tr
                         key={row.person_id}
                         className={`alltime-row ${expandedPersonId === row.person_id ? 'alltime-row-active' : ''}`}
                         onClick={() => togglePersonRecords(row.person_id)}
                       >
-                        <td className="col-num">{i + 1}</td>
+                        <td className="col-num">{rank}</td>
                         <td className="alltime-name">
                           <span className="person-link" onClick={e => { e.stopPropagation(); navigate(`/person/${row.person_id}`); }}>
                             {row.person_name}
@@ -1604,7 +1609,8 @@ export default function HistoryPage() {
                         </tr>
                       )}
                     </>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )
