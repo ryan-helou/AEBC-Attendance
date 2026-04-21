@@ -900,6 +900,18 @@ export default function HistoryPage() {
       </div>
 
       <div className="history-body">
+      <div className="page-masthead">
+        <div className="masthead-eyebrow">
+          <span>Ch. I</span>
+          <span className="masthead-rule" aria-hidden="true" />
+          <span>The Ledger</span>
+        </div>
+        <h1 className="masthead-title">Hall of Records</h1>
+        <p className="masthead-sub">
+          A chronicle of gatherings, streaks, and the quiet devotion of a congregation.
+        </p>
+      </div>
+
       {/* Attendance Over Time — full width */}
       <section className="history-section">
         <div className="section-header-row">
