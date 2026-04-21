@@ -272,7 +272,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
-                        <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMITEE</span>
+                        <span className="shabibeh-leader-badge" title="Shabibeh Committee">COMMITTEE</span>
                       )}
                       {(getMusicianRoles?.(item.entry.person_id) || []).map(role => (
                         <span
