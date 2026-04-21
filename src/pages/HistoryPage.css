@@ -113,8 +113,8 @@
 }
 
 [data-theme="dark"] .record-card {
-  background: var(--color-surface);
-  border-color: var(--color-border);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.015) 100%), var(--color-surface);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .history-section h2 {
@@ -566,45 +566,156 @@
 .records-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.875rem;
 }
 
 .record-card {
-  background: var(--color-bg);
+  --record-accent: #2563eb;
+  --record-accent-soft: rgba(37, 99, 235, 0.12);
+  --record-tint-a: rgba(37, 99, 235, 0.06);
+  --record-tint-b: rgba(37, 99, 235, 0);
+  position: relative;
+  background:
+    linear-gradient(155deg, var(--record-tint-a) 0%, var(--record-tint-b) 55%),
+    var(--color-surface);
   border: 1px solid var(--color-border);
-  border-top: 2px solid var(--color-primary);
-  border-radius: var(--radius);
-  padding: 1rem;
-  text-align: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1rem 1rem;
+  text-align: left;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.record-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--record-accent) 0%, transparent 100%);
+  opacity: 0.9;
+}
+
+.record-card::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, var(--record-accent-soft) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .record-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -12px var(--record-accent-soft), var(--shadow-md);
+  border-color: var(--record-accent-soft);
+}
+
+.record-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--record-accent-soft);
+  color: var(--record-accent);
+  margin-bottom: 0.65rem;
+}
+
+.record-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .record-label {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--color-text-muted);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
 }
 
 .record-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.2;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--record-accent), var(--color-text));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15;
   font-feature-settings: 'tnum';
 }
 
 .record-detail {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
+  line-height: 1.35;
+}
+
+.record-card--peak {
+  --record-accent: #d97706;
+  --record-accent-soft: rgba(217, 119, 6, 0.14);
+  --record-tint-a: rgba(245, 158, 11, 0.1);
+  --record-tint-b: rgba(245, 158, 11, 0);
+}
+
+.record-card--streak {
+  --record-accent: #e11d48;
+  --record-accent-soft: rgba(225, 29, 72, 0.14);
+  --record-tint-a: rgba(244, 63, 94, 0.09);
+  --record-tint-b: rgba(244, 63, 94, 0);
+}
+
+.record-card--fresh {
+  --record-accent: #059669;
+  --record-accent-soft: rgba(5, 150, 105, 0.14);
+  --record-tint-a: rgba(16, 185, 129, 0.09);
+  --record-tint-b: rgba(16, 185, 129, 0);
+}
+
+.record-card--legend {
+  --record-accent: #7c3aed;
+  --record-accent-soft: rgba(124, 58, 237, 0.14);
+  --record-tint-a: rgba(139, 92, 246, 0.1);
+  --record-tint-b: rgba(139, 92, 246, 0);
+}
+
+[data-theme="dark"] .record-card--peak {
+  --record-accent: #fbbf24;
+  --record-accent-soft: rgba(251, 191, 36, 0.16);
+  --record-tint-a: rgba(251, 191, 36, 0.08);
+}
+
+[data-theme="dark"] .record-card--streak {
+  --record-accent: #fb7185;
+  --record-accent-soft: rgba(251, 113, 133, 0.16);
+  --record-tint-a: rgba(251, 113, 133, 0.08);
+}
+
+[data-theme="dark"] .record-card--fresh {
+  --record-accent: #34d399;
+  --record-accent-soft: rgba(52, 211, 153, 0.16);
+  --record-tint-a: rgba(52, 211, 153, 0.08);
+}
+
+[data-theme="dark"] .record-card--legend {
+  --record-accent: #a78bfa;
+  --record-accent-soft: rgba(167, 139, 250, 0.18);
+  --record-tint-a: rgba(167, 139, 250, 0.09);
+}
+
+[data-theme="dark"] .record-value {
+  background: linear-gradient(135deg, var(--record-accent), var(--color-text));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @media (max-width: 400px) {
