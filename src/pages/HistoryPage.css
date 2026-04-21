@@ -34,8 +34,11 @@
 
 .history-header h1 {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-style: italic;
   flex: 1;
   color: #fff;
 }
@@ -67,6 +70,74 @@
   width: 100%;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+}
+
+.page-masthead {
+  padding: 2.25rem 0.5rem 2rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+}
+
+.page-masthead::after {
+  content: '';
+  display: block;
+  margin: 1.5rem auto 0;
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+}
+
+.masthead-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.masthead-eyebrow .masthead-rule {
+  width: 24px;
+  height: 1px;
+  background: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.masthead-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0;
+  color: var(--color-header);
+  background: linear-gradient(135deg, var(--color-header) 0%, var(--color-text-secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.masthead-sub {
+  margin: 0.85rem auto 0;
+  max-width: 520px;
+  font-family: var(--font-display);
+  font-size: 0.975rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .masthead-title {
+  background: linear-gradient(135deg, #fafafa 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .history-section {
@@ -118,10 +189,33 @@
 }
 
 .history-section h2 {
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
   font-weight: 600;
-  margin: 0 0 0.875rem;
-  color: var(--color-text);
+  font-style: italic;
+  letter-spacing: -0.015em;
+  margin: 0 0 1rem;
+  color: var(--color-header);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.history-section h2::before {
+  content: '';
+  align-self: center;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.12);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .history-section h2::before {
+  box-shadow: 0 0 0 3px rgba(229, 181, 103, 0.16);
 }
 
 .history-controls {
@@ -466,37 +560,53 @@
 }
 
 .lb-rank-num {
+  font-family: var(--font-display);
   color: var(--color-text-muted);
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  font-style: italic;
   font-weight: 500;
-  font-feature-settings: 'tnum';
+  font-feature-settings: 'tnum', 'lnum';
 }
 
 .lb-medal {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.85rem;
+  height: 1.85rem;
   border-radius: 50%;
-  font-size: 0.7rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
   font-weight: 700;
+  font-style: italic;
   color: #fff;
+  position: relative;
+}
+
+.lb-medal::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: inherit;
+  opacity: 0.25;
+  filter: blur(6px);
+  z-index: -1;
 }
 
 .lb-medal-1 {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 6px rgba(217, 119, 6, 0.4);
 }
 
 .lb-medal-2 {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
-  box-shadow: 0 1px 4px rgba(100, 116, 139, 0.3);
+  background: linear-gradient(135deg, #e2e8f0 0%, #64748b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 6px rgba(100, 116, 139, 0.3);
 }
 
 .lb-medal-3 {
-  background: linear-gradient(135deg, #d97756, #b45f3f);
-  box-shadow: 0 1px 4px rgba(180, 95, 63, 0.3);
+  background: linear-gradient(135deg, #e8a98a 0%, #a0522d 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 6px rgba(160, 82, 45, 0.35);
 }
 
 .lb-col-name {
@@ -536,10 +646,17 @@
 .lb-col-count {
   width: 4rem;
   text-align: center !important;
-  font-weight: 700;
-  color: var(--color-primary);
-  font-size: 0.9375rem;
-  font-feature-settings: 'tnum';
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-style: italic;
+  color: var(--color-text);
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+  font-feature-settings: 'tnum', 'lnum';
+}
+
+.lb-top-1 .lb-col-count {
+  color: var(--color-gold);
 }
 
 .streak-lb-section {
@@ -641,15 +758,17 @@
 }
 
 .record-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  font-weight: 600;
+  font-style: italic;
+  letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--record-accent), var(--color-text));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  line-height: 1.15;
-  font-feature-settings: 'tnum';
+  line-height: 1.05;
+  font-feature-settings: 'tnum', 'lnum';
 }
 
 .record-detail {
