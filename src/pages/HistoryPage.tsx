@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
@@ -88,6 +88,51 @@ interface RecordEntry {
   label: string;
   value: string;
   detail: string;
+}
+
+type RecordVariant = 'peak' | 'streak' | 'fresh' | 'legend';
+
+function recordTheme(label: string): { variant: RecordVariant; icon: ReactNode } {
+  if (label.startsWith('Highest')) {
+    return {
+      variant: 'peak',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 17l6-6 4 4 8-8" />
+          <path d="M14 7h7v7" />
+        </svg>
+      ),
+    };
+  }
+  if (label.startsWith('Longest Streak')) {
+    return {
+      variant: 'streak',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg>
+      ),
+    };
+  }
+  if (label.startsWith('Most First-Timers')) {
+    return {
+      variant: 'fresh',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 3l1.9 5.8H20l-4.95 3.6L16.9 18 12 14.4 7.1 18l1.85-5.6L4 8.8h6.1z" />
+        </svg>
+      ),
+    };
+  }
+  return {
+    variant: 'legend',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 7l4 6 5-8 5 8 4-6v11H3z" />
+        <path d="M3 20h18" />
+      </svg>
+    ),
+  };
 }
 
 interface InactivePerson {
@@ -1259,7 +1304,7 @@ export default function HistoryPage() {
         </section>
 
         {/* Record Breakers */}
-        <section className="history-section leaderboard-section streak-lb-section">
+        <section className="history-section leaderboard-section streak-lb-section records-section">
           <h2>Record Breakers</h2>
           {recordsLoading ? (
             <p className="history-empty">Loading...</p>
@@ -1267,13 +1312,17 @@ export default function HistoryPage() {
             <p className="history-empty">Not enough data yet.</p>
           ) : (
             <div className="records-grid">
-              {records.map(record => (
-                <div key={record.label} className="record-card">
-                  <div className="record-label">{record.label}</div>
-                  <div className="record-value">{record.value}</div>
-                  <div className="record-detail">{record.detail}</div>
-                </div>
-              ))}
+              {records.map(record => {
+                const theme = recordTheme(record.label);
+                return (
+                  <div key={record.label} className={`record-card record-card--${theme.variant}`}>
+                    <div className="record-icon" aria-hidden="true">{theme.icon}</div>
+                    <div className="record-label">{record.label}</div>
+                    <div className="record-value">{record.value}</div>
+                    <div className="record-detail">{record.detail}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
