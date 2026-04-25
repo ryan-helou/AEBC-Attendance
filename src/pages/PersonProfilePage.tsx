@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getMeetingDay } from '../lib/dateUtils';
-import type { Person, Meeting } from '../types';
+import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -259,6 +259,11 @@ export default function PersonProfilePage() {
     setPerson(prev => prev ? { ...prev, notes: trimmed || null } : prev);
   }
 
+  async function setGender(next: Gender | null) {
+    setPerson(prev => prev ? { ...prev, gender: next } : prev);
+    await supabase.from('people').update({ gender: next }).eq('id', personId!);
+  }
+
   function startEditName() {
     setNameValue(person?.full_name ?? '');
     setEditingName(true);
@@ -406,6 +411,26 @@ export default function PersonProfilePage() {
         onBlur={saveNotes}
         rows={2}
       />
+
+      <div className="profile-gender-row">
+        <span className="profile-gender-label">Gender</span>
+        <div className="profile-gender-options">
+          <button
+            type="button"
+            className={`profile-gender-option${person.gender === 'male' ? ' profile-gender-option-active' : ''}`}
+            onClick={() => setGender(person.gender === 'male' ? null : 'male')}
+          >
+            Male
+          </button>
+          <button
+            type="button"
+            className={`profile-gender-option${person.gender === 'female' ? ' profile-gender-option-active' : ''}`}
+            onClick={() => setGender(person.gender === 'female' ? null : 'female')}
+          >
+            Female
+          </button>
+        </div>
+      </div>
 
       {meetingStats.map(stat => {
         const badge = getStreakBadge(stat.longestStreak);

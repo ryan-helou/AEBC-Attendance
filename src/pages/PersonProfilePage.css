@@ -103,6 +103,54 @@
   color: var(--color-text-muted);
 }
 
+.profile-gender-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.profile-gender-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.profile-gender-options {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.profile-gender-option {
+  padding: 0.35em 1em;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+
+.profile-gender-option:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.profile-gender-option-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 /* Ryan's animated gradient header — shifts through dark→vivid→light of the chosen colour */
 .profile-themed .profile-header {
   background: linear-gradient(
