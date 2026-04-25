@@ -60,6 +60,7 @@ interface ComparePoint {
 }
 
 interface GenderPoint {
+  date: string;
   label: string;
   Male: number;
   Female: number;
@@ -334,29 +335,45 @@ export default function HistoryPage() {
     setCompareLoading(false);
   }
 
-  async function loadGenderData(tf: Timeframe, meetingsList: Meeting[]) {
+  async function loadGenderData(tf: Timeframe) {
     setGenderLoading(true);
-    let query = supabase.from('attendance_records').select('meeting_id, person:people(gender)');
+    let query = supabase.from('attendance_records').select('date, person:people(gender)');
     const cutoff = timeframeCutoff(tf);
     if (cutoff) query = query.gte('date', cutoff);
     const { data } = await query;
     if (data) {
-      const records = data as unknown as Array<{ meeting_id: string; person: { gender: string | null } | null }>;
-      const counts = new Map<string, { male: number; female: number }>();
+      const records = data as unknown as Array<{ date: string; person: { gender: string | null } | null }>;
+      function weekOf(dateStr: string): string {
+        const d = new Date(dateStr + 'T00:00:00');
+        const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1;
+        d.setDate(d.getDate() - daysBack);
+        return d.toISOString().slice(0, 10);
+      }
+      const buckets = new Map<string, { male: number; female: number }>();
       for (const r of records) {
         const g = r.person?.gender;
         if (g !== 'male' && g !== 'female') continue;
-        if (!counts.has(r.meeting_id)) counts.set(r.meeting_id, { male: 0, female: 0 });
-        const c = counts.get(r.meeting_id)!;
+        const week = weekOf(r.date);
+        if (!buckets.has(week)) buckets.set(week, { male: 0, female: 0 });
+        const c = buckets.get(week)!;
         if (g === 'male') c.male++; else c.female++;
       }
-      setGenderData(meetingsList.map(m => {
-        const c = counts.get(m.id) ?? { male: 0, female: 0 };
+      const points: GenderPoint[] = Array.from(buckets.keys()).sort().map(week => {
+        const c = buckets.get(week)!;
         const total = c.male + c.female;
         const malePct = total > 0 ? Math.round((c.male / total) * 100) : 0;
         const femalePct = total > 0 ? 100 - malePct : 0;
-        return { label: m.name, Male: malePct, Female: femalePct, maleCount: c.male, femaleCount: c.female };
-      }));
+        const sat = new Date(week + 'T00:00:00');
+        sat.setDate(sat.getDate() + 5);
+        const sun = new Date(week + 'T00:00:00');
+        sun.setDate(sun.getDate() + 6);
+        const satLabel = sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const label = sat.getMonth() === sun.getMonth()
+          ? `${satLabel}–${sun.getDate()}`
+          : `${satLabel}–${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        return { date: week, label, Male: malePct, Female: femalePct, maleCount: c.male, femaleCount: c.female };
+      });
+      setGenderData(points);
     }
     setGenderLoading(false);
   }
@@ -366,7 +383,7 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (meetings.length > 0) loadCompareData(compareTimeframe, meetings); }, [compareTimeframe]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (meetings.length > 0) loadGenderData(genderTimeframe, meetings); }, [genderTimeframe]);
+  useEffect(() => { if (meetings.length > 0) loadGenderData(genderTimeframe); }, [genderTimeframe]);
 
   async function loadStreakLeaders() {
     setStreakLoading(true);
@@ -800,7 +817,7 @@ export default function HistoryPage() {
 
         loadChartData(chartTimeframe, data);
         loadCompareData(compareTimeframe, data);
-        loadGenderData(genderTimeframe, data);
+        loadGenderData(genderTimeframe);
       }
       loadStreakLeaders();
       loadOnTimeLeaders(data?.[0]?.id);
@@ -1079,6 +1096,101 @@ export default function HistoryPage() {
         )}
       </section>
 
+      {/* Gender Breakdown — full width */}
+      <section className="history-section">
+        <div className="section-header-row">
+          <h2>Gender Breakdown</h2>
+          <div className="timeframe-pills">
+            {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+              <button
+                key={tf}
+                className={`timeframe-pill${genderTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                onClick={() => setGenderTimeframe(tf)}
+              >
+                {tf === 'all' ? 'All' : tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        {genderLoading ? (
+          <p className="history-empty">Loading...</p>
+        ) : genderData.length === 0 ? (
+          <p className="history-empty">No gender data for this period.</p>
+        ) : (
+          <div className="dashboard-chart-wrapper">
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={genderData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }}>
+                <defs>
+                  <linearGradient id="grad-gender-male" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="grad-gender-female" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ec4899" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--color-border)' }}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tickFormatter={(v: number) => `${v}%`}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={38}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    fontSize: '0.8125rem',
+                    background: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
+                  formatter={((value: number, name: string, item: { payload?: GenderPoint }) => {
+                    const p = item.payload;
+                    const count = name === 'Male' ? p?.maleCount ?? 0 : p?.femaleCount ?? 0;
+                    return [`${value}% (${count})`, name];
+                  }) as never}
+                />
+                <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '0.5rem' }} />
+                <Area
+                  type="monotone"
+                  dataKey="Male"
+                  stroke="#3b82f6"
+                  strokeWidth={2.5}
+                  fill="url(#grad-gender-male)"
+                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                  animationBegin={200}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="Female"
+                  stroke="#ec4899"
+                  strokeWidth={2.5}
+                  fill="url(#grad-gender-female)"
+                  dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                  animationBegin={400}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </section>
+
       {/* 2x2 grid for remaining panels */}
       <div className="history-grid">
         {/* Ministry Comparison */}
@@ -1150,87 +1262,6 @@ export default function HistoryPage() {
                     {compareData.map((_entry, i) => (
                       <Cell key={i} fill={`url(#cmp-grad-${i % COMPARE_COLORS.length})`} />
                     ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </section>
-
-        {/* Gender Breakdown */}
-        <section className="history-section">
-          <div className="section-header-row">
-            <h2>Gender Breakdown</h2>
-            <div className="timeframe-pills">
-              {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
-                <button
-                  key={tf}
-                  className={`timeframe-pill${genderTimeframe === tf ? ' timeframe-pill-active' : ''}`}
-                  onClick={() => setGenderTimeframe(tf)}
-                >
-                  {tf === 'all' ? 'All' : tf.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          {genderLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : genderData.every(d => d.maleCount + d.femaleCount === 0) ? (
-            <p className="history-empty">No gender data yet.</p>
-          ) : (
-            <div className="dashboard-chart-wrapper">
-              <ResponsiveContainer width="100%" height={230}>
-                <BarChart data={genderData} margin={{ top: 24, right: 16, bottom: 4, left: -10 }} barCategoryGap="28%">
-                  <defs>
-                    <linearGradient id="gender-male-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#60a5fa" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.9} />
-                    </linearGradient>
-                    <linearGradient id="gender-female-grad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f472b6" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#ec4899" stopOpacity={0.9} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="4 4" stroke="var(--color-border)" vertical={false} strokeOpacity={0.6} />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)', fontWeight: 500 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    tickFormatter={(v: number) => `${v}%`}
-                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={36}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'var(--color-primary-light)', radius: 6 }}
-                    contentStyle={{
-                      borderRadius: '10px',
-                      border: '1px solid var(--color-border)',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                      fontSize: '0.8125rem',
-                      background: 'var(--color-surface)',
-                      color: 'var(--color-text)',
-                      padding: '8px 12px',
-                    }}
-                    labelStyle={{ fontWeight: 600, marginBottom: '2px', color: 'var(--color-text)' }}
-                    itemStyle={{ color: 'var(--color-text-secondary)' }}
-                    formatter={((value: number, name: string, item: { payload?: GenderPoint }) => {
-                      const p = item.payload;
-                      const count = name === 'Male' ? p?.maleCount ?? 0 : p?.femaleCount ?? 0;
-                      return [`${value}% (${count})`, name];
-                    }) as never}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '0.25rem' }} iconType="circle" />
-                  <Bar dataKey="Male" fill="url(#gender-male-grad)" radius={[8, 8, 3, 3]} maxBarSize={56} animationDuration={800} animationEasing="ease-out">
-                    <LabelList dataKey="Male" position="top" formatter={((v: number) => `${v}%`) as never} style={{ fontSize: '11px', fontWeight: 700, fill: 'var(--color-text-secondary)' }} />
-                  </Bar>
-                  <Bar dataKey="Female" fill="url(#gender-female-grad)" radius={[8, 8, 3, 3]} maxBarSize={56} animationDuration={800} animationEasing="ease-out">
-                    <LabelList dataKey="Female" position="top" formatter={((v: number) => `${v}%`) as never} style={{ fontSize: '11px', fontWeight: 700, fill: 'var(--color-text-secondary)' }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
