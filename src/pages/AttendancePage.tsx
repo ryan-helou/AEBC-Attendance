@@ -6,7 +6,7 @@ import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
-import type { Meeting, Person, DisplayEntry } from '../types';
+import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -188,8 +188,8 @@ export default function AttendancePage() {
   }, []);
 
   const handleSaveNewPerson = useCallback(
-    async (name: string, notes?: string) => {
-      const person = await addPerson(name, notes);
+    async (name: string, notes?: string, gender?: Gender | null) => {
+      const person = await addPerson(name, notes, gender);
       if (person) {
         const success = await markAttendance(person.id, person);
         if (success) checkMilestone(totalCount + 1);

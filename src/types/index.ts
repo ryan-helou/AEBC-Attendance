@@ -4,10 +4,13 @@ export interface Meeting {
   display_order: number;
 }
 
+export type Gender = 'male' | 'female';
+
 export interface Person {
   id: string;
   full_name: string;
   notes: string | null;
+  gender: Gender | null;
   created_at: string;
 }
 

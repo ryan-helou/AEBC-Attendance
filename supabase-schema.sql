@@ -18,10 +18,14 @@ create table people (
   id uuid default gen_random_uuid() primary key,
   full_name text not null,
   notes text,
+  gender text check (gender in ('male', 'female')),
   created_at timestamptz default now()
 );
 
 create index idx_people_full_name on people (full_name);
+
+-- Migration for existing databases: add gender column if missing
+alter table people add column if not exists gender text check (gender in ('male', 'female'));
 
 -- 3. Attendance records table
 create table attendance_records (
