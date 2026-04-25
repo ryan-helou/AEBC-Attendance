@@ -234,6 +234,7 @@ export default function HistoryPage() {
   const [topLoading, setTopLoading] = useState(false);
   const [genderData, setGenderData] = useState<GenderPoint[]>([]);
   const [genderTimeframe, setGenderTimeframe] = useState<Timeframe>('12w');
+  const [genderMeetingId, setGenderMeetingId] = useState<string>('');
   const [genderLoading, setGenderLoading] = useState(false);
   const [streakLeaders, setStreakLeaders] = useState<StreakLeader[]>([]);
   const [streakLoading, setStreakLoading] = useState(true);
@@ -335,11 +336,12 @@ export default function HistoryPage() {
     setCompareLoading(false);
   }
 
-  async function loadGenderData(tf: Timeframe) {
+  async function loadGenderData(tf: Timeframe, meetingId: string) {
     setGenderLoading(true);
     let query = supabase.from('attendance_records').select('date, person:people(gender)');
     const cutoff = timeframeCutoff(tf);
     if (cutoff) query = query.gte('date', cutoff);
+    if (meetingId) query = query.eq('meeting_id', meetingId);
     const { data } = await query;
     if (data) {
       const records = data as unknown as Array<{ date: string; person: { gender: string | null } | null }>;
@@ -383,7 +385,7 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (meetings.length > 0) loadCompareData(compareTimeframe, meetings); }, [compareTimeframe]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (meetings.length > 0) loadGenderData(genderTimeframe); }, [genderTimeframe]);
+  useEffect(() => { if (meetings.length > 0) loadGenderData(genderTimeframe, genderMeetingId); }, [genderTimeframe, genderMeetingId]);
 
   async function loadStreakLeaders() {
     setStreakLoading(true);
@@ -817,7 +819,7 @@ export default function HistoryPage() {
 
         loadChartData(chartTimeframe, data);
         loadCompareData(compareTimeframe, data);
-        loadGenderData(genderTimeframe);
+        loadGenderData(genderTimeframe, genderMeetingId);
       }
       loadStreakLeaders();
       loadOnTimeLeaders(data?.[0]?.id);
@@ -1100,16 +1102,28 @@ export default function HistoryPage() {
       <section className="history-section">
         <div className="section-header-row">
           <h2>Gender Breakdown</h2>
-          <div className="timeframe-pills">
-            {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
-              <button
-                key={tf}
-                className={`timeframe-pill${genderTimeframe === tf ? ' timeframe-pill-active' : ''}`}
-                onClick={() => setGenderTimeframe(tf)}
-              >
-                {tf === 'all' ? 'All' : tf.toUpperCase()}
-              </button>
-            ))}
+          <div className="section-header-controls">
+            <select
+              className="gender-meeting-select"
+              value={genderMeetingId}
+              onChange={e => setGenderMeetingId(e.target.value)}
+            >
+              <option value="">All ministries</option>
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+            <div className="timeframe-pills">
+              {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+                <button
+                  key={tf}
+                  className={`timeframe-pill${genderTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                  onClick={() => setGenderTimeframe(tf)}
+                >
+                  {tf === 'all' ? 'All' : tf.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         {genderLoading ? (
