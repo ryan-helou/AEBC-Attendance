@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Person } from '../types';
+import type { Person, Gender } from '../types';
 
 export interface SearchResult {
   person: Person;
@@ -167,7 +167,7 @@ export function usePeople() {
   }, []);
 
   const addPerson = useCallback(
-    async (fullName: string, notes?: string): Promise<Person | null> => {
+    async (fullName: string, notes?: string, gender?: Gender | null): Promise<Person | null> => {
       if (isDuplicate(fullName, notes)) return null;
 
       const { data, error } = await supabase
@@ -175,6 +175,7 @@ export function usePeople() {
         .insert({
           full_name: fullName.trim(),
           notes: notes?.trim() || null,
+          gender: gender ?? null,
         })
         .select()
         .single();

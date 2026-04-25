@@ -14,6 +14,7 @@ import './LandingPage.css';
 export default function LandingPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [genderStats, setGenderStats] = useState<{ male: number; female: number; unknown: number; total: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [verseIndex, setVerseIndex] = useState(() => Math.floor(Math.random() * verses.length));
   const [verseFading, setVerseFading] = useState(false);
@@ -70,10 +71,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: meetingsData } = await supabase
-        .from('meetings')
-        .select('*')
-        .order('display_order');
+      const [{ data: meetingsData }, { data: peopleData }] = await Promise.all([
+        supabase.from('meetings').select('*').order('display_order'),
+        supabase.from('people').select('gender'),
+      ]);
 
       if (meetingsData) {
         setMeetings(meetingsData);
@@ -91,6 +92,16 @@ export default function LandingPage() {
           }
           setCounts(countMap);
         }
+      }
+
+      if (peopleData) {
+        let male = 0, female = 0, unknown = 0;
+        for (const p of peopleData as { gender: string | null }[]) {
+          if (p.gender === 'male') male++;
+          else if (p.gender === 'female') female++;
+          else unknown++;
+        }
+        setGenderStats({ male, female, unknown, total: peopleData.length });
       }
 
       setLoading(false);
@@ -170,6 +181,37 @@ export default function LandingPage() {
             />
           ))}
         </div>
+
+        {genderStats && (genderStats.male + genderStats.female) > 0 && (() => {
+          const known = genderStats.male + genderStats.female;
+          const malePct = Math.round((genderStats.male / known) * 100);
+          const femalePct = 100 - malePct;
+          return (
+            <div className="gender-stats">
+              <div className="gender-stats-bar">
+                <div className="gender-stats-male" style={{ width: `${malePct}%` }} />
+                <div className="gender-stats-female" style={{ width: `${femalePct}%` }} />
+              </div>
+              <div className="gender-stats-legend">
+                <span className="gender-stats-item">
+                  <span className="gender-stats-dot gender-stats-dot-male" />
+                  Male <strong>{malePct}%</strong>
+                  <span className="gender-stats-count">({genderStats.male})</span>
+                </span>
+                <span className="gender-stats-item">
+                  <span className="gender-stats-dot gender-stats-dot-female" />
+                  Female <strong>{femalePct}%</strong>
+                  <span className="gender-stats-count">({genderStats.female})</span>
+                </span>
+                {genderStats.unknown > 0 && (
+                  <span className="gender-stats-item gender-stats-unknown">
+                    {genderStats.unknown} unspecified
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         <button className="landing-history-btn" onClick={() => navigate('/history')}>
           Attendance History

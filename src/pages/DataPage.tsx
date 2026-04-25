@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import type { Person } from '../types';
+import type { Person, Gender } from '../types';
 import { DataSkeleton } from '../components/Skeleton';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
@@ -16,7 +16,7 @@ export default function DataPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ full_name: '', notes: '' });
+  const [editValues, setEditValues] = useState<{ full_name: string; notes: string; gender: Gender | null }>({ full_name: '', notes: '', gender: null });
   const [saving, setSaving] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
@@ -48,6 +48,7 @@ export default function DataPage() {
     setEditValues({
       full_name: person.full_name,
       notes: person.notes || '',
+      gender: person.gender ?? null,
     });
   }
 
@@ -73,6 +74,7 @@ export default function DataPage() {
       .update({
         full_name: editValues.full_name.trim(),
         notes: editValues.notes.trim() || null,
+        gender: editValues.gender,
       })
       .eq('id', id);
 
@@ -85,6 +87,7 @@ export default function DataPage() {
                   ...p,
                   full_name: editValues.full_name.trim(),
                   notes: editValues.notes.trim() || null,
+                  gender: editValues.gender,
                 }
               : p
           )
@@ -258,6 +261,7 @@ export default function DataPage() {
               <th>#</th>
               <th>Name</th>
               <th>Notes</th>
+              <th>Gender</th>
               <th className="col-action"></th>
             </tr>
           </thead>
@@ -286,6 +290,17 @@ export default function DataPage() {
                         placeholder="Notes"
                       />
                     </td>
+                    <td>
+                      <select
+                        className="data-edit-input"
+                        value={editValues.gender ?? ''}
+                        onChange={e => setEditValues(v => ({ ...v, gender: (e.target.value || null) as Gender | null }))}
+                      >
+                        <option value="">—</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                      </select>
+                    </td>
                     <td className="col-action">
                       <button
                         className="data-save-btn"
@@ -307,6 +322,9 @@ export default function DataPage() {
                       </span>
                     </td>
                     <td className="data-secondary">{person.notes || '—'}</td>
+                    <td className="data-secondary">
+                      {person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : '—'}
+                    </td>
                     <td className="col-action">
                       <button className="data-edit-btn" onClick={() => startEdit(person)}>
                         Edit

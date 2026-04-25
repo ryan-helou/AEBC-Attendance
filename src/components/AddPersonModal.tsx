@@ -1,9 +1,10 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import type { Gender } from '../types';
 import './AddPersonModal.css';
 
 interface AddPersonModalProps {
   initialName: string;
-  onSave: (name: string, notes?: string) => Promise<void>;
+  onSave: (name: string, notes?: string, gender?: Gender | null) => Promise<void>;
   onCancel: () => void;
   isDuplicate?: (name: string, notes?: string) => boolean;
 }
@@ -11,6 +12,7 @@ interface AddPersonModalProps {
 export default function AddPersonModal({ initialName, onSave, onCancel, isDuplicate }: AddPersonModalProps) {
   const [name, setName] = useState(initialName);
   const [notes, setNotes] = useState('');
+  const [gender, setGender] = useState<Gender | null>(null);
   const [saving, setSaving] = useState(false);
 
   const duplicate = isDuplicate ? isDuplicate(name, notes) : false;
@@ -27,7 +29,7 @@ export default function AddPersonModal({ initialName, onSave, onCancel, isDuplic
     e.preventDefault();
     if (!name.trim() || duplicate) return;
     setSaving(true);
-    await onSave(name, notes);
+    await onSave(name, notes, gender);
     setSaving(false);
   }
 
@@ -61,6 +63,25 @@ export default function AddPersonModal({ initialName, onSave, onCancel, isDuplic
             placeholder="Optional"
           />
         </label>
+        <div className="gender-field">
+          <span className="gender-label">Gender</span>
+          <div className="gender-options">
+            <button
+              type="button"
+              className={`gender-option${gender === 'male' ? ' gender-option-active' : ''}`}
+              onClick={() => setGender(g => (g === 'male' ? null : 'male'))}
+            >
+              Male
+            </button>
+            <button
+              type="button"
+              className={`gender-option${gender === 'female' ? ' gender-option-active' : ''}`}
+              onClick={() => setGender(g => (g === 'female' ? null : 'female'))}
+            >
+              Female
+            </button>
+          </div>
+        </div>
         <div className="modal-actions">
           <button type="button" onClick={onCancel} className="modal-cancel">
             Cancel
