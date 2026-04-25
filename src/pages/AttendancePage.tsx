@@ -83,6 +83,18 @@ export default function AttendancePage() {
     [displayEntries]
   );
 
+  const genderPercents = useMemo(() => {
+    let male = 0, female = 0;
+    for (const e of entries) {
+      if (e.person.gender === 'male') male++;
+      else if (e.person.gender === 'female') female++;
+    }
+    const known = male + female;
+    if (known === 0) return null;
+    const malePct = Math.round((male / known) * 100);
+    return { malePct, femalePct: 100 - malePct };
+  }, [entries]);
+
   const onTimePercent = useMemo(() => {
     if (!meeting) return null;
     const lower = meeting.name.toLowerCase();
@@ -311,6 +323,9 @@ export default function AttendancePage() {
           )}
           {onTimePercent !== null && (
             <span className="on-time-count"> · <AnimatedNumber value={onTimePercent} suffix="%" /> on time</span>
+          )}
+          {genderPercents && (
+            <span className="gender-count"> · <AnimatedNumber value={genderPercents.malePct} suffix="%" /> M · <AnimatedNumber value={genderPercents.femalePct} suffix="%" /> F</span>
           )}
         </div>
 
