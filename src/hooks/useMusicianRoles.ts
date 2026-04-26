@@ -13,6 +13,7 @@ export const MUSICIAN_ROLES = [
   'Sound',
   'Attendance',
   'Preacher',
+  'Live Stream',
 ] as const;
 
 export const PLAYING_MUSICIAN_ROLES = [
