@@ -79,18 +79,19 @@ export default function LandingPage() {
         setMeetings(meetingsData);
 
         const today = getTodayDate();
-        const { data: records } = await supabase
-          .from('attendance_records')
-          .select('meeting_id')
-          .eq('date', today);
+        const [{ data: records }, { data: guestRecords }] = await Promise.all([
+          supabase.from('attendance_records').select('meeting_id').eq('date', today),
+          supabase.from('guest_attendance').select('meeting_id').eq('date', today),
+        ]);
 
-        if (records) {
-          const countMap: Record<string, number> = {};
-          for (const r of records) {
-            countMap[r.meeting_id] = (countMap[r.meeting_id] || 0) + 1;
-          }
-          setCounts(countMap);
+        const countMap: Record<string, number> = {};
+        for (const r of records ?? []) {
+          countMap[r.meeting_id] = (countMap[r.meeting_id] || 0) + 1;
         }
+        for (const r of guestRecords ?? []) {
+          countMap[r.meeting_id] = (countMap[r.meeting_id] || 0) + 1;
+        }
+        setCounts(countMap);
       }
 
       setLoading(false);

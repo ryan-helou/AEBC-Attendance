@@ -837,11 +837,12 @@ export default function HistoryPage() {
 
       if (data) {
         setMeetings(data);
+        const shabibeh = data.find(m => m.name.toLowerCase().includes('shabibeh')) ?? data[0];
         if (data.length > 0) {
           setDateMeetingId(data[0].id);
           setAllTimeMeetingId(data[0].id);
-          setOnTimeMeetingId(data[0].id);
-          setConsistencyMeetingId(data[0].id);
+          setOnTimeMeetingId(shabibeh.id);
+          setConsistencyMeetingId(shabibeh.id);
           const day = getMeetingDay(data[0].name);
           setSelectedDate(snapToValidDate(today, day));
         }
@@ -851,8 +852,8 @@ export default function HistoryPage() {
         loadGenderData(genderTimeframe, genderMeetingId);
       }
       loadStreakLeaders();
-      loadOnTimeLeaders(data?.[0]?.id);
-      loadConsistencyLeaders(data?.[0]?.id);
+      loadOnTimeLeaders(data?.find(m => m.name.toLowerCase().includes('shabibeh'))?.id ?? data?.[0]?.id);
+      loadConsistencyLeaders(data?.find(m => m.name.toLowerCase().includes('shabibeh'))?.id ?? data?.[0]?.id);
       if (data) loadRecords(data);
       loadPeopleInsights();
       loadRoleLeaderboards();
