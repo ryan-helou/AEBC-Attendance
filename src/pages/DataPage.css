@@ -501,6 +501,13 @@
   width: 100%;
   padding: 0.3em 0.5em;
   font-size: 0.875rem;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.data-edit-input:focus {
+  color: var(--color-text);
+  background-color: var(--color-surface);
 }
 
 .data-page .person-link {
