@@ -256,6 +256,10 @@ export default function HistoryPage() {
   const [preachersLoading, setPreachersLoading] = useState(true);
   const [topAttendanceTakers, setTopAttendanceTakers] = useState<RoleCount[]>([]);
   const [attendanceTakersLoading, setAttendanceTakersLoading] = useState(true);
+  const [topSound, setTopSound] = useState<RoleCount[]>([]);
+  const [soundLoading, setSoundLoading] = useState(true);
+  const [topLiveStream, setTopLiveStream] = useState<RoleCount[]>([]);
+  const [liveStreamLoading, setLiveStreamLoading] = useState(true);
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
@@ -737,6 +741,8 @@ export default function HistoryPage() {
     setMusiciansLoading(true);
     setPreachersLoading(true);
     setAttendanceTakersLoading(true);
+    setSoundLoading(true);
+    setLiveStreamLoading(true);
     const { data } = await supabase
       .from('musician_roles')
       .select('person_id, role, date, person:people(full_name)');
@@ -749,6 +755,8 @@ export default function HistoryPage() {
       const musicianMap = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
       const preacherMap = new Map<string, { name: string; dates: Set<string> }>();
       const attendanceMap = new Map<string, { name: string; dates: Set<string> }>();
+      const soundMap = new Map<string, { name: string; dates: Set<string> }>();
+      const liveStreamMap = new Map<string, { name: string; dates: Set<string> }>();
 
       for (const r of rows) {
         const pid = r.person_id as string;
@@ -761,6 +769,13 @@ export default function HistoryPage() {
           const stats = musicianMap.get(pid)!;
           stats.dates.add(date);
           stats.roleCounts.set(role, (stats.roleCounts.get(role) || 0) + 1);
+        }
+        if (role === 'Sound') {
+          if (!soundMap.has(pid)) soundMap.set(pid, { name, dates: new Set() });
+          soundMap.get(pid)!.dates.add(date);
+        } else if (role === 'Live Stream') {
+          if (!liveStreamMap.has(pid)) liveStreamMap.set(pid, { name, dates: new Set() });
+          liveStreamMap.get(pid)!.dates.add(date);
         } else if (role === 'Preacher') {
           if (!preacherMap.has(pid)) preacherMap.set(pid, { name, dates: new Set() });
           preacherMap.get(pid)!.dates.add(date);
@@ -792,10 +807,24 @@ export default function HistoryPage() {
         .sort((a, b) => b.totalAppearances - a.totalAppearances)
         .slice(0, 15);
       setTopAttendanceTakers(takers);
+
+      const sound: RoleCount[] = Array.from(soundMap.entries())
+        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+        .sort((a, b) => b.totalAppearances - a.totalAppearances)
+        .slice(0, 15);
+      setTopSound(sound);
+
+      const liveStream: RoleCount[] = Array.from(liveStreamMap.entries())
+        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+        .sort((a, b) => b.totalAppearances - a.totalAppearances)
+        .slice(0, 15);
+      setTopLiveStream(liveStream);
     }
     setMusiciansLoading(false);
     setPreachersLoading(false);
     setAttendanceTakersLoading(false);
+    setSoundLoading(false);
+    setLiveStreamLoading(false);
   }
 
   useEffect(() => {
@@ -1696,6 +1725,99 @@ export default function HistoryPage() {
                 </thead>
                 <tbody>
                   {topAttendanceTakers.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Top Sound + Top Live Stream pair */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🔊 Top Sound</h2>
+          {soundLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topSound.length === 0 ? (
+            <p className="history-empty">No sound data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topSound.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>📡 Top Live Stream</h2>
+          {liveStreamLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topLiveStream.length === 0 ? (
+            <p className="history-empty">No live stream data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topLiveStream.map((p, _i, arr) => {
                     const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
                     return (
                     <tr
