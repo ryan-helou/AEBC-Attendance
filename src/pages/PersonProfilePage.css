@@ -60,13 +60,19 @@
   font-weight: inherit;
   font-family: inherit;
   color: #fff;
-  background: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   padding: 0.1rem 0.3rem;
   outline: none;
   width: 100%;
   min-width: 0;
+}
+
+.profile-name-input:focus {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: none;
 }
 
 .profile-body {
