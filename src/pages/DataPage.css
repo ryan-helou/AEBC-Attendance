@@ -128,6 +128,82 @@
   text-align: right;
 }
 
+.gender-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.05));
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.gender-banner:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.08));
+  border-color: rgba(245, 158, 11, 0.6);
+}
+
+.gender-banner-active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(245, 158, 11, 0.1));
+  border-color: #f59e0b;
+}
+
+.gender-banner-text strong {
+  font-weight: 700;
+  font-feature-settings: 'tnum';
+  color: #b45309;
+}
+
+[data-theme="dark"] .gender-banner-text strong {
+  color: #fbbf24;
+}
+
+.gender-banner-action {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #b45309;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .gender-banner-action {
+  color: #fbbf24;
+}
+
+.gender-missing-pill {
+  display: inline-block;
+  padding: 0.15em 0.55em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+}
+
+[data-theme="dark"] .gender-missing-pill {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.data-table tbody tr.row-missing-gender {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.data-table tbody tr.row-missing-gender:hover {
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .data-search-wrapper {
   position: relative;
   margin-bottom: 1rem;

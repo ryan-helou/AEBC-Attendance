@@ -24,6 +24,7 @@ export default function DataPage() {
   const [importStatus, setImportStatus] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [missingGenderOnly, setMissingGenderOnly] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<string[]>([]);
   const [mergeKeepId, setMergeKeepId] = useState<string | null>(null);
@@ -192,12 +193,19 @@ export default function DataPage() {
     setImporting(false);
   }
 
-  const filtered = search.trim()
-    ? people.filter(p =>
-        p.full_name.toLowerCase().includes(search.toLowerCase()) ||
-        (p.notes ?? '').toLowerCase().includes(search.toLowerCase())
-      )
-    : people;
+  const missingGenderCount = people.filter(p => p.gender == null).length;
+
+  const filtered = people.filter(p => {
+    if (missingGenderOnly && p.gender != null) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (
+        p.full_name.toLowerCase().includes(q) ||
+        (p.notes ?? '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   if (loading) return <DataSkeleton />;
 
@@ -234,6 +242,20 @@ export default function DataPage() {
         )}
       </div>
 
+      {missingGenderCount > 0 && (
+        <button
+          className={`gender-banner${missingGenderOnly ? ' gender-banner-active' : ''}`}
+          onClick={() => setMissingGenderOnly(v => !v)}
+        >
+          <span className="gender-banner-text">
+            <strong>{missingGenderCount}</strong> {missingGenderCount === 1 ? 'person needs' : 'people need'} their gender set
+          </span>
+          <span className="gender-banner-action">
+            {missingGenderOnly ? 'Show all' : 'Show only these'}
+          </span>
+        </button>
+      )}
+
       {showImport && (
         <div className="import-section">
           <textarea
@@ -267,7 +289,7 @@ export default function DataPage() {
           </thead>
           <tbody>
             {filtered.map((person, i) => (
-              <tr key={person.id}>
+              <tr key={person.id} className={person.gender == null ? 'row-missing-gender' : ''}>
                 <td className="col-num">{i + 1}</td>
 
                 {editingId === person.id ? (
@@ -323,7 +345,9 @@ export default function DataPage() {
                     </td>
                     <td className="data-secondary">{person.notes || '—'}</td>
                     <td className="data-secondary">
-                      {person.gender === 'male' ? 'Male' : person.gender === 'female' ? 'Female' : '—'}
+                      {person.gender === 'male' ? 'Male'
+                        : person.gender === 'female' ? 'Female'
+                        : <span className="gender-missing-pill">Not set</span>}
                     </td>
                     <td className="col-action">
                       <button className="data-edit-btn" onClick={() => startEdit(person)}>
