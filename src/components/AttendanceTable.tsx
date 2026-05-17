@@ -29,6 +29,7 @@ const BABIES = [
   'William Sarnouk',
   'Ella Alabras',
   'Alba',
+  'Ella Jaine Pullan',
 ];
 
 function isAttendanceMinistryName(fullName: string) {
