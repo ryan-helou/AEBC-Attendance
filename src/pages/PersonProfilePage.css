@@ -338,6 +338,7 @@
 .profile-total-card {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   margin-bottom: 0.75rem;
@@ -371,6 +372,21 @@
   font-size: 0.8125rem;
   font-weight: 500;
   opacity: 0.85;
+}
+
+.profile-first-meeting {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.3em 0.7em;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* Meeting cards */
