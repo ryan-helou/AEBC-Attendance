@@ -500,24 +500,25 @@ export default function HistoryPage() {
     const today = getTodayDate();
     let query = supabase
       .from('attendance_records')
-      .select('person_id, person:people(full_name)');
+      .select('person_id, date, person:people(full_name)');
     if (timeframe !== 'all') {
       const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
       query = query.gte('date', shiftDate(today, -daysMap[timeframe]));
     }
     const { data } = await query;
     if (data) {
-      const personCounts = new Map<string, { name: string; count: number }>();
+      const personData = new Map<string, { name: string; dates: Set<string> }>();
       for (const r of data as Array<Record<string, unknown>>) {
         const pid = r.person_id as string;
+        const date = r.date as string;
         const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        const existing = personCounts.get(pid);
-        if (existing) { existing.count++; } else { personCounts.set(pid, { name, count: 1 }); }
+        if (!personData.has(pid)) personData.set(pid, { name, dates: new Set() });
+        personData.get(pid)!.dates.add(date);
       }
-      const sorted = Array.from(personCounts.entries())
-        .sort((a, b) => b[1].count - a[1].count)
-        .slice(0, 15)
-        .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.count }));
+      const sorted = Array.from(personData.entries())
+        .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.dates.size }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 15);
       setTopAttendees(sorted);
       setMaxCount(sorted[0]?.count || 1);
     }
