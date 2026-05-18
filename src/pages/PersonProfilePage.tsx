@@ -130,6 +130,7 @@ export default function PersonProfilePage() {
   const [person, setPerson] = useState<Person | null>(null);
   const [meetingStats, setMeetingStats] = useState<MeetingStat[]>([]);
   const [totalAttendances, setTotalAttendances] = useState(0);
+  const [firstMeetingDate, setFirstMeetingDate] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
   const [notes, setNotes] = useState('');
@@ -175,6 +176,7 @@ export default function PersonProfilePage() {
       setPerson(personData);
       setNotes(personData?.notes ?? '');
       setTotalAttendances(records.length);
+      setFirstMeetingDate(records.length > 0 ? records[records.length - 1].date : null);
 
       // Build meeting map for names
       const meetingMap = new Map(meetings.map(m => [m.id, m]));
@@ -237,7 +239,11 @@ export default function PersonProfilePage() {
     const { id, meetingId } = pendingDelete;
     setPendingDelete(null);
 
-    setHistory(prev => prev.filter(r => r.id !== id));
+    setHistory(prev => {
+      const next = prev.filter(r => r.id !== id);
+      setFirstMeetingDate(next.length > 0 ? next[next.length - 1].date : null);
+      return next;
+    });
     setTotalAttendances(prev => prev - 1);
     setMeetingStats(prev =>
       prev
@@ -401,6 +407,15 @@ export default function PersonProfilePage() {
       <div className="profile-total-card">
         <span className="profile-total-number"><AnimatedNumber value={totalAttendances} /></span>
         <span className="profile-total-label">Total Attendances</span>
+        {firstMeetingDate && (
+          <span className="profile-first-meeting" title="Date of first attendance">
+            First Meeting · {new Date(firstMeetingDate + 'T00:00:00').toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+        )}
       </div>
 
       <textarea
