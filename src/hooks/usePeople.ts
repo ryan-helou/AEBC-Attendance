@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllRows } from '../lib/supabase';
 import type { Person, Gender } from '../types';
 
 export interface SearchResult {
@@ -93,9 +93,12 @@ export function usePeople() {
 
   useEffect(() => {
     async function load() {
-      const [{ data: peopleData }, { data: countData }] = await Promise.all([
+      const [{ data: peopleData }, countData] = await Promise.all([
         supabase.from('people').select('*').order('full_name'),
-        supabase.from('attendance_records').select('person_id'),
+        fetchAllRows((from, to) =>
+          supabase.from('attendance_records').select('person_id')
+            .order('id', { ascending: true }).range(from, to)
+        ),
       ]);
 
       if (peopleData) {
@@ -103,13 +106,12 @@ export function usePeople() {
         peopleRef.current = peopleData;
       }
 
-      if (countData) {
-        const counts = new Map<string, number>();
-        for (const row of countData) {
-          counts.set(row.person_id, (counts.get(row.person_id) || 0) + 1);
-        }
-        attendanceCountsRef.current = counts;
+      const counts = new Map<string, number>();
+      for (const row of countData) {
+        const pid = row.person_id as string;
+        counts.set(pid, (counts.get(pid) || 0) + 1);
       }
+      attendanceCountsRef.current = counts;
 
       setLoading(false);
     }
