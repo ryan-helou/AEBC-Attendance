@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry } from '../types';
 import type { SearchResult } from '../hooks/usePeople';
@@ -81,13 +82,36 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   const [showGuestSuggestions, setShowGuestSuggestions] = useState(false);
   const guestNameInputRef = useRef<HTMLInputElement>(null);
   const [rolePickerPersonId, setRolePickerPersonId] = useState<string | null>(null);
+  const [rolePickerAnchor, setRolePickerAnchor] = useState<DOMRect | null>(null);
+
+  const closeRolePicker = useCallback(() => {
+    setRolePickerPersonId(null);
+    setRolePickerAnchor(null);
+  }, []);
+
+  const toggleRolePicker = useCallback((personId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (rolePickerPersonId === personId) {
+      closeRolePicker();
+    } else {
+      setRolePickerPersonId(personId);
+      setRolePickerAnchor(e.currentTarget.getBoundingClientRect());
+    }
+  }, [rolePickerPersonId, closeRolePicker]);
 
   useEffect(() => {
     if (!rolePickerPersonId) return;
-    function handleClick() { setRolePickerPersonId(null); }
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, [rolePickerPersonId]);
+    // Close on any outside click, or on scroll/resize (the picker is fixed-positioned
+    // and would otherwise detach from its anchor).
+    window.addEventListener('click', closeRolePicker);
+    window.addEventListener('scroll', closeRolePicker, true);
+    window.addEventListener('resize', closeRolePicker);
+    return () => {
+      window.removeEventListener('click', closeRolePicker);
+      window.removeEventListener('scroll', closeRolePicker, true);
+      window.removeEventListener('resize', closeRolePicker);
+    };
+  }, [rolePickerPersonId, closeRolePicker]);
 
   useEffect(() => {
     prevIdsRef.current = new Set(entries.map(e => e.entry.id));
@@ -290,36 +314,20 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                         <span
                           key={role}
                           className="musician-role-badge"
-                          onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                          onClick={e => toggleRolePicker(item.entry.person_id, e)}
                         >
                           {role}
                         </span>
                       ))}
                       <span
                         className="musician-role-add"
-                        onClick={e => { e.stopPropagation(); setRolePickerPersonId(rolePickerPersonId === item.entry.person_id ? null : item.entry.person_id); }}
+                        onClick={e => toggleRolePicker(item.entry.person_id, e)}
                         title="Assign role"
                       >
                         +
                       </span>
                       {item.entry.person.notes && (
                         <div className="person-note">{item.entry.person.notes}</div>
-                      )}
-                      {rolePickerPersonId === item.entry.person_id && (
-                        <div className="role-picker" onClick={e => e.stopPropagation()}>
-                          {MUSICIAN_ROLES.map(role => (
-                            <button
-                              key={role}
-                              className={`role-picker-item${(getMusicianRoles?.(item.entry.person_id) || []).includes(role) ? ' active' : ''}`}
-                              onClick={e => {
-                                e.stopPropagation();
-                                onToggleMusicianRole?.(item.entry.person_id, role);
-                              }}
-                            >
-                              {role}
-                            </button>
-                          ))}
-                        </div>
                       )}
                     </div>
                   )}
@@ -373,6 +381,35 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
       <div className="attendance-table-footer">
         Total: {entries.length} present
       </div>
+      {rolePickerPersonId && rolePickerAnchor && createPortal(
+        (() => {
+          const personId = rolePickerPersonId;
+          const anchor = rolePickerAnchor;
+          const GAP = 6;
+          const PICKER_MAX_W = 288; // matches max-width: 18rem
+          const left = Math.max(8, Math.min(anchor.left, window.innerWidth - PICKER_MAX_W - 8));
+          // Flip above the trigger when there isn't room below (keeps it on-screen on mobile).
+          const openUp = window.innerHeight - anchor.bottom < 220;
+          const style: React.CSSProperties = openUp
+            ? { left, bottom: window.innerHeight - anchor.top + GAP }
+            : { left, top: anchor.bottom + GAP };
+          const activeRoles = getMusicianRoles?.(personId) || [];
+          return (
+            <div className="role-picker" style={style} onClick={e => e.stopPropagation()}>
+              {MUSICIAN_ROLES.map(role => (
+                <button
+                  key={role}
+                  className={`role-picker-item${activeRoles.includes(role) ? ' active' : ''}`}
+                  onClick={e => { e.stopPropagation(); onToggleMusicianRole?.(personId, role); }}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+          );
+        })(),
+        document.body
+      )}
     </div>
   );
 }
