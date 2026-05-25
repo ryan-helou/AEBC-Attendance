@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
@@ -268,19 +268,24 @@ export default function HistoryPage() {
 
   async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
     setChartLoading(true);
-    let query = supabase.from('attendance_records').select('meeting_id, date, first_time');
     const cutoff = timeframeCutoff(tf);
-    if (cutoff) query = query.gte('date', cutoff);
 
-    // Also fetch guest first-timers
-    let guestQuery = supabase.from('guest_attendance').select('meeting_id, date, first_time');
-    if (cutoff) guestQuery = guestQuery.gte('date', cutoff);
+    const [data, guestData] = await Promise.all([
+      fetchAllRows((from, to) => {
+        let query = supabase.from('attendance_records').select('meeting_id, date, first_time');
+        if (cutoff) query = query.gte('date', cutoff);
+        return query.order('id', { ascending: true }).range(from, to);
+      }),
+      fetchAllRows((from, to) => {
+        let query = supabase.from('guest_attendance').select('meeting_id, date, first_time');
+        if (cutoff) query = query.gte('date', cutoff);
+        return query.order('id', { ascending: true }).range(from, to);
+      }),
+    ]);
 
-    const [{ data }, { data: guestData }] = await Promise.all([query, guestQuery]);
-
-    if (data) {
-      const records = data as Array<{ meeting_id: string; date: string; first_time: boolean }>;
-      const guestRecords = (guestData ?? []) as Array<{ meeting_id: string; date: string; first_time: boolean }>;
+    {
+      const records = data as unknown as Array<{ meeting_id: string; date: string; first_time: boolean }>;
+      const guestRecords = guestData as unknown as Array<{ meeting_id: string; date: string; first_time: boolean }>;
 
       function weekOf(dateStr: string): string {
         const d = new Date(dateStr + 'T00:00:00');
@@ -327,12 +332,14 @@ export default function HistoryPage() {
 
   async function loadCompareData(tf: Timeframe, meetingsList: Meeting[]) {
     setCompareLoading(true);
-    let query = supabase.from('attendance_records').select('meeting_id');
     const cutoff = timeframeCutoff(tf);
-    if (cutoff) query = query.gte('date', cutoff);
-    const { data } = await query;
-    if (data) {
-      const records = data as Array<{ meeting_id: string }>;
+    const data = await fetchAllRows((from, to) => {
+      let query = supabase.from('attendance_records').select('meeting_id');
+      if (cutoff) query = query.gte('date', cutoff);
+      return query.order('id', { ascending: true }).range(from, to);
+    });
+    {
+      const records = data as unknown as Array<{ meeting_id: string }>;
       const totals = new Map<string, number>();
       for (const r of records) totals.set(r.meeting_id, (totals.get(r.meeting_id) || 0) + 1);
       setCompareData(meetingsList.map(m => ({ label: m.name, Attendance: totals.get(m.id) || 0 })));
@@ -342,12 +349,14 @@ export default function HistoryPage() {
 
   async function loadGenderData(tf: Timeframe, meetingId: string) {
     setGenderLoading(true);
-    let query = supabase.from('attendance_records').select('date, person:people(gender)');
     const cutoff = timeframeCutoff(tf);
-    if (cutoff) query = query.gte('date', cutoff);
-    if (meetingId) query = query.eq('meeting_id', meetingId);
-    const { data } = await query;
-    if (data) {
+    const data = await fetchAllRows((from, to) => {
+      let query = supabase.from('attendance_records').select('date, person:people(gender)');
+      if (cutoff) query = query.gte('date', cutoff);
+      if (meetingId) query = query.eq('meeting_id', meetingId);
+      return query.order('id', { ascending: true }).range(from, to);
+    });
+    {
       const records = data as unknown as Array<{ date: string; person: { gender: string | null } | null }>;
       function weekOf(dateStr: string): string {
         const d = new Date(dateStr + 'T00:00:00');
@@ -393,10 +402,14 @@ export default function HistoryPage() {
 
   async function loadStreakLeaders() {
     setStreakLoading(true);
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('person_id, meeting_id, date, person:people(full_name), meeting:meetings(name)');
-    if (data) {
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, meeting_id, date, person:people(full_name), meeting:meetings(name)')
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    {
       const groups = new Map<string, { person_id: string; person_name: string; meeting_name: string; dates: string[] }>();
       for (const r of data as Array<Record<string, unknown>>) {
         const key = `${r.person_id}|${r.meeting_id}`;
@@ -422,12 +435,16 @@ export default function HistoryPage() {
     setOnTimeLoading(true);
 
     // Fetch all data we need
-    const { data: attendanceData } = await supabase
-      .from('attendance_records')
-      .select('person_id, marked_at, date, meeting_id, person:people(full_name)')
-      .eq('meeting_id', targetMeetingId);
+    const attendanceData = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, marked_at, date, meeting_id, person:people(full_name)')
+        .eq('meeting_id', targetMeetingId)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
-    if (attendanceData) {
+    {
 
       // Build active dates per meeting (only weeks where attendance was actually taken)
       const activeDatesByMeeting = new Map<string, Set<string>>();
@@ -498,30 +515,31 @@ export default function HistoryPage() {
   async function loadTopAttendees(timeframe: Timeframe) {
     setTopLoading(true);
     const today = getTodayDate();
-    let query = supabase
-      .from('attendance_records')
-      .select('person_id, date, person:people(full_name)');
-    if (timeframe !== 'all') {
-      const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
-      query = query.gte('date', shiftDate(today, -daysMap[timeframe]));
+    const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
+    const cutoff = timeframe !== 'all' ? shiftDate(today, -daysMap[timeframe]) : null;
+
+    const records = await fetchAllRows((from, to) => {
+      let query = supabase
+        .from('attendance_records')
+        .select('person_id, date, person:people(full_name)');
+      if (cutoff) query = query.gte('date', cutoff);
+      return query.order('id', { ascending: true }).range(from, to);
+    });
+
+    const personData = new Map<string, { name: string; dates: Set<string> }>();
+    for (const r of records) {
+      const pid = r.person_id as string;
+      const date = r.date as string;
+      const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
+      if (!personData.has(pid)) personData.set(pid, { name, dates: new Set() });
+      personData.get(pid)!.dates.add(date);
     }
-    const { data } = await query;
-    if (data) {
-      const personData = new Map<string, { name: string; dates: Set<string> }>();
-      for (const r of data as Array<Record<string, unknown>>) {
-        const pid = r.person_id as string;
-        const date = r.date as string;
-        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        if (!personData.has(pid)) personData.set(pid, { name, dates: new Set() });
-        personData.get(pid)!.dates.add(date);
-      }
-      const sorted = Array.from(personData.entries())
-        .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.dates.size }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 15);
-      setTopAttendees(sorted);
-      setMaxCount(sorted[0]?.count || 1);
-    }
+    const sorted = Array.from(personData.entries())
+      .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.dates.size }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
+    setTopAttendees(sorted);
+    setMaxCount(sorted[0]?.count || 1);
     setTopLoading(false);
   }
 
@@ -534,13 +552,17 @@ export default function HistoryPage() {
     setConsistencyLoading(true);
 
     const cutoff = shiftDate(getTodayDate(), -84); // last 12 weeks
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('person_id, date, person:people(full_name)')
-      .eq('meeting_id', targetId)
-      .gte('date', cutoff);
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, date, person:people(full_name)')
+        .eq('meeting_id', targetId)
+        .gte('date', cutoff)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
-    if (data) {
+    {
       const rows = data as Array<Record<string, unknown>>;
       const activeDates = new Set<string>();
       const personMap = new Map<string, { name: string; dates: Set<string> }>();
@@ -575,12 +597,19 @@ export default function HistoryPage() {
     const entries: RecordEntry[] = [];
 
     // Fetch all attendance + guest data
-    const [{ data: attData }, { data: guestData }] = await Promise.all([
-      supabase.from('attendance_records').select('meeting_id, date, person_id, first_time, person:people(full_name)'),
-      supabase.from('guest_attendance').select('meeting_id, date, first_time'),
+    const [attData, guestData] = await Promise.all([
+      fetchAllRows((from, to) =>
+        supabase.from('attendance_records')
+          .select('meeting_id, date, person_id, first_time, person:people(full_name)')
+          .order('id', { ascending: true }).range(from, to)
+      ),
+      fetchAllRows((from, to) =>
+        supabase.from('guest_attendance').select('meeting_id, date, first_time')
+          .order('id', { ascending: true }).range(from, to)
+      ),
     ]);
 
-    if (attData && guestData) {
+    {
       const attRows = attData as Array<Record<string, unknown>>;
       const guestRows = guestData as Array<Record<string, unknown>>;
 
@@ -690,10 +719,14 @@ export default function HistoryPage() {
   async function loadPeopleInsights() {
     setInactiveLoading(true);
     setRisingStarsLoading(true);
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('person_id, date, person:people(full_name)');
-    if (data) {
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, date, person:people(full_name)')
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    {
       const rows = data as Array<Record<string, unknown>>;
       const personMap = new Map<string, { name: string; dates: string[] }>();
       for (const r of rows) {
@@ -919,12 +952,16 @@ export default function HistoryPage() {
     if (!allTimeMeetingId) return;
     setAllTimeLoading(true);
 
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('person_id, person:people(full_name)')
-      .eq('meeting_id', allTimeMeetingId);
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, person:people(full_name)')
+        .eq('meeting_id', allTimeMeetingId)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
-    if (data) {
+    {
       const countMap = new Map<string, { name: string; count: number }>();
       for (const r of data as Array<Record<string, unknown>>) {
         const pid = r.person_id as string;
@@ -993,12 +1030,16 @@ export default function HistoryPage() {
 
   async function exportCSV() {
     setExporting(true);
-    const { data } = await supabase
-      .from('attendance_records')
-      .select('date, marked_at, person:people(full_name), meeting:meetings(name)')
-      .order('date', { ascending: false });
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('date, marked_at, person:people(full_name), meeting:meetings(name)')
+        .order('date', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
 
-    if (data && data.length > 0) {
+    if (data.length > 0) {
       const rows = data as Array<Record<string, unknown>>;
       const csvLines = ['Date,Meeting,Name,Time'];
       for (const r of rows) {

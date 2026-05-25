@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
@@ -149,7 +149,7 @@ export default function PersonProfilePage() {
     if (!personId) return;
 
     async function load() {
-      const [personRes, meetingsRes, recordsRes, allDatesRes] = await Promise.all([
+      const [personRes, meetingsRes, recordsRes, allDates] = await Promise.all([
         supabase.from('people').select('*').eq('id', personId).single(),
         supabase.from('meetings').select('*').order('display_order'),
         supabase
@@ -157,9 +157,13 @@ export default function PersonProfilePage() {
           .select('id, meeting_id, date, marked_at')
           .eq('person_id', personId)
           .order('date', { ascending: false }),
-        supabase
-          .from('attendance_records')
-          .select('meeting_id, date'),
+        fetchAllRows((from, to) =>
+          supabase
+            .from('attendance_records')
+            .select('meeting_id, date')
+            .order('id', { ascending: true })
+            .range(from, to)
+        ),
       ]);
 
       const personData = personRes.data as Person | null;
@@ -168,7 +172,7 @@ export default function PersonProfilePage() {
 
       // Build active dates per meeting (all dates where any attendance was taken)
       const activeDatesByMeeting = new Map<string, Set<string>>();
-      for (const r of (allDatesRes.data ?? []) as Array<{ meeting_id: string; date: string }>) {
+      for (const r of allDates as unknown as Array<{ meeting_id: string; date: string }>) {
         if (!activeDatesByMeeting.has(r.meeting_id)) activeDatesByMeeting.set(r.meeting_id, new Set());
         activeDatesByMeeting.get(r.meeting_id)!.add(r.date);
       }
