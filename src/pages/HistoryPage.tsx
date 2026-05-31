@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
@@ -248,6 +248,8 @@ export default function HistoryPage() {
   const [recordsLoading, setRecordsLoading] = useState(true);
   const [inactiveList, setInactiveList] = useState<InactivePerson[]>([]);
   const [inactiveLoading, setInactiveLoading] = useState(true);
+  const [inactiveMeetingId, setInactiveMeetingId] = useState<string>('');
+  const insightsRowsRef = useRef<Array<{ pid: string; name: string; date: string; meetingId: string }>>([]);
   const [risingStars, setRisingStars] = useState<RisingStar[]>([]);
   const [risingStarsLoading, setRisingStarsLoading] = useState(true);
   const [topMusicians, setTopMusicians] = useState<MusicianCount[]>([]);
@@ -716,43 +718,64 @@ export default function HistoryPage() {
     setRecordsLoading(false);
   }
 
+  // Build the inactive watchlist from the already-fetched rows, optionally scoped
+  // to a single ministry. Empty meetingId = combined across both ministries.
+  function computeInactive(meetingId: string): InactivePerson[] {
+    const personMap = new Map<string, { name: string; dates: string[] }>();
+    for (const r of insightsRowsRef.current) {
+      if (meetingId && r.meetingId !== meetingId) continue;
+      if (!personMap.has(r.pid)) personMap.set(r.pid, { name: r.name, dates: [] });
+      personMap.get(r.pid)!.dates.push(r.date);
+    }
+
+    const today = new Date(getTodayDate() + 'T00:00:00');
+    const inactive: InactivePerson[] = [];
+    for (const [pid, stats] of personMap.entries()) {
+      if (stats.dates.length < 3) continue;
+      const sorted = [...stats.dates].sort();
+      const lastDate = sorted[sorted.length - 1];
+      const last = new Date(lastDate + 'T00:00:00');
+      const weeksSince = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24 * 7));
+      if (weeksSince >= 3) {
+        inactive.push({ person_id: pid, person_name: stats.name, totalAttendances: stats.dates.length, lastSeenDate: lastDate, weeksSinceLast: weeksSince });
+      }
+    }
+    inactive.sort((a, b) => b.weeksSinceLast - a.weeksSinceLast);
+    return inactive.slice(0, 15);
+  }
+
+  // Recompute the watchlist instantly when the ministry filter changes (no refetch).
+  useEffect(() => {
+    if (insightsRowsRef.current.length > 0) setInactiveList(computeInactive(inactiveMeetingId));
+  }, [inactiveMeetingId]);
+
   async function loadPeopleInsights() {
     setInactiveLoading(true);
     setRisingStarsLoading(true);
     const data = await fetchAllRows((from, to) =>
       supabase
         .from('attendance_records')
-        .select('person_id, date, person:people(full_name)')
+        .select('person_id, date, meeting_id, person:people(full_name)')
         .order('id', { ascending: true })
         .range(from, to)
     );
     {
       const rows = data as Array<Record<string, unknown>>;
+      insightsRowsRef.current = rows.map(r => ({
+        pid: r.person_id as string,
+        name: ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown',
+        date: r.date as string,
+        meetingId: r.meeting_id as string,
+      }));
+
+      // Inactive: attended 3+ times, last seen 3+ weeks ago (scoped to selected ministry)
+      setInactiveList(computeInactive(inactiveMeetingId));
+
       const personMap = new Map<string, { name: string; dates: string[] }>();
-      for (const r of rows) {
-        const pid = r.person_id as string;
-        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        const date = r.date as string;
-        if (!personMap.has(pid)) personMap.set(pid, { name, dates: [] });
-        personMap.get(pid)!.dates.push(date);
+      for (const r of insightsRowsRef.current) {
+        if (!personMap.has(r.pid)) personMap.set(r.pid, { name: r.name, dates: [] });
+        personMap.get(r.pid)!.dates.push(r.date);
       }
-
-      const today = new Date(getTodayDate() + 'T00:00:00');
-
-      // Inactive: attended 3+ times, last seen 3+ weeks ago
-      const inactive: InactivePerson[] = [];
-      for (const [pid, stats] of personMap.entries()) {
-        if (stats.dates.length < 3) continue;
-        const sorted = [...stats.dates].sort();
-        const lastDate = sorted[sorted.length - 1];
-        const last = new Date(lastDate + 'T00:00:00');
-        const weeksSince = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24 * 7));
-        if (weeksSince >= 3) {
-          inactive.push({ person_id: pid, person_name: stats.name, totalAttendances: stats.dates.length, lastSeenDate: lastDate, weeksSinceLast: weeksSince });
-        }
-      }
-      inactive.sort((a, b) => b.weeksSinceLast - a.weeksSinceLast);
-      setInactiveList(inactive.slice(0, 15));
 
       // Rising Stars: first attendance within 8 weeks, attended 3+ times
       const cutoff = shiftDate(getTodayDate(), -56);
@@ -1625,7 +1648,21 @@ export default function HistoryPage() {
         {/* Inactive Watchlist + Rising Stars */}
         <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
-          <h2>Inactive Watchlist</h2>
+          <div className="section-header-row">
+            <h2>Inactive Watchlist</h2>
+            <div className="section-header-controls">
+              <select
+                className="gender-meeting-select"
+                value={inactiveMeetingId}
+                onChange={e => setInactiveMeetingId(e.target.value)}
+              >
+                <option value="">All ministries</option>
+                {meetings.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           {inactiveLoading ? (
             <p className="history-empty">Loading...</p>
           ) : inactiveList.length === 0 ? (
