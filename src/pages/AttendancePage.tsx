@@ -5,7 +5,7 @@ import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
-import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate } from '../lib/dateUtils';
+import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET } from '../lib/dateUtils';
 import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
@@ -110,14 +110,8 @@ export default function AttendancePage() {
     const timedCount = timedEntries.length + timedGuests.length;
     if (timedCount === 0) return null;
 
-    const onTimeEntries = timedEntries.filter(e => {
-      const d = new Date(e.marked_at);
-      return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
-    });
-    const onTimeGuests = timedGuests.filter(g => {
-      const d = new Date(g.marked_at);
-      return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
-    });
+    const onTimeEntries = timedEntries.filter(e => minutesSinceMidnightET(e.marked_at)! <= cutoffMinutes!);
+    const onTimeGuests = timedGuests.filter(g => minutesSinceMidnightET(g.marked_at)! <= cutoffMinutes!);
     return Math.round(((onTimeEntries.length + onTimeGuests.length) / timedCount) * 100);
   }, [meeting, entries, guests]);
 

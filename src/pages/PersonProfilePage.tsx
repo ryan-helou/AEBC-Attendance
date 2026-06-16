@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay } from '../lib/dateUtils';
+import { getMeetingDay, formatTimeET, minutesSinceMidnightET } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -217,17 +217,20 @@ export default function PersonProfilePage() {
           }
         }
 
-        // Compute average arrival time (time-of-day only)
-        const times = meetingRecords.map(r => {
-          const d = new Date(r.marked_at);
-          return d.getHours() * 60 + d.getMinutes();
-        });
-        const avgMinutes = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
-        const avgH = Math.floor(avgMinutes / 60);
-        const avgM = avgMinutes % 60;
-        const period = avgH >= 12 ? 'PM' : 'AM';
-        const displayH = avgH % 12 || 12;
-        const avgArrivalTime = `${displayH}:${avgM.toString().padStart(2, '0')} ${period}`;
+        // Compute average arrival time (time-of-day only), in Eastern Time.
+        // Records with no recorded time are excluded from the average.
+        const times = meetingRecords
+          .map(r => minutesSinceMidnightET(r.marked_at))
+          .filter((m): m is number => m !== null);
+        let avgArrivalTime = '—';
+        if (times.length > 0) {
+          const avgMinutes = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+          const avgH = Math.floor(avgMinutes / 60);
+          const avgM = avgMinutes % 60;
+          const period = avgH >= 12 ? 'PM' : 'AM';
+          const displayH = avgH % 12 || 12;
+          avgArrivalTime = `${displayH}:${avgM.toString().padStart(2, '0')} ${period}`;
+        }
 
         stats.push({ meeting, timesAttended, longestStreak, currentStreak, attendanceRate, avgArrivalTime });
       }
@@ -520,10 +523,7 @@ export default function PersonProfilePage() {
                   </td>
                   <td>{row.meetingName}</td>
                   <td className="col-time">
-                    {new Date(row.marked_at).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
+                    {formatTimeET(row.marked_at)}
                   </td>
                   <td className="col-action">
                     <button className="profile-remove-btn" onClick={() => setPendingDelete({ id: row.id, meetingId: row.meeting_id })}>
