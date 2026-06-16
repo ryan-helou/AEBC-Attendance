@@ -101,18 +101,25 @@ export default function AttendancePage() {
     let cutoffMinutes: number | null = null;
     if (lower.includes('english') || lower.includes('sunday')) cutoffMinutes = 10 * 60 + 30; // 10:30 AM
     else if (lower.includes('saturday') || lower.includes('shabibeh')) cutoffMinutes = 19 * 60 + 30; // 7:30 PM
-    if (cutoffMinutes === null || totalCount === 0) return null;
+    if (cutoffMinutes === null) return null;
 
-    const onTimeEntries = entries.filter(e => {
+    // Only records that actually carry a check-in time count toward the on-time
+    // rate — records with the time removed are excluded from both sides.
+    const timedEntries = entries.filter(e => e.marked_at);
+    const timedGuests = guests.filter(g => g.marked_at);
+    const timedCount = timedEntries.length + timedGuests.length;
+    if (timedCount === 0) return null;
+
+    const onTimeEntries = timedEntries.filter(e => {
       const d = new Date(e.marked_at);
       return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
     });
-    const onTimeGuests = guests.filter(g => {
+    const onTimeGuests = timedGuests.filter(g => {
       const d = new Date(g.marked_at);
       return d.getHours() * 60 + d.getMinutes() <= cutoffMinutes!;
     });
-    return Math.round(((onTimeEntries.length + onTimeGuests.length) / totalCount) * 100);
-  }, [meeting, entries, guests, totalCount]);
+    return Math.round(((onTimeEntries.length + onTimeGuests.length) / timedCount) * 100);
+  }, [meeting, entries, guests]);
 
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MILESTONES = [25, 50, 75, 100];

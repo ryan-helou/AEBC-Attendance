@@ -56,6 +56,7 @@ interface AttendanceTableProps {
 }
 
 function formatTime(isoString: string) {
+  if (!isoString) return '';
   return new Date(isoString).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -63,6 +64,7 @@ function formatTime(isoString: string) {
 }
 
 function toTimeInputValue(isoString: string) {
+  if (!isoString) return '';
   const d = new Date(isoString);
   const h = d.getHours().toString().padStart(2, '0');
   const m = d.getMinutes().toString().padStart(2, '0');
