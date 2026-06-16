@@ -468,8 +468,7 @@ export default function HistoryPage() {
       for (const r of attendanceData as Array<Record<string, unknown>>) {
         const pid = r.person_id as string;
         const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        const markedAt = new Date(r.marked_at as string);
-        const minutesSinceMidnight = markedAt.getHours() * 60 + markedAt.getMinutes();
+        const rawMarkedAt = r.marked_at as string | null;
         const date = r.date as string;
         const meetingId = r.meeting_id as string;
 
@@ -477,7 +476,12 @@ export default function HistoryPage() {
           personStats.set(pid, { name, times: [], attendances: 0, datesByMeeting: new Map() });
         }
         const stats = personStats.get(pid)!;
-        stats.times.push(minutesSinceMidnight);
+        // Records with the time removed still count as an attendance, but they
+        // can't contribute to the average arrival time.
+        if (rawMarkedAt) {
+          const markedAt = new Date(rawMarkedAt);
+          stats.times.push(markedAt.getHours() * 60 + markedAt.getMinutes());
+        }
         stats.attendances++;
 
         if (!stats.datesByMeeting.has(meetingId)) {
@@ -498,6 +502,7 @@ export default function HistoryPage() {
 
         const attendanceRate = totalPossible > 0 ? (stats.attendances / totalPossible) * 100 : 0;
         if (attendanceRate < 50) continue; // Only include 50%+ attendance rate
+        if (stats.times.length === 0) continue; // no recorded times → can't rank on-time
 
         const avgMinutes = Math.round(stats.times.reduce((a, b) => a + b, 0) / stats.times.length);
         const hours = Math.floor(avgMinutes / 60);
@@ -1069,7 +1074,7 @@ export default function HistoryPage() {
         const date = r.date as string;
         const meetingName = ((r.meeting as Record<string, unknown>)?.name as string) || '';
         const personName = ((r.person as Record<string, unknown>)?.full_name as string) || '';
-        const time = r.marked_at as string;
+        const time = (r.marked_at as string | null) ?? '';
         csvLines.push(`${date},"${meetingName}","${personName}",${time}`);
       }
       const blob = new Blob([csvLines.join('\n')], { type: 'text/csv' });
