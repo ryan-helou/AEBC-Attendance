@@ -6,6 +6,7 @@ import type { SearchResult } from '../hooks/usePeople';
 import { MUSICIAN_ROLES } from '../hooks/useMusicianRoles';
 import type { MusicianRole } from '../hooks/useMusicianRoles';
 import SuggestionList from './SuggestionList';
+import { formatTimeET, toTimeInputValueET, etWallClockToISO } from '../lib/dateUtils';
 import './AttendanceTable.css';
 
 const SHABIBEH_LEADERS = [
@@ -53,22 +54,6 @@ interface AttendanceTableProps {
   markedPersonIds?: Set<string>;
   getMusicianRoles?: (personId: string) => MusicianRole[];
   onToggleMusicianRole?: (personId: string, role: MusicianRole) => void;
-}
-
-function formatTime(isoString: string) {
-  if (!isoString) return '';
-  return new Date(isoString).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function toTimeInputValue(isoString: string) {
-  if (!isoString) return '';
-  const d = new Date(isoString);
-  const h = d.getHours().toString().padStart(2, '0');
-  const m = d.getMinutes().toString().padStart(2, '0');
-  return `${h}:${m}`;
 }
 
 export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole }: AttendanceTableProps) {
@@ -140,7 +125,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
   function startEdit(item: DisplayEntry) {
     if (!canEditTime(item)) return;
     setEditingId(item.entry.id);
-    setEditValue(toTimeInputValue(item.entry.marked_at));
+    setEditValue(toTimeInputValueET(item.entry.marked_at));
   }
 
   function commitEdit(item: DisplayEntry) {
@@ -153,12 +138,11 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
       setEditingId(null);
       return;
     }
-    const d = new Date(item.entry.date + 'T00:00:00');
-    d.setHours(h, m, 0, 0);
+    const iso = etWallClockToISO(item.entry.date, h, m);
     if (item.type === 'guest') {
-      onUpdateGuestTime?.(item.entry.id, d.toISOString());
+      onUpdateGuestTime?.(item.entry.id, iso);
     } else {
-      onUpdateTime?.(item.entry.id, d.toISOString());
+      onUpdateTime?.(item.entry.id, iso);
     }
     setEditingId(null);
   }
@@ -362,7 +346,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       className={canEditTime(item) ? 'time-tap' : ''}
                       onClick={() => startEdit(item)}
                     >
-                      {formatTime(item.entry.marked_at)}
+                      {formatTimeET(item.entry.marked_at)}
                     </span>
                   )}
                 </td>

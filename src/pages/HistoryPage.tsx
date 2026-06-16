@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate } from '../lib/dateUtils';
+import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -477,11 +477,10 @@ export default function HistoryPage() {
         }
         const stats = personStats.get(pid)!;
         // Records with the time removed still count as an attendance, but they
-        // can't contribute to the average arrival time.
-        if (rawMarkedAt) {
-          const markedAt = new Date(rawMarkedAt);
-          stats.times.push(markedAt.getHours() * 60 + markedAt.getMinutes());
-        }
+        // can't contribute to the average arrival time. Times are evaluated in
+        // Eastern Time so leaders rank consistently regardless of viewer locale.
+        const mins = minutesSinceMidnightET(rawMarkedAt);
+        if (mins !== null) stats.times.push(mins);
         stats.attendances++;
 
         if (!stats.datesByMeeting.has(meetingId)) {
