@@ -189,6 +189,7 @@ export default function PersonProfilePage() {
   const [firstMeetingDate, setFirstMeetingDate] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [chartMeetingId, setChartMeetingId] = useState<string>('');
+  const [meetingAvgMinutes, setMeetingAvgMinutes] = useState<Map<string, number>>(new Map());
   const [accent, setAccent] = useState('#2563eb');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
   const [notes, setNotes] = useState('');
@@ -218,7 +219,7 @@ export default function PersonProfilePage() {
         fetchAllRows((from, to) =>
           supabase
             .from('attendance_records')
-            .select('meeting_id, date')
+            .select('meeting_id, date, marked_at')
             .order('id', { ascending: true })
             .range(from, to)
         ),
@@ -228,12 +229,24 @@ export default function PersonProfilePage() {
       const meetings = (meetingsRes.data ?? []) as Meeting[];
       const records = (recordsRes.data ?? []) as AttendanceRow[];
 
-      // Build active dates per meeting (all dates where any attendance was taken)
+      // Build active dates per meeting (all dates where any attendance was taken),
+      // and accumulate each meeting's average arrival time (ET) across everyone.
       const activeDatesByMeeting = new Map<string, Set<string>>();
-      for (const r of allDates as unknown as Array<{ meeting_id: string; date: string }>) {
+      const avgAcc = new Map<string, { sum: number; count: number }>();
+      for (const r of allDates as unknown as Array<{ meeting_id: string; date: string; marked_at: string }>) {
         if (!activeDatesByMeeting.has(r.meeting_id)) activeDatesByMeeting.set(r.meeting_id, new Set());
         activeDatesByMeeting.get(r.meeting_id)!.add(r.date);
+        const mins = minutesSinceMidnightET(r.marked_at);
+        if (mins !== null) {
+          if (!avgAcc.has(r.meeting_id)) avgAcc.set(r.meeting_id, { sum: 0, count: 0 });
+          const a = avgAcc.get(r.meeting_id)!;
+          a.sum += mins;
+          a.count++;
+        }
       }
+      const avgMap = new Map<string, number>();
+      for (const [mid, a] of avgAcc) if (a.count > 0) avgMap.set(mid, Math.round(a.sum / a.count));
+      setMeetingAvgMinutes(avgMap);
 
       setPerson(personData);
       setNotes(personData?.notes ?? '');
@@ -329,15 +342,18 @@ export default function PersonProfilePage() {
   }, [history, selectedMeeting]);
 
   const cutoff = selectedMeeting ? onTimeCutoffMinutes(selectedMeeting.name) : null;
+  const meetingAvg = selectedMeeting ? meetingAvgMinutes.get(selectedMeeting.id) ?? null : null;
 
-  // Y-axis domain padded around the data (and the cutoff line), rounded to 15 min.
+  // Y-axis domain hugging the data (plus the cutoff/average lines), padded
+  // lightly and rounded to 5 min so it doesn't stretch into empty space.
   const [yDomain, yTicks] = useMemo<[[number, number], number[]]>(() => {
     if (chartData.length === 0) return [[0, 1440], []];
-    const vals = chartData.map(d => d.minutes);
-    const lo = Math.max(0, Math.floor((Math.min(...vals, cutoff ?? Infinity) - 20) / 15) * 15);
-    const hi = Math.min(1440, Math.ceil((Math.max(...vals, cutoff ?? -Infinity) + 20) / 15) * 15);
+    const refs = [cutoff, meetingAvg].filter((v): v is number => v !== null);
+    const vals = [...chartData.map(d => d.minutes), ...refs];
+    const lo = Math.max(0, Math.floor((Math.min(...vals) - 10) / 5) * 5);
+    const hi = Math.min(1440, Math.ceil((Math.max(...vals) + 10) / 5) * 5);
     return [[lo, hi], niceTimeTicks(lo, hi)];
-  }, [chartData, cutoff]);
+  }, [chartData, cutoff, meetingAvg]);
 
   const hasAnyArrivalTimes = useMemo(
     () => history.some(r => minutesSinceMidnightET(r.marked_at) !== null),
@@ -650,6 +666,14 @@ export default function PersonProfilePage() {
                     axisLine={false}
                     width={64}
                   />
+                  {meetingAvg !== null && meetingAvg >= yDomain[0] && meetingAvg <= yDomain[1] && (
+                    <ReferenceLine
+                      y={meetingAvg}
+                      stroke="var(--color-text-muted)"
+                      strokeDasharray="2 4"
+                      strokeOpacity={0.65}
+                    />
+                  )}
                   {cutoff !== null && cutoff >= yDomain[0] && cutoff <= yDomain[1] && (
                     <ReferenceLine
                       y={cutoff}
@@ -674,7 +698,8 @@ export default function PersonProfilePage() {
                 </AreaChart>
               </ResponsiveContainer>
               <p className="profile-chart-hint">
-                Each dot is one service{cutoff !== null ? ' · below the green line is on time' : ''}.
+                Each dot is one service{cutoff !== null ? ' · green dashes = on-time' : ''}
+                {meetingAvg !== null ? ` · dotted = meeting avg (${minutesToClock(meetingAvg)})` : ''}.
               </p>
             </>
           )}
