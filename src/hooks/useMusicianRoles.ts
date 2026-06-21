@@ -17,6 +17,7 @@ export const MUSICIAN_ROLES = [
   'PowerPoint',
 ] as const;
 
+// Sound is a valid role (see MUSICIAN_ROLES) but is not counted as a musician.
 export const PLAYING_MUSICIAN_ROLES = [
   'Piano',
   'Guitar',
@@ -26,7 +27,6 @@ export const PLAYING_MUSICIAN_ROLES = [
   'Violin',
   'Singer',
   'Backup Singer',
-  'Sound',
 ] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
