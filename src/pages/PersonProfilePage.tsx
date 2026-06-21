@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, formatTimeET, minutesSinceMidnightET } from '../lib/dateUtils';
+import { getMeetingDay, formatTimeET, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -128,32 +128,6 @@ function computeCurrentStreak(dates: string[], meetingDay: number | null): numbe
     }
   }
   return streak;
-}
-
-/** Minutes-since-midnight → "7:32 PM". */
-function minutesToClock(mins: number): string {
-  const h = Math.floor(mins / 60);
-  const m = Math.round(mins % 60);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const dh = h % 12 || 12;
-  return `${dh}:${m.toString().padStart(2, '0')} ${period}`;
-}
-
-/** On-time cutoff (minutes since midnight, ET) for a meeting, matching the live page. */
-function onTimeCutoffMinutes(meetingName: string): number | null {
-  const l = meetingName.toLowerCase();
-  if (l.includes('english') || l.includes('sunday')) return 10 * 60 + 30;
-  if (l.includes('saturday') || l.includes('shabibeh')) return 19 * 60 + 30;
-  return null;
-}
-
-/** Y-axis ticks at a sensible whole-clock interval across a minutes range. */
-function niceTimeTicks(lo: number, hi: number): number[] {
-  const range = Math.max(1, hi - lo);
-  const step = [15, 30, 60, 120, 180, 240].find(s => range / s <= 6) ?? 360;
-  const ticks: number[] = [];
-  for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
-  return ticks;
 }
 
 interface ArrivalPoint {
@@ -671,7 +645,8 @@ export default function PersonProfilePage() {
                       y={meetingAvg}
                       stroke="var(--color-text-muted)"
                       strokeDasharray="2 4"
-                      strokeOpacity={0.65}
+                      strokeOpacity={0.7}
+                      label={{ value: `Avg · ${minutesToClock(meetingAvg)}`, position: 'insideTopLeft', fontSize: 10, fill: 'var(--color-text-muted)' }}
                     />
                   )}
                   {cutoff !== null && cutoff >= yDomain[0] && cutoff <= yDomain[1] && (
@@ -697,10 +672,6 @@ export default function PersonProfilePage() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
-              <p className="profile-chart-hint">
-                Each dot is one service{cutoff !== null ? ' · green dashes = on-time' : ''}
-                {meetingAvg !== null ? ` · dotted = meeting avg (${minutesToClock(meetingAvg)})` : ''}.
-              </p>
             </>
           )}
         </section>

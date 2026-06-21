@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET } from '../lib/dateUtils';
+import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -12,6 +12,9 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  LineChart,
+  Line,
+  ReferenceLine,
   BarChart,
   Bar,
   Cell,
@@ -223,6 +226,19 @@ function musicianLeaderboard(rows: RoleRow[], meetingId: string): MusicianCount[
     .slice(0, 15);
 }
 
+function AvgTimeTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (!active || !payload?.length || label === undefined) return null;
+  const fullDate = new Date(label + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
+  return (
+    <div className="profile-chart-tooltip">
+      <span className="profile-chart-tooltip-date">{fullDate}</span>
+      <span className="profile-chart-tooltip-time">Avg {minutesToClock(payload[0].value)}</span>
+    </div>
+  );
+}
+
 /** Per-leaderboard meeting picker: All Meetings + one option per ministry. */
 function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onChange: (v: string) => void; meetings: Meeting[] }) {
   return (
@@ -297,6 +313,11 @@ export default function HistoryPage() {
   const [chartLoading, setChartLoading] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
+  // Average-arrival-time chart: per-meeting, per-service averages (ET).
+  const [avgSeries, setAvgSeries] = useState<Map<string, { date: string; minutes: number }[]>>(new Map());
+  const [avgTimeLoading, setAvgTimeLoading] = useState(true);
+  const [avgTimeframe, setAvgTimeframe] = useState<Timeframe>('6m');
+  const [avgChartMeetingId, setAvgChartMeetingId] = useState('');
   const [genderData, setGenderData] = useState<GenderPoint[]>([]);
   const [genderTimeframe, setGenderTimeframe] = useState<Timeframe>('12w');
   const [genderMeetingId, setGenderMeetingId] = useState<string>('');
@@ -339,6 +360,27 @@ export default function HistoryPage() {
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
     return shiftDate(getTodayDate(), -daysMap[tf]);
   }
+
+  // Average-arrival-time chart: selected meeting's per-service points within the timeframe.
+  const avgChartMeeting = meetings.find(m => m.id === avgChartMeetingId) ?? meetings[0] ?? null;
+  const avgChartData = useMemo(() => {
+    if (!avgChartMeeting) return [] as Array<{ date: string; minutes: number; timeLabel: string }>;
+    const cutoff = timeframeCutoff(avgTimeframe);
+    return (avgSeries.get(avgChartMeeting.id) ?? [])
+      .filter(p => !cutoff || p.date >= cutoff)
+      .map(p => ({ date: p.date, minutes: p.minutes, timeLabel: minutesToClock(p.minutes) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avgSeries, avgChartMeeting, avgTimeframe]);
+
+  const avgChartCutoff = avgChartMeeting ? onTimeCutoffMinutes(avgChartMeeting.name) : null;
+  const [avgYDomain, avgYTicks] = useMemo<[[number, number], number[]]>(() => {
+    if (avgChartData.length === 0) return [[0, 1440], []];
+    const refs = avgChartCutoff !== null ? [avgChartCutoff] : [];
+    const vals = [...avgChartData.map(d => d.minutes), ...refs];
+    const lo = Math.max(0, Math.floor((Math.min(...vals) - 10) / 5) * 5);
+    const hi = Math.min(1440, Math.ceil((Math.max(...vals) + 10) / 5) * 5);
+    return [[lo, hi], niceTimeTicks(lo, hi)];
+  }, [avgChartData, avgChartCutoff]);
 
   async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
     setChartLoading(true);
@@ -402,6 +444,39 @@ export default function HistoryPage() {
       setChartData(points);
     }
     setChartLoading(false);
+  }
+
+  async function loadAvgTimeData() {
+    setAvgTimeLoading(true);
+    const data = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('meeting_id, date, marked_at')
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    const records = data as unknown as Array<{ meeting_id: string; date: string; marked_at: string }>;
+    // meeting_id -> date -> { sum, count } of arrival minutes (ET)
+    const acc = new Map<string, Map<string, { sum: number; count: number }>>();
+    for (const r of records) {
+      const mins = minutesSinceMidnightET(r.marked_at);
+      if (mins === null) continue;
+      if (!acc.has(r.meeting_id)) acc.set(r.meeting_id, new Map());
+      const byDate = acc.get(r.meeting_id)!;
+      if (!byDate.has(r.date)) byDate.set(r.date, { sum: 0, count: 0 });
+      const a = byDate.get(r.date)!;
+      a.sum += mins;
+      a.count++;
+    }
+    const series = new Map<string, { date: string; minutes: number }[]>();
+    for (const [mid, byDate] of acc) {
+      const pts = Array.from(byDate.entries())
+        .map(([date, a]) => ({ date, minutes: Math.round(a.sum / a.count) }))
+        .sort((x, y) => x.date.localeCompare(y.date));
+      series.set(mid, pts);
+    }
+    setAvgSeries(series);
+    setAvgTimeLoading(false);
   }
 
   async function loadCompareData(tf: Timeframe, meetingsList: Meeting[]) {
@@ -903,6 +978,7 @@ export default function HistoryPage() {
           setAllTimeMeetingId(data[0].id);
           setOnTimeMeetingId(shabibeh.id);
           setConsistencyMeetingId(shabibeh.id);
+          setAvgChartMeetingId(shabibeh.id);
           const day = getMeetingDay(data[0].name);
           setSelectedDate(snapToValidDate(today, day));
         }
@@ -917,6 +993,7 @@ export default function HistoryPage() {
       if (data) loadRecords(data);
       loadPeopleInsights();
       loadRoleLeaderboards();
+      loadAvgTimeData();
       setLoading(false);
     }
     load();
@@ -1191,6 +1268,83 @@ export default function HistoryPage() {
                   animationBegin={400}
                 />
               </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </section>
+
+      {/* Average Arrival Time — full width, per meeting */}
+      <section className="history-section">
+        <div className="section-header-row">
+          <h2>Average Arrival Time</h2>
+          <div className="timeframe-pills">
+            {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+              <button
+                key={tf}
+                className={`timeframe-pill${avgTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                onClick={() => setAvgTimeframe(tf)}
+              >
+                {tf === 'all' ? 'All' : tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="history-controls">
+          <select value={avgChartMeetingId} onChange={e => setAvgChartMeetingId(e.target.value)}>
+            {meetings.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+        {avgTimeLoading ? (
+          <p className="history-empty">Loading...</p>
+        ) : avgChartData.length === 0 ? (
+          <p className="history-empty">No arrival-time data for this period.</p>
+        ) : (
+          <div className="dashboard-chart-wrapper">
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={avgChartData} margin={{ top: 12, right: 20, bottom: 5, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                  tickLine={false}
+                  axisLine={{ stroke: 'var(--color-border)' }}
+                  minTickGap={28}
+                />
+                <YAxis
+                  domain={avgYDomain}
+                  ticks={avgYTicks}
+                  tickFormatter={minutesToClock}
+                  tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={64}
+                />
+                {avgChartCutoff !== null && avgChartCutoff >= avgYDomain[0] && avgChartCutoff <= avgYDomain[1] && (
+                  <ReferenceLine
+                    y={avgChartCutoff}
+                    stroke="#16a34a"
+                    strokeDasharray="5 4"
+                    strokeOpacity={0.75}
+                    label={{ value: `On-time · ${minutesToClock(avgChartCutoff)}`, position: 'insideTopLeft', fontSize: 10, fill: '#16a34a' }}
+                  />
+                )}
+                <Tooltip content={<AvgTimeTooltip />} cursor={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />
+                <Line
+                  type="monotone"
+                  dataKey="minutes"
+                  name="Avg arrival"
+                  stroke="var(--color-primary)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3.5, strokeWidth: 2, stroke: 'var(--color-primary)', fill: 'var(--color-surface)' }}
+                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                  connectNulls
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         )}

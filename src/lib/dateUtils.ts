@@ -85,6 +85,32 @@ export function minutesSinceMidnightET(isoString: string | null | undefined): nu
   return ((Math.floor(etMs / 60000) % 1440) + 1440) % 1440;
 }
 
+/** Minutes-since-midnight (0–1439) → a clock label like "7:32 PM". */
+export function minutesToClock(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const dh = h % 12 || 12;
+  return `${dh}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+/** Y-axis ticks at a sensible whole-clock interval (minutes) across a range. */
+export function niceTimeTicks(lo: number, hi: number): number[] {
+  const range = Math.max(1, hi - lo);
+  const step = [15, 30, 60, 120, 180, 240].find(s => range / s <= 6) ?? 360;
+  const ticks: number[] = [];
+  for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
+  return ticks;
+}
+
+/** On-time cutoff (minutes since midnight, ET) for a meeting, or null if unknown. */
+export function onTimeCutoffMinutes(meetingName: string): number | null {
+  const l = meetingName.toLowerCase();
+  if (l.includes('english') || l.includes('sunday')) return 10 * 60 + 30; // 10:30 AM
+  if (l.includes('saturday') || l.includes('shabibeh')) return 19 * 60 + 30; // 7:30 PM
+  return null;
+}
+
 /** Eastern-Time "HH:mm" value for an <input type="time">. Empty string when there's no time. */
 export function toTimeInputValueET(isoString: string | null | undefined): string {
   const mins = minutesSinceMidnightET(isoString);
