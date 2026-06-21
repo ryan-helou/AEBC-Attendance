@@ -166,24 +166,23 @@ export function computeLongestStreak(attendedDates: string[], serviceDates: stri
 
 /**
  * Current (ongoing) streak: consecutive service dates attended, counting back
- * from the person's most recent attendance. Returns 0 once that attendance is
- * more than two weeks stale. Cancelled / no-service weeks are bridged.
+ * from the most recent service. Missing the latest *past* service ends the
+ * streak (returns 0) — so someone who stopped coming no longer has a streak.
+ * Today's service is exempt (it may still be in progress / not fully marked).
+ * Cancelled / no-service weeks aren't in `serviceDates`, so they're bridged.
  */
 export function computeCurrentStreak(attendedDates: string[], serviceDates: string[]): number {
   if (attendedDates.length === 0) return 0;
   const services = Array.from(new Set(serviceDates)).sort();
+  if (services.length === 0) return 0;
   const attended = new Set(attendedDates);
-  const lastAttended = Array.from(attended).sort().pop()!;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysSinceLast = Math.round(
-    (today.getTime() - new Date(lastAttended + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24),
-  );
-  if (daysSinceLast > 14) return 0; // gone too long → streak ended
-  const idx = services.lastIndexOf(lastAttended);
-  if (idx === -1) return 0;
+  let i = services.length - 1;
+  if (!attended.has(services[i])) {
+    if (services[i] === getTodayDate()) i--; // don't end the streak on a service happening today
+    else return 0; // missed the most recent past service → streak has ended
+  }
   let streak = 0;
-  for (let i = idx; i >= 0; i--) {
+  for (; i >= 0; i--) {
     if (attended.has(services[i])) streak++;
     else break;
   }

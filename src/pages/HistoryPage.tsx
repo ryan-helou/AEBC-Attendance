@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak } from '../lib/dateUtils';
+import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -564,7 +564,9 @@ export default function HistoryPage() {
       }
       const leaders: StreakLeader[] = [];
       for (const g of groups.values()) {
-        const streak = computeLongestStreak(g.dates, Array.from(serviceDatesByMeeting.get(g.meeting_id) ?? []));
+        // Current (active) streak — ends when someone stops attending, so people
+        // who racked up a long run then left drop off the board.
+        const streak = computeCurrentStreak(g.dates, Array.from(serviceDatesByMeeting.get(g.meeting_id) ?? []));
         if (streak >= 2) leaders.push({ person_id: g.person_id, person_name: g.person_name, meeting_name: g.meeting_name, streak });
       }
       leaders.sort((a, b) => b.streak - a.streak);
@@ -1193,28 +1195,35 @@ export default function HistoryPage() {
             ))}
           </div>
         </div>
-        <div className="meeting-filter-pills">
+        <div className="meeting-filter-toggle" role="tablist" aria-label="Ministry">
           <button
-            className={`meeting-filter-pill${chartMeeting === 'all' ? ' meeting-filter-pill-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={chartMeeting === 'all'}
+            className={`meeting-filter-option${chartMeeting === 'all' ? ' meeting-filter-option-active' : ''}`}
             onClick={() => setChartMeeting('all')}
           >
             All
           </button>
-          {meetings.map((m, i) => (
+          {meetings.map(m => (
             <button
               key={m.id}
-              className={`meeting-filter-pill${chartMeeting === m.id ? ' meeting-filter-pill-active' : ''}`}
+              type="button"
+              role="tab"
+              aria-selected={chartMeeting === m.id}
+              className={`meeting-filter-option${chartMeeting === m.id ? ' meeting-filter-option-active' : ''}`}
               onClick={() => setChartMeeting(m.id)}
             >
-              <span className="meeting-filter-dot" style={{ background: LINE_COLORS[i % LINE_COLORS.length] }} />
-              {m.name}
+              {m.name.replace(/ Service$/, '')}
             </button>
           ))}
           <button
-            className={`meeting-filter-pill${chartMeeting === 'firsttimers' ? ' meeting-filter-pill-active' : ''}`}
+            type="button"
+            role="tab"
+            aria-selected={chartMeeting === 'firsttimers'}
+            className={`meeting-filter-option${chartMeeting === 'firsttimers' ? ' meeting-filter-option-active' : ''}`}
             onClick={() => setChartMeeting('firsttimers')}
           >
-            <span className="meeting-filter-dot" style={{ background: '#f59e0b' }} />
             First Timers
           </button>
         </div>
@@ -1695,11 +1704,11 @@ export default function HistoryPage() {
 
         {/* Streak Leaderboard */}
         <section className="history-section leaderboard-section streak-lb-section">
-          <h2>🔥 Best Streaks</h2>
+          <h2>🔥 Current Streaks</h2>
           {streakLoading ? (
             <p className="history-empty">Loading...</p>
           ) : streakLeaders.length === 0 ? (
-            <p className="history-empty">Not enough data yet.</p>
+            <p className="history-empty">No active streaks right now.</p>
           ) : (
             <div className="leaderboard-scroll">
               <table className="leaderboard-table">
