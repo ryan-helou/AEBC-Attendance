@@ -1,5 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+} from 'recharts';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, formatTimeET, minutesSinceMidnightET } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
@@ -120,6 +130,52 @@ function computeCurrentStreak(dates: string[], meetingDay: number | null): numbe
   return streak;
 }
 
+/** Minutes-since-midnight → "7:32 PM". */
+function minutesToClock(mins: number): string {
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const dh = h % 12 || 12;
+  return `${dh}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
+/** On-time cutoff (minutes since midnight, ET) for a meeting, matching the live page. */
+function onTimeCutoffMinutes(meetingName: string): number | null {
+  const l = meetingName.toLowerCase();
+  if (l.includes('english') || l.includes('sunday')) return 10 * 60 + 30;
+  if (l.includes('saturday') || l.includes('shabibeh')) return 19 * 60 + 30;
+  return null;
+}
+
+/** Y-axis ticks at a sensible whole-clock interval across a minutes range. */
+function niceTimeTicks(lo: number, hi: number): number[] {
+  const range = Math.max(1, hi - lo);
+  const step = [15, 30, 60, 120, 180, 240].find(s => range / s <= 6) ?? 360;
+  const ticks: number[] = [];
+  for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
+  return ticks;
+}
+
+interface ArrivalPoint {
+  date: string;
+  label: string;
+  minutes: number;
+  timeLabel: string;
+}
+
+function ArrivalTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ArrivalPoint }> }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  const fullDate = new Date(p.date + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
+  return (
+    <div className="profile-chart-tooltip">
+      <span className="profile-chart-tooltip-date">{fullDate}</span>
+      <span className="profile-chart-tooltip-time">{p.timeLabel}</span>
+    </div>
+  );
+}
 
 export default function PersonProfilePage() {
   const { personId } = useParams<{ personId: string }>();
@@ -132,6 +188,8 @@ export default function PersonProfilePage() {
   const [totalAttendances, setTotalAttendances] = useState(0);
   const [firstMeetingDate, setFirstMeetingDate] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [chartMeetingId, setChartMeetingId] = useState<string>('');
+  const [accent, setAccent] = useState('#2563eb');
   const [pendingDelete, setPendingDelete] = useState<{ id: string; meetingId: string } | null>(null);
   const [notes, setNotes] = useState('');
   const [editingName, setEditingName] = useState(false);
@@ -235,11 +293,56 @@ export default function PersonProfilePage() {
         stats.push({ meeting, timesAttended, longestStreak, currentStreak, attendanceRate, avgArrivalTime });
       }
       setMeetingStats(stats);
+      // Default the arrival-time chart to Shabibeh if attended, else the first meeting.
+      const preferred = stats.find(s => s.meeting.name.toLowerCase().includes('shabibeh')) ?? stats[0];
+      if (preferred) setChartMeetingId(preferred.meeting.id);
       setLoading(false);
     }
 
     load();
   }, [personId]);
+
+  // Resolve the themed accent to a concrete hex so chart gradients render reliably.
+  useEffect(() => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim();
+    if (v) setAccent(v);
+  }, []);
+
+  // Meetings the person has attended (for the chart's meeting toggle).
+  const chartMeetings = useMemo(() => meetingStats.map(s => s.meeting), [meetingStats]);
+  const selectedMeeting = chartMeetings.find(m => m.id === chartMeetingId) ?? chartMeetings[0] ?? null;
+
+  // Arrival-time points for the selected meeting, oldest → newest, timed records only.
+  const chartData = useMemo<ArrivalPoint[]>(() => {
+    if (!selectedMeeting) return [];
+    return history
+      .filter(r => r.meeting_id === selectedMeeting.id)
+      .map(r => ({ date: r.date, minutes: minutesSinceMidnightET(r.marked_at) }))
+      .filter((r): r is { date: string; minutes: number } => r.minutes !== null)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(r => ({
+        date: r.date,
+        label: new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        minutes: r.minutes,
+        timeLabel: minutesToClock(r.minutes),
+      }));
+  }, [history, selectedMeeting]);
+
+  const cutoff = selectedMeeting ? onTimeCutoffMinutes(selectedMeeting.name) : null;
+
+  // Y-axis domain padded around the data (and the cutoff line), rounded to 15 min.
+  const [yDomain, yTicks] = useMemo<[[number, number], number[]]>(() => {
+    if (chartData.length === 0) return [[0, 1440], []];
+    const vals = chartData.map(d => d.minutes);
+    const lo = Math.max(0, Math.floor((Math.min(...vals, cutoff ?? Infinity) - 20) / 15) * 15);
+    const hi = Math.min(1440, Math.ceil((Math.max(...vals, cutoff ?? -Infinity) + 20) / 15) * 15);
+    return [[lo, hi], niceTimeTicks(lo, hi)];
+  }, [chartData, cutoff]);
+
+  const hasAnyArrivalTimes = useMemo(
+    () => history.some(r => minutesSinceMidnightET(r.marked_at) !== null),
+    [history],
+  );
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -495,6 +598,88 @@ export default function PersonProfilePage() {
         </div>
         );
       })}
+
+      {hasAnyArrivalTimes && selectedMeeting && (
+        <section className="profile-section profile-chart-section">
+          <div className="profile-chart-head">
+            <h2>Arrival Times</h2>
+            {chartMeetings.length > 1 && (
+              <div className="profile-chart-toggle" role="tablist" aria-label="Meeting">
+                {chartMeetings.map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selectedMeeting.id === m.id}
+                    className={`profile-chart-option${selectedMeeting.id === m.id ? ' profile-chart-option-active' : ''}`}
+                    onClick={() => setChartMeetingId(m.id)}
+                  >
+                    {m.name.replace(/ Service$/, '')}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {chartData.length === 0 ? (
+            <p className="profile-empty">No arrival times recorded for {selectedMeeting.name}.</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={chartData} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
+                  <defs>
+                    <linearGradient id="arrival-grad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={accent} stopOpacity={0.28} />
+                      <stop offset="95%" stopColor={accent} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    minTickGap={24}
+                  />
+                  <YAxis
+                    domain={yDomain}
+                    ticks={yTicks}
+                    tickFormatter={minutesToClock}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={64}
+                  />
+                  {cutoff !== null && cutoff >= yDomain[0] && cutoff <= yDomain[1] && (
+                    <ReferenceLine
+                      y={cutoff}
+                      stroke="#16a34a"
+                      strokeDasharray="5 4"
+                      strokeOpacity={0.75}
+                      label={{ value: `On-time · ${minutesToClock(cutoff)}`, position: 'insideTopLeft', fontSize: 10, fill: '#16a34a' }}
+                    />
+                  )}
+                  <Tooltip content={<ArrivalTooltip />} cursor={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="minutes"
+                    stroke={accent}
+                    strokeWidth={2.5}
+                    fill="url(#arrival-grad)"
+                    dot={{ r: 3.5, strokeWidth: 2, stroke: accent, fill: 'var(--color-surface)' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="profile-chart-hint">
+                Each dot is one service{cutoff !== null ? ' · below the green line is on time' : ''}.
+              </p>
+            </>
+          )}
+        </section>
+      )}
 
       <section className="profile-section">
         <h2>History</h2>
