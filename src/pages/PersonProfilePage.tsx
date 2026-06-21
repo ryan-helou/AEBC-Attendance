@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, formatTimeET, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks } from '../lib/dateUtils';
+import { formatTimeET, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -84,50 +84,6 @@ interface HistoryRow {
   date: string;
   marked_at: string;
   meetingName: string;
-}
-
-function computeLongestStreak(dates: string[]): number {
-  if (dates.length === 0) return 0;
-  const sorted = [...dates].sort();
-  let longest = 1;
-  let current = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1] + 'T00:00:00');
-    const curr = new Date(sorted[i] + 'T00:00:00');
-    const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 7) {
-      current++;
-      if (current > longest) longest = current;
-    } else {
-      current = 1;
-    }
-  }
-  return longest;
-}
-
-function computeCurrentStreak(dates: string[], meetingDay: number | null): number {
-  if (dates.length === 0 || meetingDay === null) return 0;
-  const sorted = [...dates].sort().reverse(); // most recent first
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Check if the most recent attendance is within the last 2 weeks
-  const lastDate = new Date(sorted[0] + 'T00:00:00');
-  const daysSinceLast = Math.round((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-  if (daysSinceLast > 14) return 0; // streak is broken
-
-  let streak = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1] + 'T00:00:00');
-    const curr = new Date(sorted[i] + 'T00:00:00');
-    const diff = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 7) {
-      streak++;
-    } else {
-      break;
-    }
-  }
-  return streak;
 }
 
 interface ArrivalPoint {
@@ -249,9 +205,11 @@ export default function PersonProfilePage() {
 
         const dates = meetingRecords.map(r => r.date);
         const timesAttended = dates.length;
-        const longestStreak = computeLongestStreak(dates);
-        const day = getMeetingDay(meeting.name);
-        const currentStreak = computeCurrentStreak(dates, day);
+        // Service dates = every date this meeting was actually held, so streaks
+        // bridge cancelled / no-service weeks instead of breaking on them.
+        const serviceDates = Array.from(activeDatesByMeeting.get(meeting.id) ?? []);
+        const longestStreak = computeLongestStreak(dates, serviceDates);
+        const currentStreak = computeCurrentStreak(dates, serviceDates);
 
         let attendanceRate = 0;
         {
