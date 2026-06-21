@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks } from '../lib/dateUtils';
+import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak } from '../lib/dateUtils';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -253,19 +253,8 @@ function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onCha
   );
 }
 
-function computeLongestStreak(dates: string[]): number {
-  if (dates.length === 0) return 0;
-  const sorted = [...dates].sort();
-  let longest = 1, current = 1;
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = new Date(sorted[i - 1] + 'T00:00:00');
-    const curr = new Date(sorted[i] + 'T00:00:00');
-    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 7) { current++; if (current > longest) longest = current; }
-    else current = 1;
-  }
-  return longest;
-}
+// computeLongestStreak now lives in dateUtils (service-date aware, bridges
+// cancelled / no-service weeks).
 
 const LINE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -308,6 +297,8 @@ export default function HistoryPage() {
   const [topAttendees, setTopAttendees] = useState<TopAttendee[]>([]);
   const [maxCount, setMaxCount] = useState(1);
   const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('12w');
+  // 'all' shows every series; otherwise a meeting id or 'firsttimers' isolates one line.
+  const [chartMeeting, setChartMeeting] = useState<string>('all');
   const [compareTimeframe, setCompareTimeframe] = useState<Timeframe>('12w');
   const [topTimeframe, setTopTimeframe] = useState<Timeframe>('all');
   const [chartLoading, setChartLoading] = useState(false);
@@ -559,17 +550,21 @@ export default function HistoryPage() {
         .range(from, to)
     );
     {
-      const groups = new Map<string, { person_id: string; person_name: string; meeting_name: string; dates: string[] }>();
+      const groups = new Map<string, { person_id: string; person_name: string; meeting_id: string; meeting_name: string; dates: string[] }>();
+      const serviceDatesByMeeting = new Map<string, Set<string>>();
       for (const r of data as Array<Record<string, unknown>>) {
-        const key = `${r.person_id}|${r.meeting_id}`;
+        const meetingId = r.meeting_id as string;
+        const key = `${r.person_id}|${meetingId}`;
         const personName = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
         const meetingName = ((r.meeting as Record<string, unknown>)?.name as string) || 'Unknown';
-        if (!groups.has(key)) groups.set(key, { person_id: r.person_id as string, person_name: personName, meeting_name: meetingName, dates: [] });
+        if (!groups.has(key)) groups.set(key, { person_id: r.person_id as string, person_name: personName, meeting_id: meetingId, meeting_name: meetingName, dates: [] });
         groups.get(key)!.dates.push(r.date as string);
+        if (!serviceDatesByMeeting.has(meetingId)) serviceDatesByMeeting.set(meetingId, new Set());
+        serviceDatesByMeeting.get(meetingId)!.add(r.date as string);
       }
       const leaders: StreakLeader[] = [];
       for (const g of groups.values()) {
-        const streak = computeLongestStreak(g.dates);
+        const streak = computeLongestStreak(g.dates, Array.from(serviceDatesByMeeting.get(g.meeting_id) ?? []));
         if (streak >= 2) leaders.push({ person_id: g.person_id, person_name: g.person_name, meeting_name: g.meeting_name, streak });
       }
       leaders.sort((a, b) => b.streak - a.streak);
@@ -798,17 +793,21 @@ export default function HistoryPage() {
       }
 
       // 2. Longest streak ever
-      const streakGroups = new Map<string, { name: string; meeting: string; dates: string[] }>();
+      const streakGroups = new Map<string, { name: string; meeting_id: string; meeting: string; dates: string[] }>();
+      const streakServiceDates = new Map<string, Set<string>>();
       for (const r of attRows) {
-        const key = `${r.person_id}|${r.meeting_id}`;
+        const meetingId = r.meeting_id as string;
+        const key = `${r.person_id}|${meetingId}`;
         const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        const meeting = meetingsList.find(m => m.id === r.meeting_id)?.name || '';
-        if (!streakGroups.has(key)) streakGroups.set(key, { name, meeting, dates: [] });
+        const meeting = meetingsList.find(m => m.id === meetingId)?.name || '';
+        if (!streakGroups.has(key)) streakGroups.set(key, { name, meeting_id: meetingId, meeting, dates: [] });
         streakGroups.get(key)!.dates.push(r.date as string);
+        if (!streakServiceDates.has(meetingId)) streakServiceDates.set(meetingId, new Set());
+        streakServiceDates.get(meetingId)!.add(r.date as string);
       }
       let longestStreak = { count: 0, name: '', meeting: '' };
       for (const g of streakGroups.values()) {
-        const s = computeLongestStreak(g.dates);
+        const s = computeLongestStreak(g.dates, Array.from(streakServiceDates.get(g.meeting_id) ?? []));
         if (s > longestStreak.count) longestStreak = { count: s, name: g.name, meeting: g.meeting };
       }
       if (longestStreak.count > 0) {
@@ -1194,6 +1193,31 @@ export default function HistoryPage() {
             ))}
           </div>
         </div>
+        <div className="meeting-filter-pills">
+          <button
+            className={`meeting-filter-pill${chartMeeting === 'all' ? ' meeting-filter-pill-active' : ''}`}
+            onClick={() => setChartMeeting('all')}
+          >
+            All
+          </button>
+          {meetings.map((m, i) => (
+            <button
+              key={m.id}
+              className={`meeting-filter-pill${chartMeeting === m.id ? ' meeting-filter-pill-active' : ''}`}
+              onClick={() => setChartMeeting(m.id)}
+            >
+              <span className="meeting-filter-dot" style={{ background: LINE_COLORS[i % LINE_COLORS.length] }} />
+              {m.name}
+            </button>
+          ))}
+          <button
+            className={`meeting-filter-pill${chartMeeting === 'firsttimers' ? ' meeting-filter-pill-active' : ''}`}
+            onClick={() => setChartMeeting('firsttimers')}
+          >
+            <span className="meeting-filter-dot" style={{ background: '#f59e0b' }} />
+            First Timers
+          </button>
+        </div>
         {chartLoading ? (
           <p className="history-empty">Loading...</p>
         ) : chartData.length === 0 ? (
@@ -1240,33 +1264,37 @@ export default function HistoryPage() {
                 />
                 <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '0.5rem' }} />
                 {meetings.map((m, i) => (
+                  (chartMeeting === 'all' || chartMeeting === m.id) ? (
+                    <Area
+                      key={m.id}
+                      type="monotone"
+                      dataKey={m.name}
+                      stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                      strokeWidth={2.5}
+                      fill={`url(#grad-${i})`}
+                      dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                      activeDot={{ r: 6, strokeWidth: 0 }}
+                      animationDuration={800}
+                      animationEasing="ease-out"
+                      animationBegin={200}
+                    />
+                  ) : null
+                ))}
+                {(chartMeeting === 'all' || chartMeeting === 'firsttimers') && (
                   <Area
-                    key={m.id}
                     type="monotone"
-                    dataKey={m.name}
-                    stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                    strokeWidth={2.5}
-                    fill={`url(#grad-${i})`}
-                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    dataKey="First Timers"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    strokeDasharray="5 3"
+                    fill="url(#grad-firsttimers)"
+                    dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
                     animationDuration={800}
                     animationEasing="ease-out"
-                    animationBegin={200}
+                    animationBegin={400}
                   />
-                ))}
-                <Area
-                  type="monotone"
-                  dataKey="First Timers"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  strokeDasharray="5 3"
-                  fill="url(#grad-firsttimers)"
-                  dot={{ r: 3, strokeWidth: 2, fill: '#fff' }}
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                  animationDuration={800}
-                  animationEasing="ease-out"
-                  animationBegin={400}
-                />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

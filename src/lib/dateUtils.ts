@@ -141,3 +141,51 @@ export function snapToValidDate(dateStr: string, meetingDay: number | null): str
   }
   return toDateStr(d);
 }
+
+/**
+ * Longest run of consecutive *service dates* the person attended. `serviceDates`
+ * is every date the meeting was actually held; weeks with no service (cancelled,
+ * or none held) aren't in it, so a gap across them does NOT break the streak.
+ */
+export function computeLongestStreak(attendedDates: string[], serviceDates: string[]): number {
+  if (attendedDates.length === 0) return 0;
+  const services = Array.from(new Set(serviceDates)).sort();
+  const attended = new Set(attendedDates);
+  let longest = 0;
+  let current = 0;
+  for (const d of services) {
+    if (attended.has(d)) {
+      current++;
+      if (current > longest) longest = current;
+    } else {
+      current = 0;
+    }
+  }
+  return longest;
+}
+
+/**
+ * Current (ongoing) streak: consecutive service dates attended, counting back
+ * from the person's most recent attendance. Returns 0 once that attendance is
+ * more than two weeks stale. Cancelled / no-service weeks are bridged.
+ */
+export function computeCurrentStreak(attendedDates: string[], serviceDates: string[]): number {
+  if (attendedDates.length === 0) return 0;
+  const services = Array.from(new Set(serviceDates)).sort();
+  const attended = new Set(attendedDates);
+  const lastAttended = Array.from(attended).sort().pop()!;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysSinceLast = Math.round(
+    (today.getTime() - new Date(lastAttended + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (daysSinceLast > 14) return 0; // gone too long → streak ended
+  const idx = services.lastIndexOf(lastAttended);
+  if (idx === -1) return 0;
+  let streak = 0;
+  for (let i = idx; i >= 0; i--) {
+    if (attended.has(services[i])) streak++;
+    else break;
+  }
+  return streak;
+}
