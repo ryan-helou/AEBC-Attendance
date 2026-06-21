@@ -514,6 +514,80 @@
   margin: 0;
 }
 
+/* Arrival-times chart */
+.profile-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.profile-chart-head h2 {
+  margin: 0;
+}
+
+.profile-chart-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-primary-light);
+  border-radius: 999px;
+}
+
+.profile-chart-option {
+  padding: 0.32em 0.95em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.profile-chart-option:hover {
+  color: var(--color-primary);
+}
+
+.profile-chart-option-active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-chart-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0.4rem 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.profile-chart-tooltip-date {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.profile-chart-tooltip-time {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.profile-chart-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .profile-table {
   width: 100%;
   border-collapse: collapse;
