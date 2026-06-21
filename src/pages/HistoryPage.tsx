@@ -262,6 +262,9 @@ export default function HistoryPage() {
   const [soundLoading, setSoundLoading] = useState(true);
   const [topLiveStream, setTopLiveStream] = useState<RoleCount[]>([]);
   const [liveStreamLoading, setLiveStreamLoading] = useState(true);
+  const [topPowerPoint, setTopPowerPoint] = useState<RoleCount[]>([]);
+  const [powerPointLoading, setPowerPointLoading] = useState(true);
+  const [roleMeetingId, setRoleMeetingId] = useState(''); // '' = all meetings
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
@@ -798,15 +801,19 @@ export default function HistoryPage() {
     setRisingStarsLoading(false);
   }
 
-  async function loadRoleLeaderboards() {
+  async function loadRoleLeaderboards(meetingId?: string) {
+    const targetMeetingId = meetingId ?? roleMeetingId;
     setMusiciansLoading(true);
     setPreachersLoading(true);
     setAttendanceTakersLoading(true);
     setSoundLoading(true);
     setLiveStreamLoading(true);
-    const { data } = await supabase
+    setPowerPointLoading(true);
+    let query = supabase
       .from('musician_roles')
       .select('person_id, role, date, person:people(full_name)');
+    if (targetMeetingId) query = query.eq('meeting_id', targetMeetingId);
+    const { data } = await query;
     if (data) {
       const rows = data as Array<Record<string, unknown>>;
       const PLAYING = new Set([
@@ -818,6 +825,7 @@ export default function HistoryPage() {
       const attendanceMap = new Map<string, { name: string; dates: Set<string> }>();
       const soundMap = new Map<string, { name: string; dates: Set<string> }>();
       const liveStreamMap = new Map<string, { name: string; dates: Set<string> }>();
+      const powerPointMap = new Map<string, { name: string; dates: Set<string> }>();
 
       for (const r of rows) {
         const pid = r.person_id as string;
@@ -837,6 +845,9 @@ export default function HistoryPage() {
         } else if (role === 'Live Stream') {
           if (!liveStreamMap.has(pid)) liveStreamMap.set(pid, { name, dates: new Set() });
           liveStreamMap.get(pid)!.dates.add(date);
+        } else if (role === 'PowerPoint') {
+          if (!powerPointMap.has(pid)) powerPointMap.set(pid, { name, dates: new Set() });
+          powerPointMap.get(pid)!.dates.add(date);
         } else if (role === 'Preacher') {
           if (!preacherMap.has(pid)) preacherMap.set(pid, { name, dates: new Set() });
           preacherMap.get(pid)!.dates.add(date);
@@ -880,12 +891,19 @@ export default function HistoryPage() {
         .sort((a, b) => b.totalAppearances - a.totalAppearances)
         .slice(0, 15);
       setTopLiveStream(liveStream);
+
+      const powerPoint: RoleCount[] = Array.from(powerPointMap.entries())
+        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+        .sort((a, b) => b.totalAppearances - a.totalAppearances)
+        .slice(0, 15);
+      setTopPowerPoint(powerPoint);
     }
     setMusiciansLoading(false);
     setPreachersLoading(false);
     setAttendanceTakersLoading(false);
     setSoundLoading(false);
     setLiveStreamLoading(false);
+    setPowerPointLoading(false);
   }
 
   useEffect(() => {
@@ -1744,6 +1762,25 @@ export default function HistoryPage() {
         </section>
         </div>
 
+        {/* Service-role leaderboards: meeting switcher governs all boards below */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🎵 Service Roles</h2>
+          <div className="history-controls">
+            <select
+              value={roleMeetingId}
+              onChange={e => {
+                setRoleMeetingId(e.target.value);
+                loadRoleLeaderboards(e.target.value);
+              }}
+            >
+              <option value="">All Meetings</option>
+              {meetings.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+        </section>
+
         {/* Top Preachers + Top Attendance Takers pair */}
         <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
@@ -1929,6 +1966,52 @@ export default function HistoryPage() {
           )}
         </section>
         </div>
+
+        {/* Top PowerPoint */}
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🖥️ Top PowerPoint</h2>
+          {powerPointLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topPowerPoint.length === 0 ? (
+            <p className="history-empty">No PowerPoint data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topPowerPoint.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {/* Top Musicians */}
         <section className="history-section leaderboard-section streak-lb-section">

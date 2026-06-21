@@ -10,10 +10,10 @@ export const MUSICIAN_ROLES = [
   'Violin',
   'Singer',
   'Backup Singer',
-  'Sound',
   'Attendance',
   'Preacher',
   'Live Stream',
+  'PowerPoint',
 ] as const;
 
 export const PLAYING_MUSICIAN_ROLES = [
@@ -25,7 +25,6 @@ export const PLAYING_MUSICIAN_ROLES = [
   'Violin',
   'Singer',
   'Backup Singer',
-  'Sound',
 ] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
