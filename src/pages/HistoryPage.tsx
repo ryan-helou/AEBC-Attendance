@@ -180,8 +180,10 @@ interface RoleRow {
   meeting_id: string;
 }
 
+// Sound is an assignable role with its own Top Sound board, but it is not a
+// musician — keep it out of the Top Musicians leaderboard.
 const PLAYING_ROLES = new Set([
-  'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer', 'Sound',
+  'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer',
 ]);
 
 /** Leaderboard for a single role, optionally filtered to one meeting ('' = all meetings). */
