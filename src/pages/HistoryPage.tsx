@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET } from '../lib/dateUtils';
@@ -172,6 +172,69 @@ interface RoleCount {
   totalAppearances: number;
 }
 
+interface RoleRow {
+  person_id: string;
+  name: string;
+  role: string;
+  date: string;
+  meeting_id: string;
+}
+
+const PLAYING_ROLES = new Set([
+  'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer', 'Sound',
+]);
+
+/** Leaderboard for a single role, optionally filtered to one meeting ('' = all meetings). */
+function simpleRoleLeaderboard(rows: RoleRow[], role: string, meetingId: string): RoleCount[] {
+  const map = new Map<string, { name: string; dates: Set<string> }>();
+  for (const r of rows) {
+    if (r.role !== role) continue;
+    if (meetingId && r.meeting_id !== meetingId) continue;
+    if (!map.has(r.person_id)) map.set(r.person_id, { name: r.name, dates: new Set() });
+    map.get(r.person_id)!.dates.add(r.date);
+  }
+  return Array.from(map.entries())
+    .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
+    .sort((a, b) => b.totalAppearances - a.totalAppearances)
+    .slice(0, 15);
+}
+
+/** Top musicians (any playing role), optionally filtered to one meeting ('' = all). */
+function musicianLeaderboard(rows: RoleRow[], meetingId: string): MusicianCount[] {
+  const map = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
+  for (const r of rows) {
+    if (!PLAYING_ROLES.has(r.role)) continue;
+    if (meetingId && r.meeting_id !== meetingId) continue;
+    if (!map.has(r.person_id)) map.set(r.person_id, { name: r.name, dates: new Set(), roleCounts: new Map() });
+    const s = map.get(r.person_id)!;
+    s.dates.add(r.date);
+    s.roleCounts.set(r.role, (s.roleCounts.get(r.role) || 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([pid, s]) => ({
+      person_id: pid,
+      person_name: s.name,
+      totalAppearances: s.dates.size,
+      topRoles: Array.from(s.roleCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([role]) => role),
+    }))
+    .sort((a, b) => b.totalAppearances - a.totalAppearances)
+    .slice(0, 15);
+}
+
+/** Per-leaderboard meeting picker: All Meetings + one option per ministry. */
+function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onChange: (v: string) => void; meetings: Meeting[] }) {
+  return (
+    <div className="history-controls">
+      <select value={value} onChange={e => onChange(e.target.value)}>
+        <option value="">All Meetings</option>
+        {meetings.map(m => (
+          <option key={m.id} value={m.id}>{m.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function computeLongestStreak(dates: string[]): number {
   if (dates.length === 0) return 0;
   const sorted = [...dates].sort();
@@ -252,19 +315,23 @@ export default function HistoryPage() {
   const insightsRowsRef = useRef<Array<{ pid: string; name: string; date: string; meetingId: string }>>([]);
   const [risingStars, setRisingStars] = useState<RisingStar[]>([]);
   const [risingStarsLoading, setRisingStarsLoading] = useState(true);
-  const [topMusicians, setTopMusicians] = useState<MusicianCount[]>([]);
-  const [musiciansLoading, setMusiciansLoading] = useState(true);
-  const [topPreachers, setTopPreachers] = useState<RoleCount[]>([]);
-  const [preachersLoading, setPreachersLoading] = useState(true);
-  const [topAttendanceTakers, setTopAttendanceTakers] = useState<RoleCount[]>([]);
-  const [attendanceTakersLoading, setAttendanceTakersLoading] = useState(true);
-  const [topSound, setTopSound] = useState<RoleCount[]>([]);
-  const [soundLoading, setSoundLoading] = useState(true);
-  const [topLiveStream, setTopLiveStream] = useState<RoleCount[]>([]);
-  const [liveStreamLoading, setLiveStreamLoading] = useState(true);
-  const [topPowerPoint, setTopPowerPoint] = useState<RoleCount[]>([]);
-  const [powerPointLoading, setPowerPointLoading] = useState(true);
-  const [roleMeetingId, setRoleMeetingId] = useState(''); // '' = all meetings
+  // All musician_roles rows, loaded once; each leaderboard below derives from
+  // these and filters by its own per-board meeting selection ('' = all).
+  const [roleRows, setRoleRows] = useState<RoleRow[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(true);
+  const [musiciansMeetingId, setMusiciansMeetingId] = useState('');
+  const [preachersMeetingId, setPreachersMeetingId] = useState('');
+  const [attendanceTakersMeetingId, setAttendanceTakersMeetingId] = useState('');
+  const [soundMeetingId, setSoundMeetingId] = useState('');
+  const [liveStreamMeetingId, setLiveStreamMeetingId] = useState('');
+  const [powerPointMeetingId, setPowerPointMeetingId] = useState('');
+
+  const topMusicians = useMemo(() => musicianLeaderboard(roleRows, musiciansMeetingId), [roleRows, musiciansMeetingId]);
+  const topPreachers = useMemo(() => simpleRoleLeaderboard(roleRows, 'Preacher', preachersMeetingId), [roleRows, preachersMeetingId]);
+  const topAttendanceTakers = useMemo(() => simpleRoleLeaderboard(roleRows, 'Attendance', attendanceTakersMeetingId), [roleRows, attendanceTakersMeetingId]);
+  const topSound = useMemo(() => simpleRoleLeaderboard(roleRows, 'Sound', soundMeetingId), [roleRows, soundMeetingId]);
+  const topLiveStream = useMemo(() => simpleRoleLeaderboard(roleRows, 'Live Stream', liveStreamMeetingId), [roleRows, liveStreamMeetingId]);
+  const topPowerPoint = useMemo(() => simpleRoleLeaderboard(roleRows, 'PowerPoint', powerPointMeetingId), [roleRows, powerPointMeetingId]);
   function timeframeCutoff(tf: Timeframe): string | null {
     if (tf === 'all') return null;
     const daysMap = { '4w': 28, '12w': 84, '6m': 182, '1y': 365 } as const;
@@ -801,109 +868,21 @@ export default function HistoryPage() {
     setRisingStarsLoading(false);
   }
 
-  async function loadRoleLeaderboards(meetingId?: string) {
-    const targetMeetingId = meetingId ?? roleMeetingId;
-    setMusiciansLoading(true);
-    setPreachersLoading(true);
-    setAttendanceTakersLoading(true);
-    setSoundLoading(true);
-    setLiveStreamLoading(true);
-    setPowerPointLoading(true);
-    let query = supabase
+  async function loadRoleLeaderboards() {
+    setRolesLoading(true);
+    const { data } = await supabase
       .from('musician_roles')
-      .select('person_id, role, date, person:people(full_name)');
-    if (targetMeetingId) query = query.eq('meeting_id', targetMeetingId);
-    const { data } = await query;
+      .select('person_id, role, date, meeting_id, person:people(full_name)');
     if (data) {
-      const rows = data as Array<Record<string, unknown>>;
-      const PLAYING = new Set([
-        'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer', 'Sound',
-      ]);
-
-      const musicianMap = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
-      const preacherMap = new Map<string, { name: string; dates: Set<string> }>();
-      const attendanceMap = new Map<string, { name: string; dates: Set<string> }>();
-      const soundMap = new Map<string, { name: string; dates: Set<string> }>();
-      const liveStreamMap = new Map<string, { name: string; dates: Set<string> }>();
-      const powerPointMap = new Map<string, { name: string; dates: Set<string> }>();
-
-      for (const r of rows) {
-        const pid = r.person_id as string;
-        const name = ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown';
-        const role = r.role as string;
-        const date = r.date as string;
-
-        if (PLAYING.has(role)) {
-          if (!musicianMap.has(pid)) musicianMap.set(pid, { name, dates: new Set(), roleCounts: new Map() });
-          const stats = musicianMap.get(pid)!;
-          stats.dates.add(date);
-          stats.roleCounts.set(role, (stats.roleCounts.get(role) || 0) + 1);
-        }
-        if (role === 'Sound') {
-          if (!soundMap.has(pid)) soundMap.set(pid, { name, dates: new Set() });
-          soundMap.get(pid)!.dates.add(date);
-        } else if (role === 'Live Stream') {
-          if (!liveStreamMap.has(pid)) liveStreamMap.set(pid, { name, dates: new Set() });
-          liveStreamMap.get(pid)!.dates.add(date);
-        } else if (role === 'PowerPoint') {
-          if (!powerPointMap.has(pid)) powerPointMap.set(pid, { name, dates: new Set() });
-          powerPointMap.get(pid)!.dates.add(date);
-        } else if (role === 'Preacher') {
-          if (!preacherMap.has(pid)) preacherMap.set(pid, { name, dates: new Set() });
-          preacherMap.get(pid)!.dates.add(date);
-        } else if (role === 'Attendance') {
-          if (!attendanceMap.has(pid)) attendanceMap.set(pid, { name, dates: new Set() });
-          attendanceMap.get(pid)!.dates.add(date);
-        }
-      }
-
-      const musicians: MusicianCount[] = [];
-      for (const [pid, stats] of musicianMap.entries()) {
-        const sortedRoles = Array.from(stats.roleCounts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([role]) => role);
-        musicians.push({ person_id: pid, person_name: stats.name, totalAppearances: stats.dates.size, topRoles: sortedRoles });
-      }
-      musicians.sort((a, b) => b.totalAppearances - a.totalAppearances);
-      setTopMusicians(musicians.slice(0, 15));
-
-      const preachers: RoleCount[] = Array.from(preacherMap.entries())
-        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-        .sort((a, b) => b.totalAppearances - a.totalAppearances)
-        .slice(0, 15);
-      setTopPreachers(preachers);
-
-      const takers: RoleCount[] = Array.from(attendanceMap.entries())
-        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-        .sort((a, b) => b.totalAppearances - a.totalAppearances)
-        .slice(0, 15);
-      setTopAttendanceTakers(takers);
-
-      const sound: RoleCount[] = Array.from(soundMap.entries())
-        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-        .sort((a, b) => b.totalAppearances - a.totalAppearances)
-        .slice(0, 15);
-      setTopSound(sound);
-
-      const liveStream: RoleCount[] = Array.from(liveStreamMap.entries())
-        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-        .sort((a, b) => b.totalAppearances - a.totalAppearances)
-        .slice(0, 15);
-      setTopLiveStream(liveStream);
-
-      const powerPoint: RoleCount[] = Array.from(powerPointMap.entries())
-        .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-        .sort((a, b) => b.totalAppearances - a.totalAppearances)
-        .slice(0, 15);
-      setTopPowerPoint(powerPoint);
+      setRoleRows((data as Array<Record<string, unknown>>).map(r => ({
+        person_id: r.person_id as string,
+        name: ((r.person as Record<string, unknown>)?.full_name as string) || 'Unknown',
+        role: r.role as string,
+        date: r.date as string,
+        meeting_id: r.meeting_id as string,
+      })));
     }
-    setMusiciansLoading(false);
-    setPreachersLoading(false);
-    setAttendanceTakersLoading(false);
-    setSoundLoading(false);
-    setLiveStreamLoading(false);
-    setPowerPointLoading(false);
+    setRolesLoading(false);
   }
 
   useEffect(() => {
@@ -1762,30 +1741,12 @@ export default function HistoryPage() {
         </section>
         </div>
 
-        {/* Service-role leaderboards: meeting switcher governs all boards below */}
-        <section className="history-section leaderboard-section streak-lb-section">
-          <h2>🎵 Service Roles</h2>
-          <div className="history-controls">
-            <select
-              value={roleMeetingId}
-              onChange={e => {
-                setRoleMeetingId(e.target.value);
-                loadRoleLeaderboards(e.target.value);
-              }}
-            >
-              <option value="">All Meetings</option>
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-        </section>
-
         {/* Top Preachers + Top Attendance Takers pair */}
         <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Top Preachers</h2>
-          {preachersLoading ? (
+          <RoleMeetingSelect value={preachersMeetingId} onChange={setPreachersMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topPreachers.length === 0 ? (
             <p className="history-empty">No preacher data yet.</p>
@@ -1830,7 +1791,8 @@ export default function HistoryPage() {
 
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Top Attendance Takers</h2>
-          {attendanceTakersLoading ? (
+          <RoleMeetingSelect value={attendanceTakersMeetingId} onChange={setAttendanceTakersMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topAttendanceTakers.length === 0 ? (
             <p className="history-empty">No attendance-taker data yet.</p>
@@ -1878,7 +1840,8 @@ export default function HistoryPage() {
         <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>🔊 Top Sound</h2>
-          {soundLoading ? (
+          <RoleMeetingSelect value={soundMeetingId} onChange={setSoundMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topSound.length === 0 ? (
             <p className="history-empty">No sound data yet.</p>
@@ -1923,7 +1886,8 @@ export default function HistoryPage() {
 
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>📡 Top Live Stream</h2>
-          {liveStreamLoading ? (
+          <RoleMeetingSelect value={liveStreamMeetingId} onChange={setLiveStreamMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topLiveStream.length === 0 ? (
             <p className="history-empty">No live stream data yet.</p>
@@ -1967,10 +1931,12 @@ export default function HistoryPage() {
         </section>
         </div>
 
-        {/* Top PowerPoint */}
+        {/* Top PowerPoint + Top Musicians pair */}
+        <div className="leaderboard-pair">
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>🖥️ Top PowerPoint</h2>
-          {powerPointLoading ? (
+          <RoleMeetingSelect value={powerPointMeetingId} onChange={setPowerPointMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topPowerPoint.length === 0 ? (
             <p className="history-empty">No PowerPoint data yet.</p>
@@ -2016,7 +1982,8 @@ export default function HistoryPage() {
         {/* Top Musicians */}
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Top Musicians</h2>
-          {musiciansLoading ? (
+          <RoleMeetingSelect value={musiciansMeetingId} onChange={setMusiciansMeetingId} meetings={meetings} />
+          {rolesLoading ? (
             <p className="history-empty">Loading...</p>
           ) : topMusicians.length === 0 ? (
             <p className="history-empty">No musician data yet.</p>
@@ -2066,6 +2033,7 @@ export default function HistoryPage() {
             </div>
           )}
         </section>
+        </div>
 
         {/* Date lookup section */}
         <section className="history-section">
