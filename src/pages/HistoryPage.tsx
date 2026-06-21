@@ -309,7 +309,7 @@ export default function HistoryPage() {
   const [maxCount, setMaxCount] = useState(1);
   const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('12w');
   const [compareTimeframe, setCompareTimeframe] = useState<Timeframe>('12w');
-  const [topTimeframe, setTopTimeframe] = useState<Timeframe>('12w');
+  const [topTimeframe, setTopTimeframe] = useState<Timeframe>('all');
   const [chartLoading, setChartLoading] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
