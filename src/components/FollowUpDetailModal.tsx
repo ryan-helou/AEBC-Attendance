@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent, type CSSProperties } from 'react';
 import type { FollowupMember, FollowupNote, WatchListEntry } from '../types';
 import { formatDate, formatTimeET } from '../lib/dateUtils';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
+import Dropdown from './Dropdown';
 import './AddPersonModal.css'; // shared .modal-overlay / .modal-card / .modal-save base
 import './FollowUpDetailModal.css';
 
@@ -55,6 +56,8 @@ export default function FollowUpDetailModal({
 
   const sev = awaySeverity(entry.weeksSinceLast);
   const fillPct = Math.min(entry.weeksSinceLast / AWAY_CAP_WEEKS, 1) * 100;
+  const memberOptions = members.map(m => ({ value: m.id, label: m.name }));
+  const assigneeOptions = [{ value: '', label: 'Unassigned' }, ...memberOptions];
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
@@ -93,20 +96,29 @@ export default function FollowUpDetailModal({
             <span className="fu-toggle-dot" />
             {entry.needs_followup ? 'Flagged for follow-up' : 'Flag for follow-up'}
           </button>
-          <label className="fu-assign">
+          <div className="fu-assign">
             <span>Assigned to</span>
-            <select value={entry.assigned_to ?? ''} onChange={e => onSetAssignee(e.target.value || null)}>
-              <option value="">Unassigned</option>
-              {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
-          </label>
+            <Dropdown
+              className="fu-assign-dd"
+              ariaLabel="Assigned to"
+              align="right"
+              value={entry.assigned_to ?? ''}
+              options={assigneeOptions}
+              onChange={v => onSetAssignee(v || null)}
+            />
+          </div>
         </div>
 
         <form className="fu-add-note" onSubmit={handleAddNote}>
-          <select value={authorId} onChange={e => setAuthorId(e.target.value)} disabled={members.length === 0}>
-            <option value="" disabled>Who's leaving this note?</option>
-            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
+          <Dropdown
+            className="fu-author-dd"
+            ariaLabel="Note author"
+            placeholder="Who's leaving this note?"
+            value={authorId}
+            options={memberOptions}
+            onChange={setAuthorId}
+            disabled={members.length === 0}
+          />
           <textarea
             className="fu-note-input"
             placeholder={members.length === 0 ? 'Add a committee member first to leave notes' : 'How did the follow-up go?'}

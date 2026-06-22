@@ -219,8 +219,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.followup-search,
-.followup-sort {
+.followup-search {
+  width: 180px;
   font-family: inherit;
   font-size: 0.82rem;
   padding: 0.5em 0.8em;
@@ -230,15 +230,14 @@
   color: var(--color-text);
 }
 
-.followup-search { width: 180px; }
-.followup-sort { cursor: pointer; }
-
-.followup-search:focus,
-.followup-sort:focus {
+.followup-search:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
+
+/* Sort dropdown trigger sizing */
+.sort-dd .dd-trigger { font-size: 0.82rem; padding: 0.5em 0.8em; }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
@@ -477,33 +476,29 @@
 
 .care-assignee { min-width: 0; }
 
-.assignee-select {
-  width: 100%;
-  font-family: inherit;
+/* Assignee dropdown — dashed "Assign…" chip that fills solid once assigned */
+.assignee-dd { display: block; }
+
+.assignee-dd .dd-trigger {
   font-size: 0.78rem;
-  padding: 0.34em 0.55em;
+  padding: 0.34em 0.6em;
   border-radius: 999px;
   border: 1px dashed var(--color-border);
   background: transparent;
   color: var(--color-text-muted);
-  cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
 }
 
-.assignee-select:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.assignee-dd .dd-trigger:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
 
-.assignee-select.has-assignee {
+.assignee-dd.is-assigned .dd-trigger {
   border-style: solid;
   border-color: transparent;
   background: var(--color-primary-light);
   color: var(--color-primary);
   font-weight: 600;
-}
-
-.assignee-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .care-flag {
