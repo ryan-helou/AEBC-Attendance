@@ -88,7 +88,7 @@ export default function FollowUpDashboardPage() {
     <div className="followup-page">
       <header className="followup-header">
         <div className="followup-header-inner">
-          <img src="/logo_small.png" alt="AEBC" className="followup-logo" />
+          <img src="/logo_icon.png" alt="AEBC" className="followup-logo" />
           <div className="followup-header-text">
             <span className="followup-eyebrow">Follow-up committee</span>
             <h1>Who needs a check-in</h1>
