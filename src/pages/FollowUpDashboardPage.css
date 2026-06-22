@@ -23,12 +23,10 @@
 }
 
 .followup-logo {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
   border-radius: 11px;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 3px;
   flex-shrink: 0;
 }
 
