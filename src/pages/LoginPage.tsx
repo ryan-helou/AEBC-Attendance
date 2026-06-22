@@ -17,7 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   // Hook is role-aware. LoginPage only ever calls login(), never reads
   // isAuthenticated, so the default 'attendance' instance before a role is
-  // chosen is harmless — login() closes over the chosen role's keys.
+  // chosen is harmless; login() closes over the chosen role's keys.
   const { login } = useAuth(role ?? 'attendance');
 
   function chooseRole(next: AuthRole) {
