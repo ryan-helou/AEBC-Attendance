@@ -393,6 +393,14 @@
   background: var(--color-primary-light);
 }
 
+/* Each row has a transform (animation/hover) => its own stacking context, so a
+   later row paints over an earlier row's open dropdown menu. Lift the row whose
+   assignee dropdown is open above its siblings so the menu sits on top. */
+.care-row:has(.dd-trigger[aria-expanded='true']) {
+  position: relative;
+  z-index: 5;
+}
+
 .care-monogram {
   width: 2.4rem;
   height: 2.4rem;
