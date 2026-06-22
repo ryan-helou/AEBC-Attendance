@@ -2,10 +2,12 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useAccentColor } from '../hooks/useAccentColor';
 import { useFollowUps } from '../hooks/useFollowUps';
 import FollowUpDetailModal from '../components/FollowUpDetailModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Dropdown from '../components/Dropdown';
+import AccentColorPicker from '../components/AccentColorPicker';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
 import type { FollowupMember, WatchListEntry } from '../types';
 import './FollowUpDashboardPage.css';
@@ -17,6 +19,7 @@ export default function FollowUpDashboardPage() {
   const navigate = useNavigate();
   const { logout } = useAuth('followup');
   const { dark, toggle: toggleTheme } = useTheme();
+  const { accent, setAccent } = useAccentColor(dark);
 
   const [cutoffWeeks, setCutoffWeeks] = useState(3);
   const {
@@ -91,6 +94,7 @@ export default function FollowUpDashboardPage() {
             <h1>Who needs a check-in</h1>
           </div>
           <div className="followup-header-actions">
+            <AccentColorPicker accent={accent} setAccent={setAccent} dark={dark} />
             <button className="followup-ghost-btn" onClick={toggleTheme}>{dark ? 'Light' : 'Dark'}</button>
             <button className="followup-ghost-btn" onClick={handleLogout}>Logout</button>
           </div>

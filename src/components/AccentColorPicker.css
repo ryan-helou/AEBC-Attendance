@@ -1,0 +1,108 @@
+.accent-picker {
+  position: relative;
+  display: inline-block;
+}
+
+/* Trigger — a white-ghost button sized to match the dashboard header buttons */
+.accent-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45em 0.85em;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.accent-picker-btn:hover {
+  background: rgba(255, 255, 255, 0.27);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.accent-picker-dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+}
+
+/* Panel */
+.accent-picker-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.85rem 1rem;
+  min-width: 290px;
+  z-index: 100;
+  animation: accentPanelIn 0.14s ease;
+}
+
+@keyframes accentPanelIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.accent-picker-label {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.accent-picker-swatches {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 3px;
+}
+
+.accent-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  border: 1.5px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  outline: none;
+}
+
+.accent-swatch:hover {
+  transform: scale(1.2);
+  z-index: 1;
+  position: relative;
+  border-color: transparent;
+}
+
+.accent-swatch--base {
+  border-radius: 4px;
+  margin-bottom: 3px;
+}
+
+.accent-swatch.is-active {
+  box-shadow: 0 0 0 1.5px var(--color-surface), 0 0 0 3px var(--color-text);
+}
+
+.accent-swatch.is-active:hover {
+  transform: scale(1.15);
+}
+
+@media (max-width: 680px) {
+  .accent-picker-text { display: none; }
+  .accent-picker-btn { padding: 0.45em 0.6em; }
+  .accent-picker-panel { min-width: 0; width: min(290px, 80vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accent-picker-panel { animation: none; }
+}
