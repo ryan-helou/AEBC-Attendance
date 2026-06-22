@@ -313,7 +313,7 @@ export default function FollowUpDashboardPage() {
                   <div className="care-actions" onClick={e => e.stopPropagation()}>
                     {filterMode === 'removed' ? (
                       <button
-                        className="care-restore"
+                        className="care-action care-restore"
                         onClick={() => setDismissed(entry.person_id, false)}
                         title="Restore to watch list"
                         aria-label={`Restore ${entry.person_name} to the watch list`}
@@ -326,23 +326,22 @@ export default function FollowUpDashboardPage() {
                     ) : (
                       <>
                         <button
-                          className={`care-flag${entry.needs_followup ? ' is-on' : ''}`}
+                          className={`care-action care-flag${entry.needs_followup ? ' is-on' : ''}`}
                           onClick={() => toggleNeedsFollowup(entry.person_id, !entry.needs_followup)}
                           aria-pressed={entry.needs_followup}
                           title={entry.needs_followup ? 'Flagged for follow-up' : 'Flag for follow-up'}
                         >
-                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                            <path d="M5 3v18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <path d="M5 4h11l-2 3 2 3H5z" fill="currentColor" stroke="none" />
+                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M5 12.5l4.5 4.5L19 7" />
                           </svg>
                         </button>
                         <button
-                          className="care-remove"
+                          className="care-action care-remove"
                           onClick={() => setPersonToRemove(entry)}
                           title="Remove from watch list"
                           aria-label={`Remove ${entry.person_name} from the watch list`}
                         >
-                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
                             <path d="M6 6l12 12M18 6L6 18" />
                           </svg>
                         </button>
