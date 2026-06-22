@@ -331,7 +331,7 @@ export default function FollowUpDashboardPage() {
                           aria-pressed={entry.needs_followup}
                           title={entry.needs_followup ? 'Flagged for follow-up' : 'Flag for follow-up'}
                         >
-                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <path d="M5 12.5l4.5 4.5L19 7" />
                           </svg>
                         </button>
@@ -341,7 +341,7 @@ export default function FollowUpDashboardPage() {
                           title="Remove from watch list"
                           aria-label={`Remove ${entry.person_name} from the watch list`}
                         >
-                          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true">
                             <path d="M6 6l12 12M18 6L6 18" />
                           </svg>
                         </button>

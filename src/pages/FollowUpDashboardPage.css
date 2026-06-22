@@ -517,13 +517,13 @@
   justify-content: center;
   border-radius: 9px;
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  color: var(--color-text);
   cursor: pointer;
   transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.care-action:hover { border-color: var(--color-text-muted); color: var(--color-text); }
+.care-action:hover { border-color: var(--color-text-muted); }
 
 .care-flag:hover {
   border-color: var(--color-primary);
