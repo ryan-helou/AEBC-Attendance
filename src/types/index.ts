@@ -39,3 +39,40 @@ export interface GuestEntry {
 export type DisplayEntry =
   | { type: 'person'; entry: AttendanceEntry }
   | { type: 'guest'; entry: GuestEntry };
+
+// --- Follow-up dashboard ---
+
+export interface FollowupMember {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface FollowupStatus {
+  person_id: string;
+  needs_followup: boolean;
+  assigned_to: string | null; // FollowupMember.id
+  updated_at: string;
+}
+
+export interface FollowupNote {
+  id: string;
+  person_id: string;
+  author_id: string | null; // FollowupMember.id (null if the member was removed)
+  body: string;
+  created_at: string;
+}
+
+/** A merged row rendered in the watch list (attendance metrics + follow-up state). */
+export interface WatchListEntry {
+  person_id: string;
+  person_name: string;
+  totalAttendances: number;
+  lastSeenDate: string | null;
+  weeksSinceLast: number;
+  needs_followup: boolean;
+  assigned_to: string | null;
+  latestNotePreview: string | null;
+  /** true when the person qualifies via the inactivity cutoff (vs only manually flagged). */
+  isInactiveByCutoff: boolean;
+}

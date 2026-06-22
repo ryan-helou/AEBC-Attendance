@@ -116,3 +116,89 @@
   border-radius: var(--radius);
   animation: shake 0.4s ease;
 }
+
+/* Role chooser */
+.login-role-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.login-card button.login-role-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.95rem 1.05rem;
+  text-align: left;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.login-card button.login-role-btn:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.14);
+  transform: translateY(-1px);
+}
+
+.login-role-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.login-role-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.login-role-name {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.login-role-desc {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.login-role-arrow {
+  color: var(--color-text-muted);
+  font-size: 1.1rem;
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.login-card button.login-role-btn:hover .login-role-arrow {
+  color: var(--color-primary);
+  transform: translateX(3px);
+}
+
+/* Back link on the password step */
+.login-card button.login-back-btn {
+  margin-top: 0.75rem;
+  background: none;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.login-card button.login-back-btn:hover {
+  background: none;
+  color: var(--color-primary);
+  box-shadow: none;
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
+import { computeInactivePeople } from '../lib/inactivity';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -872,28 +873,9 @@ export default function HistoryPage() {
 
   // Build the inactive watchlist from the already-fetched rows, optionally scoped
   // to a single ministry. Empty meetingId = combined across both ministries.
+  // Shared rule lives in lib/inactivity (also used by the follow-up dashboard).
   function computeInactive(meetingId: string): InactivePerson[] {
-    const personMap = new Map<string, { name: string; dates: string[] }>();
-    for (const r of insightsRowsRef.current) {
-      if (meetingId && r.meetingId !== meetingId) continue;
-      if (!personMap.has(r.pid)) personMap.set(r.pid, { name: r.name, dates: [] });
-      personMap.get(r.pid)!.dates.push(r.date);
-    }
-
-    const today = new Date(getTodayDate() + 'T00:00:00');
-    const inactive: InactivePerson[] = [];
-    for (const [pid, stats] of personMap.entries()) {
-      if (stats.dates.length < 3) continue;
-      const sorted = [...stats.dates].sort();
-      const lastDate = sorted[sorted.length - 1];
-      const last = new Date(lastDate + 'T00:00:00');
-      const weeksSince = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24 * 7));
-      if (weeksSince >= 3) {
-        inactive.push({ person_id: pid, person_name: stats.name, totalAttendances: stats.dates.length, lastSeenDate: lastDate, weeksSinceLast: weeksSince });
-      }
-    }
-    inactive.sort((a, b) => b.weeksSinceLast - a.weeksSinceLast);
-    return inactive.slice(0, 15);
+    return computeInactivePeople(insightsRowsRef.current, 3, meetingId).slice(0, 15);
   }
 
   // Recompute the watchlist instantly when the ministry filter changes (no refetch).

@@ -6,6 +6,7 @@ import AttendancePage from './pages/AttendancePage'
 import DataPage from './pages/DataPage'
 import HistoryPage from './pages/HistoryPage'
 import PersonProfilePage from './pages/PersonProfilePage'
+import FollowUpDashboardPage from './pages/FollowUpDashboardPage'
 import IdeasPage from './pages/IdeasPage'
 import GamesPage from './pages/GamesPage'
 import TetrisPage from './pages/TetrisPage'
@@ -18,7 +19,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route element={<AuthGate />}>
+      <Route element={<AuthGate role="attendance" />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/attendance/:meetingId/:date" element={<AttendancePage />} />
         <Route path="/data" element={<DataPage />} />
@@ -30,6 +31,9 @@ function App() {
         <Route path="/games/breakout" element={<BreakoutPage />} />
         <Route path="/games/chess" element={<ChessPuzzlePage />} />
         <Route path="/games/wordle" element={<WordlePage />} />
+      </Route>
+      <Route element={<AuthGate role="followup" />}>
+        <Route path="/followup" element={<FollowUpDashboardPage />} />
       </Route>
     </Routes>
   )
