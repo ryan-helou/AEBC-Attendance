@@ -23,10 +23,9 @@
 }
 
 .followup-logo {
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
-  border-radius: 11px;
   flex-shrink: 0;
 }
 
