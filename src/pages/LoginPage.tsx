@@ -53,7 +53,7 @@ export default function LoginPage() {
     return (
       <div className="login-page">
         <div className="login-card">
-          <img src="/logo.png" alt="AEBC Logo" className="login-logo" />
+          <img src="/logo_small.png" alt="AEBC Logo" className="login-logo" />
           <h1>AEBC</h1>
           <p>Choose how you want to sign in</p>
           <div className="login-role-choices">
@@ -102,7 +102,7 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <img src="/logo.png" alt="AEBC Logo" className="login-logo" />
+        <img src="/logo_small.png" alt="AEBC Logo" className="login-logo" />
         <h1>{ROLE_LABELS[role]}</h1>
         <p>Enter the access key to continue</p>
         {error && <div className="login-error">{error}</div>}
