@@ -151,8 +151,8 @@
   color: var(--color-text-secondary);
 }
 
-.fu-assign select,
-.fu-add-note select,
+.fu-assign-dd .dd-trigger { font-size: 0.85rem; min-width: 130px; }
+
 .fu-note-input {
   font-family: inherit;
   font-size: 0.85rem;
@@ -163,10 +163,6 @@
   color: var(--color-text);
 }
 
-.fu-assign select { cursor: pointer; }
-
-.fu-assign select:focus,
-.fu-add-note select:focus,
 .fu-note-input:focus {
   outline: none;
   border-color: var(--color-primary);
@@ -181,7 +177,7 @@
   margin-bottom: 1.25rem;
 }
 
-.fu-add-note select { width: 100%; cursor: pointer; }
+.fu-author-dd { display: block; }
 
 .fu-note-input {
   width: 100%;

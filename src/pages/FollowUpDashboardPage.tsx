@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useFollowUps } from '../hooks/useFollowUps';
 import FollowUpDetailModal from '../components/FollowUpDetailModal';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Dropdown from '../components/Dropdown';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
 import type { FollowupMember } from '../types';
 import './FollowUpDashboardPage.css';
@@ -48,6 +49,11 @@ export default function FollowUpDashboardPage() {
   }, [watchList, filterMode, search, sortKey]);
 
   const selected = selectedPersonId ? watchList.find(e => e.person_id === selectedPersonId) ?? null : null;
+
+  const assigneeOptions = useMemo(
+    () => [{ value: '', label: 'Unassigned' }, ...members.map(m => ({ value: m.id, label: m.name }))],
+    [members],
+  );
 
   const stats = useMemo(() => {
     const flagged = watchList.filter(e => e.needs_followup);
@@ -148,16 +154,18 @@ export default function FollowUpDashboardPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          <select
-            className="followup-sort"
+          <Dropdown
+            className="sort-dd"
+            ariaLabel="Sort"
+            align="right"
             value={sortKey}
-            onChange={e => setSortKey(e.target.value as SortKey)}
-            aria-label="Sort"
-          >
-            <option value="away">Longest away</option>
-            <option value="name">Name (A–Z)</option>
-            <option value="visits">Most visits</option>
-          </select>
+            options={[
+              { value: 'away', label: 'Longest away' },
+              { value: 'name', label: 'Name (A–Z)' },
+              { value: 'visits', label: 'Most visits' },
+            ]}
+            onChange={v => setSortKey(v as SortKey)}
+          />
           <button className="followup-ghost-btn followup-ghost-btn--dark" onClick={() => setShowMembers(s => !s)}>
             {showMembers ? 'Done' : 'Members'}
           </button>
@@ -230,7 +238,6 @@ export default function FollowUpDashboardPage() {
             {rows.map((entry, i) => {
               const sev = awaySeverity(entry.weeksSinceLast);
               const fillPct = Math.min(entry.weeksSinceLast / AWAY_CAP_WEEKS, 1) * 100;
-              const assigneeName = entry.assigned_to ? memberById.get(entry.assigned_to) : null;
               return (
                 <li
                   key={entry.person_id}
@@ -272,15 +279,14 @@ export default function FollowUpDashboardPage() {
                   </div>
 
                   <div className="care-assignee" onClick={e => e.stopPropagation()}>
-                    <select
-                      className={`assignee-select${assigneeName ? ' has-assignee' : ''}`}
+                    <Dropdown
+                      className={`assignee-dd${entry.assigned_to ? ' is-assigned' : ''}`}
+                      ariaLabel={`Assign ${entry.person_name}`}
+                      align="right"
                       value={entry.assigned_to ?? ''}
-                      onChange={e => setAssignee(entry.person_id, e.target.value || null)}
-                      aria-label={`Assign ${entry.person_name}`}
-                    >
-                      <option value="">Assign…</option>
-                      {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                      options={assigneeOptions}
+                      onChange={v => setAssignee(entry.person_id, v || null)}
+                    />
                   </div>
 
                   <button
