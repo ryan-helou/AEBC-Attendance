@@ -109,3 +109,45 @@ create index idx_musician_roles_meeting_date on musician_roles (meeting_id, date
 
 alter table musician_roles enable row level security;
 create policy "Allow all on musician_roles" on musician_roles for all using (true) with check (true);
+
+-- 8. Follow-up dashboard
+-- Committee members (the editable list authors/assignees are chosen from)
+create table followup_members (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  created_at timestamptz default now()
+);
+
+-- Current follow-up state for a person (one row per person, created lazily)
+create table followup_status (
+  person_id uuid primary key references people(id) on delete cascade,
+  needs_followup boolean not null default false,
+  assigned_to uuid references followup_members(id) on delete set null,
+  updated_at timestamptz default now()
+);
+
+-- Follow-up history log (comments left over time)
+create table followup_notes (
+  id uuid default gen_random_uuid() primary key,
+  person_id uuid not null references people(id) on delete cascade,
+  author_id uuid references followup_members(id) on delete set null,
+  body text not null,
+  created_at timestamptz default now()
+);
+
+create index idx_followup_notes_person on followup_notes (person_id, created_at desc);
+
+alter table followup_members enable row level security;
+alter table followup_status enable row level security;
+alter table followup_notes enable row level security;
+create policy "Allow all on followup_members" on followup_members for all using (true) with check (true);
+create policy "Allow all on followup_status" on followup_status for all using (true) with check (true);
+create policy "Allow all on followup_notes" on followup_notes for all using (true) with check (true);
+
+-- Live sync across committee members
+alter publication supabase_realtime add table followup_status;
+alter publication supabase_realtime add table followup_notes;
+alter publication supabase_realtime add table followup_members;
+
+-- Follow-up dashboard password. Set this manually with your chosen key:
+-- insert into app_config (key, value) values ('followup_access_key', '<choose-a-password>');

@@ -1,0 +1,295 @@
+/* Wider, scrollable variant of the shared .modal-card for the detail view. */
+.followup-modal {
+  max-width: 540px;
+  max-height: min(86vh, 780px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1.6rem 1.6rem 0;
+}
+
+/* Header */
+.fu-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.fu-modal-mono {
+  width: 2.9rem;
+  height: 2.9rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: hsl(var(--mono-h, 220) 65% 91%);
+  color: hsl(var(--mono-h, 220) 48% 37%);
+}
+
+.fu-modal-id { flex: 1; min-width: 0; }
+
+.fu-modal-id h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.fu-modal-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-feature-settings: 'tnum';
+}
+
+.fu-modal-close {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.fu-modal-close:hover { background: none; color: var(--color-text); box-shadow: none; transform: none; }
+
+/* Away meter */
+.fu-away-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 1.1rem 0 0;
+}
+
+.fu-away-row .away-track {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.fu-away-row .away-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+/* Track width is fluid here, so use a solid severity colour rather than a
+   position-mapped gradient (which would misread on short bars). */
+.fu-away-row .away-fill.away-info { background: var(--color-primary); }
+.fu-away-row .away-fill.away-warn { background: #d97706; }
+.fu-away-row .away-fill.away-danger { background: #dc2626; }
+
+.away-weeks {
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-feature-settings: 'tnum';
+}
+
+.away-info { color: var(--color-primary); }
+.away-warn { color: #d97706; }
+.away-danger { color: #dc2626; }
+
+/* Status controls */
+.fu-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 1.1rem 0;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fu-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5em 0.9em;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.fu-toggle-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  transition: background var(--transition-fast);
+}
+
+.fu-toggle:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.fu-toggle:hover .fu-toggle-dot { background: var(--color-primary); }
+
+.fu-toggle.is-on {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.fu-toggle.is-on .fu-toggle-dot { background: #fff; }
+
+.fu-assign {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.fu-assign select,
+.fu-add-note select,
+.fu-note-input {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45em 0.7em;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.fu-assign select { cursor: pointer; }
+
+.fu-assign select:focus,
+.fu-add-note select:focus,
+.fu-note-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Add note */
+.fu-add-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.fu-add-note select { width: 100%; cursor: pointer; }
+
+.fu-note-input {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.fu-note-input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.fu-note-actions { display: flex; justify-content: flex-end; }
+
+/* History thread */
+.fu-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-border);
+  padding: 1rem 0 1.4rem;
+  margin: 0 -0.2rem;
+}
+
+.fu-history h3 {
+  margin: 0 0 0.85rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.fu-history-empty {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.fu-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.fu-thread-item {
+  display: flex;
+  gap: 0.7rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+/* Vertical thread connector */
+.fu-thread-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.92rem;
+  top: 2rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.fu-thread-mono {
+  width: 1.85rem;
+  height: 1.85rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  z-index: 1;
+  background: hsl(var(--mono-h, 220) 65% 91%);
+  color: hsl(var(--mono-h, 220) 48% 37%);
+}
+
+.fu-thread-body {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+}
+
+.fu-thread-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.fu-thread-author { font-size: 0.82rem; font-weight: 600; color: var(--color-text); }
+.fu-thread-date { font-size: 0.7rem; color: var(--color-text-muted); white-space: nowrap; }
+
+.fu-thread-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Dark mode */
+[data-theme="dark"] .fu-modal-mono,
+[data-theme="dark"] .fu-thread-mono { background: hsl(var(--mono-h, 220) 32% 24%); color: hsl(var(--mono-h, 220) 68% 76%); }
+[data-theme="dark"] .fu-away-row .away-track { background: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .away-warn { color: #fbbf24; }
+[data-theme="dark"] .away-danger { color: #f87171; }
