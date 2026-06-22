@@ -102,21 +102,19 @@ export default function FollowUpDashboardPage() {
       </header>
 
       <main className="followup-body">
-        <div className="followup-statline" aria-label="Summary">
-          <span className="stat-chip">
-            <span className="stat-dot dot-neutral" />
-            <b>{stats.total}</b> on the watch list
-          </span>
-          <span className="stat-sep" />
-          <span className="stat-chip">
-            <span className="stat-dot dot-flag" />
-            <b>{stats.flagged}</b> flagged for follow-up
-          </span>
-          <span className="stat-sep" />
-          <span className="stat-chip">
-            <span className="stat-dot dot-open" />
-            <b>{stats.unassigned}</b> still need someone
-          </span>
+        <div className="followup-summary" aria-label="Summary">
+          <div className="summary-cell">
+            <span className="summary-value">{stats.total}</span>
+            <span className="summary-label"><span className="summary-dot dot-neutral" />On the watch list</span>
+          </div>
+          <div className="summary-cell">
+            <span className="summary-value">{stats.flagged}</span>
+            <span className="summary-label"><span className="summary-dot dot-flag" />Flagged for follow-up</span>
+          </div>
+          <div className="summary-cell">
+            <span className="summary-value">{stats.unassigned}</span>
+            <span className="summary-label"><span className="summary-dot dot-open" />Awaiting an assignee</span>
+          </div>
         </div>
 
         <div className="followup-toolbar">
@@ -164,13 +162,19 @@ export default function FollowUpDashboardPage() {
 
           <div className="tool-spacer" />
 
-          <input
-            className="followup-search"
-            type="search"
-            placeholder="Search by name…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+          <div className="followup-search-wrap">
+            <svg className="followup-search-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
+            <input
+              className="followup-search"
+              type="search"
+              placeholder="Search by name"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
           <Dropdown
             className="sort-dd"
             ariaLabel="Sort"
@@ -178,7 +182,7 @@ export default function FollowUpDashboardPage() {
             value={sortKey}
             options={[
               { value: 'away', label: 'Longest away' },
-              { value: 'name', label: 'Name (A–Z)' },
+              { value: 'name', label: 'Name (A to Z)' },
               { value: 'visits', label: 'Most visits' },
             ]}
             onChange={v => setSortKey(v as SortKey)}
@@ -205,7 +209,7 @@ export default function FollowUpDashboardPage() {
               <button className="btn-primary" onClick={handleAddMember} disabled={!newMemberName.trim()}>Add</button>
             </div>
             {members.length === 0 ? (
-              <p className="followup-members-empty">No members yet — add the first one above.</p>
+              <p className="followup-members-empty">No members yet. Add the first one above.</p>
             ) : (
               <ul className="followup-members-list">
                 {members.map(m => (
@@ -241,21 +245,39 @@ export default function FollowUpDashboardPage() {
         ) : rows.length === 0 ? (
           <div className="followup-empty">
             <span className="followup-empty-icon">
-              {filterMode === 'needs' ? '🕊️' : filterMode === 'removed' ? '🗂️' : '☕'}
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {filterMode === 'needs' ? (
+                  <>
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+                  </>
+                ) : filterMode === 'removed' ? (
+                  <>
+                    <rect x="3" y="4" width="18" height="4" rx="1" />
+                    <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+                    <path d="M10 12h4" />
+                  </>
+                ) : (
+                  <>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+                  </>
+                )}
+              </svg>
             </span>
             <p className="followup-empty-title">
               {filterMode === 'needs'
                 ? 'Nobody is flagged right now'
                 : filterMode === 'removed'
                   ? 'Nothing removed'
-                  : "Everyone's been around"}
+                  : 'Everyone has been around'}
             </p>
             <p className="followup-empty-desc">
               {filterMode === 'needs'
-                ? 'Flag someone from “Everyone” to start keeping track of them.'
+                ? 'Flag someone from the Everyone tab to start keeping track of them.'
                 : filterMode === 'removed'
-                  ? 'People you remove from the watch list show up here, ready to restore.'
-                  : `No one has been away for ${cutoffWeeks}+ weeks. Try a shorter window above.`}
+                  ? 'People you remove from the watch list appear here, ready to restore.'
+                  : `No one has been away for ${cutoffWeeks} or more weeks. Try a shorter window above.`}
             </p>
           </div>
         ) : (

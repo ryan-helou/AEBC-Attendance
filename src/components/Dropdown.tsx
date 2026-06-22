@@ -18,7 +18,7 @@ interface DropdownProps {
 }
 
 /**
- * A fully styled select replacement — the native <select> popup is OS-rendered
+ * A fully styled select replacement. The native <select> popup is OS-rendered
  * and can't be themed, so we render our own button + menu instead.
  */
 export default function Dropdown({
