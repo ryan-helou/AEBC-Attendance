@@ -52,6 +52,7 @@ export interface FollowupStatus {
   person_id: string;
   needs_followup: boolean;
   assigned_to: string | null; // FollowupMember.id
+  dismissed: boolean; // removed from the watch list (kept for restore)
   updated_at: string;
 }
 
@@ -72,6 +73,7 @@ export interface WatchListEntry {
   weeksSinceLast: number;
   needs_followup: boolean;
   assigned_to: string | null;
+  dismissed: boolean;
   latestNotePreview: string | null;
   /** true when the person qualifies via the inactivity cutoff (vs only manually flagged). */
   isInactiveByCutoff: boolean;

@@ -123,8 +123,12 @@ create table followup_status (
   person_id uuid primary key references people(id) on delete cascade,
   needs_followup boolean not null default false,
   assigned_to uuid references followup_members(id) on delete set null,
+  dismissed boolean not null default false,
   updated_at timestamptz default now()
 );
+
+-- Migration for existing databases: add dismissed column if missing
+alter table followup_status add column if not exists dismissed boolean not null default false;
 
 -- Follow-up history log (comments left over time)
 create table followup_notes (

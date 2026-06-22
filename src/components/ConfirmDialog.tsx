@@ -5,9 +5,10 @@ interface ConfirmDialogProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmLabel?: string;
 }
 
-export default function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmDialogProps) {
+export default function ConfirmDialog({ message, onConfirm, onCancel, confirmLabel = 'Delete' }: ConfirmDialogProps) {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onCancel();
@@ -26,7 +27,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel }: ConfirmD
             Cancel
           </button>
           <button className="confirm-delete" onClick={onConfirm}>
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>
