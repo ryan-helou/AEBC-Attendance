@@ -7,7 +7,7 @@ import FollowUpDetailModal from '../components/FollowUpDetailModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Dropdown from '../components/Dropdown';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
-import type { FollowupMember } from '../types';
+import type { FollowupMember, WatchListEntry } from '../types';
 import './FollowUpDashboardPage.css';
 
 const CUTOFF_OPTIONS = [2, 3, 4, 6, 8];
@@ -21,10 +21,10 @@ export default function FollowUpDashboardPage() {
   const [cutoffWeeks, setCutoffWeeks] = useState(3);
   const {
     loading, watchList, members, memberById, notesByPerson,
-    toggleNeedsFollowup, setAssignee, addNote, addMember, removeMember,
+    toggleNeedsFollowup, setAssignee, setDismissed, addNote, addMember, removeMember,
   } = useFollowUps(cutoffWeeks);
 
-  const [filterMode, setFilterMode] = useState<'all' | 'needs'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'needs' | 'removed'>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('away');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -32,10 +32,13 @@ export default function FollowUpDashboardPage() {
   const [showMembers, setShowMembers] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [memberToRemove, setMemberToRemove] = useState<FollowupMember | null>(null);
+  const [personToRemove, setPersonToRemove] = useState<WatchListEntry | null>(null);
 
   const rows = useMemo(() => {
-    let list = watchList;
-    if (filterMode === 'needs') list = list.filter(e => e.needs_followup);
+    // "Removed" shows dismissed people; the others hide them.
+    let list = filterMode === 'removed'
+      ? watchList.filter(e => e.dismissed)
+      : watchList.filter(e => !e.dismissed && (filterMode !== 'needs' || e.needs_followup));
     const q = search.trim().toLowerCase();
     if (q) list = list.filter(e => e.person_name.toLowerCase().includes(q));
 
@@ -56,11 +59,13 @@ export default function FollowUpDashboardPage() {
   );
 
   const stats = useMemo(() => {
-    const flagged = watchList.filter(e => e.needs_followup);
+    const active = watchList.filter(e => !e.dismissed);
+    const flagged = active.filter(e => e.needs_followup);
     return {
-      total: watchList.length,
+      total: active.length,
       flagged: flagged.length,
       unassigned: flagged.filter(e => !e.assigned_to).length,
+      removed: watchList.filter(e => e.dismissed).length,
     };
   }, [watchList]);
 
@@ -143,6 +148,14 @@ export default function FollowUpDashboardPage() {
             >
               Needs follow-up{stats.flagged > 0 ? ` · ${stats.flagged}` : ''}
             </button>
+            <button
+              role="tab"
+              aria-selected={filterMode === 'removed'}
+              className={`seg-option${filterMode === 'removed' ? ' is-active' : ''}`}
+              onClick={() => setFilterMode('removed')}
+            >
+              Removed{stats.removed > 0 ? ` · ${stats.removed}` : ''}
+            </button>
           </div>
 
           <div className="tool-spacer" />
@@ -223,14 +236,22 @@ export default function FollowUpDashboardPage() {
           </ul>
         ) : rows.length === 0 ? (
           <div className="followup-empty">
-            <span className="followup-empty-icon">{filterMode === 'needs' ? '🕊️' : '☕'}</span>
+            <span className="followup-empty-icon">
+              {filterMode === 'needs' ? '🕊️' : filterMode === 'removed' ? '🗂️' : '☕'}
+            </span>
             <p className="followup-empty-title">
-              {filterMode === 'needs' ? 'Nobody is flagged right now' : 'Everyone\'s been around'}
+              {filterMode === 'needs'
+                ? 'Nobody is flagged right now'
+                : filterMode === 'removed'
+                  ? 'Nothing removed'
+                  : "Everyone's been around"}
             </p>
             <p className="followup-empty-desc">
               {filterMode === 'needs'
                 ? 'Flag someone from “Everyone” to start keeping track of them.'
-                : `No one has been away for ${cutoffWeeks}+ weeks. Try a shorter window above.`}
+                : filterMode === 'removed'
+                  ? 'People you remove from the watch list show up here, ready to restore.'
+                  : `No one has been away for ${cutoffWeeks}+ weeks. Try a shorter window above.`}
             </p>
           </div>
         ) : (
@@ -289,17 +310,45 @@ export default function FollowUpDashboardPage() {
                     />
                   </div>
 
-                  <button
-                    className={`care-flag${entry.needs_followup ? ' is-on' : ''}`}
-                    onClick={e => { e.stopPropagation(); toggleNeedsFollowup(entry.person_id, !entry.needs_followup); }}
-                    aria-pressed={entry.needs_followup}
-                    title={entry.needs_followup ? 'Flagged for follow-up' : 'Flag for follow-up'}
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                      <path d="M5 3v18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <path d="M5 4h11l-2 3 2 3H5z" fill="currentColor" stroke="none" />
-                    </svg>
-                  </button>
+                  <div className="care-actions" onClick={e => e.stopPropagation()}>
+                    {filterMode === 'removed' ? (
+                      <button
+                        className="care-restore"
+                        onClick={() => setDismissed(entry.person_id, false)}
+                        title="Restore to watch list"
+                        aria-label={`Restore ${entry.person_name} to the watch list`}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                          <path d="M3 3v5h5" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          className={`care-flag${entry.needs_followup ? ' is-on' : ''}`}
+                          onClick={() => toggleNeedsFollowup(entry.person_id, !entry.needs_followup)}
+                          aria-pressed={entry.needs_followup}
+                          title={entry.needs_followup ? 'Flagged for follow-up' : 'Flag for follow-up'}
+                        >
+                          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                            <path d="M5 3v18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M5 4h11l-2 3 2 3H5z" fill="currentColor" stroke="none" />
+                          </svg>
+                        </button>
+                        <button
+                          className="care-remove"
+                          onClick={() => setPersonToRemove(entry)}
+                          title="Remove from watch list"
+                          aria-label={`Remove ${entry.person_name} from the watch list`}
+                        >
+                          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                            <path d="M6 6l12 12M18 6L6 18" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </li>
               );
             })}
@@ -322,9 +371,19 @@ export default function FollowUpDashboardPage() {
 
       {memberToRemove && (
         <ConfirmDialog
+          confirmLabel="Remove"
           message={`Remove ${memberToRemove.name} from the committee? Their past comments stay, but they'll be unassigned from anyone they're following up with.`}
           onConfirm={() => { removeMember(memberToRemove.id); setMemberToRemove(null); }}
           onCancel={() => setMemberToRemove(null)}
+        />
+      )}
+
+      {personToRemove && (
+        <ConfirmDialog
+          confirmLabel="Remove"
+          message={`Remove ${personToRemove.person_name} from the watch list? You can restore them anytime from the Removed tab.`}
+          onConfirm={() => { setDismissed(personToRemove.person_id, true); setPersonToRemove(null); }}
+          onCancel={() => setPersonToRemove(null)}
         />
       )}
 

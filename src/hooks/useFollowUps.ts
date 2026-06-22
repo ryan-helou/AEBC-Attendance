@@ -113,8 +113,10 @@ export function useFollowUps(cutoffWeeks: number) {
     }
 
     const statusById = new Map(statuses.map(s => [s.person_id, s]));
-    const flaggedIds = statuses.filter(s => s.needs_followup).map(s => s.person_id);
-    const ids = new Set<string>([...inactiveById.keys(), ...flaggedIds]);
+    // Include flagged + dismissed people in the set: flagged so they stay on the
+    // list after returning, dismissed so the "Removed" view can show/restore them.
+    const trackedIds = statuses.filter(s => s.needs_followup || s.dismissed).map(s => s.person_id);
+    const ids = new Set<string>([...inactiveById.keys(), ...trackedIds]);
 
     const today = new Date(getTodayDate() + 'T00:00:00').getTime();
     const entries: WatchListEntry[] = [];
@@ -145,6 +147,7 @@ export function useFollowUps(cutoffWeeks: number) {
         weeksSinceLast,
         needs_followup: status?.needs_followup ?? false,
         assigned_to: status?.assigned_to ?? null,
+        dismissed: status?.dismissed ?? false,
         latestNotePreview: notesByPerson.get(pid)?.[0]?.body ?? null,
         isInactiveByCutoff: !!inactiveRow,
       });
@@ -165,6 +168,13 @@ export function useFollowUps(cutoffWeeks: number) {
     await supabase
       .from('followup_status')
       .upsert({ person_id: personId, assigned_to: memberId, updated_at: new Date().toISOString() }, { onConflict: 'person_id' });
+    await loadFollowupTables();
+  }, [loadFollowupTables]);
+
+  const setDismissed = useCallback(async (personId: string, value: boolean) => {
+    await supabase
+      .from('followup_status')
+      .upsert({ person_id: personId, dismissed: value, updated_at: new Date().toISOString() }, { onConflict: 'person_id' });
     await loadFollowupTables();
   }, [loadFollowupTables]);
 
@@ -195,6 +205,7 @@ export function useFollowUps(cutoffWeeks: number) {
     notesByPerson,
     toggleNeedsFollowup,
     setAssignee,
+    setDismissed,
     addNote,
     addMember,
     removeMember,
