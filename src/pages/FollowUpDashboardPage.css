@@ -373,6 +373,95 @@
 
 .member-remove:hover { background: none; color: var(--color-danger); box-shadow: none; transform: none; }
 
+/* ── Add-to-watch-list panel ────────────────────────────── */
+.addp-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.addp-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.addp-search {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.6em 0.8em 0.6em 2.3rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.addp-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.addp-search-wrap:focus-within .addp-search-icon { color: var(--color-primary); }
+
+.addp-confirm {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.addp-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.addp-result {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.addp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.addp-name { font-weight: 600; font-size: 0.9rem; }
+
+.addp-notes {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addp-add-btn { font-size: 0.82rem; padding: 0.4em 1em; flex-shrink: 0; }
+
+.addp-on {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  padding-right: 0.3rem;
+}
+
 /* ── Roster ─────────────────────────────────────────────── */
 .followup-roster {
   list-style: none;
