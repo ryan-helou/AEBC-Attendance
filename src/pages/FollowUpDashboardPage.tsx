@@ -271,7 +271,6 @@ export default function FollowUpDashboardPage() {
                     <span className="member-mono">{initials(person.full_name)}</span>
                     <span className="addp-info">
                       <span className="addp-name">{person.full_name}</span>
-                      {person.notes && <span className="addp-notes">{person.notes}</span>}
                     </span>
                     {alreadyMarked ? (
                       <span className="addp-on">On the list</span>

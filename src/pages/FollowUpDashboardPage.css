@@ -444,14 +444,6 @@
 
 .addp-name { font-weight: 600; font-size: 0.9rem; }
 
-.addp-notes {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .addp-add-btn { font-size: 0.82rem; padding: 0.4em 1em; flex-shrink: 0; }
 
 .addp-on {
