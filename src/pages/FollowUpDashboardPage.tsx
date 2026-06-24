@@ -8,6 +8,7 @@ import FollowUpDetailModal from '../components/FollowUpDetailModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Dropdown from '../components/Dropdown';
 import AccentColorPicker from '../components/AccentColorPicker';
+import FollowupIdeasPanel from '../components/FollowupIdeasPanel';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
 import type { FollowupMember, WatchListEntry } from '../types';
 import './FollowUpDashboardPage.css';
@@ -24,7 +25,7 @@ export default function FollowUpDashboardPage() {
   const [cutoffWeeks, setCutoffWeeks] = useState(3);
   const {
     loading, watchList, members, memberById, notesByPerson,
-    toggleNeedsFollowup, setAssignee, setDismissed, addNote, addMember, removeMember,
+    toggleNeedsFollowup, setAssignee, setDismissed, addNote, deleteNote, addMember, removeMember,
   } = useFollowUps(cutoffWeeks);
 
   const [filterMode, setFilterMode] = useState<'all' | 'needs' | 'removed'>('all');
@@ -32,7 +33,7 @@ export default function FollowUpDashboardPage() {
   const [sortKey, setSortKey] = useState<SortKey>('away');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
-  const [showMembers, setShowMembers] = useState(false);
+  const [activePanel, setActivePanel] = useState<'members' | 'ideas' | null>(null);
   const [newMemberName, setNewMemberName] = useState('');
   const [memberToRemove, setMemberToRemove] = useState<FollowupMember | null>(null);
   const [personToRemove, setPersonToRemove] = useState<WatchListEntry | null>(null);
@@ -187,12 +188,21 @@ export default function FollowUpDashboardPage() {
             ]}
             onChange={v => setSortKey(v as SortKey)}
           />
-          <button className="followup-ghost-btn followup-ghost-btn--dark" onClick={() => setShowMembers(s => !s)}>
-            {showMembers ? 'Done' : 'Members'}
+          <button
+            className={`followup-ghost-btn followup-ghost-btn--dark${activePanel === 'ideas' ? ' is-active' : ''}`}
+            onClick={() => setActivePanel(p => (p === 'ideas' ? null : 'ideas'))}
+          >
+            Ideas
+          </button>
+          <button
+            className={`followup-ghost-btn followup-ghost-btn--dark${activePanel === 'members' ? ' is-active' : ''}`}
+            onClick={() => setActivePanel(p => (p === 'members' ? null : 'members'))}
+          >
+            Members
           </button>
         </div>
 
-        {showMembers && (
+        {activePanel === 'members' && (
           <div className="followup-members-panel">
             <div className="members-head">
               <h2>Committee members</h2>
@@ -229,6 +239,8 @@ export default function FollowUpDashboardPage() {
             )}
           </div>
         )}
+
+        {activePanel === 'ideas' && <FollowupIdeasPanel />}
 
         {loading ? (
           <ul className="followup-roster" aria-hidden="true">
@@ -391,6 +403,7 @@ export default function FollowUpDashboardPage() {
           onToggleNeedsFollowup={value => toggleNeedsFollowup(selected.person_id, value)}
           onSetAssignee={memberId => setAssignee(selected.person_id, memberId)}
           onAddNote={(authorId, body) => addNote(selected.person_id, authorId, body)}
+          onDeleteNote={noteId => deleteNote(noteId)}
         />
       )}
 

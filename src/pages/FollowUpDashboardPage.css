@@ -84,6 +84,13 @@
   color: var(--color-text);
 }
 
+.followup-ghost-btn--dark.is-active,
+.followup-ghost-btn--dark.is-active:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 /* ── Body ───────────────────────────────────────────────── */
 .followup-body {
   flex: 1;

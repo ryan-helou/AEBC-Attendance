@@ -185,6 +185,11 @@ export function useFollowUps(cutoffWeeks: number) {
     await loadFollowupTables();
   }, [loadFollowupTables]);
 
+  const deleteNote = useCallback(async (noteId: string) => {
+    await supabase.from('followup_notes').delete().eq('id', noteId);
+    await loadFollowupTables();
+  }, [loadFollowupTables]);
+
   const addMember = useCallback(async (name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -207,6 +212,7 @@ export function useFollowUps(cutoffWeeks: number) {
     setAssignee,
     setDismissed,
     addNote,
+    deleteNote,
     addMember,
     removeMember,
   };

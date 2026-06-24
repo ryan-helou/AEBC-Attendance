@@ -272,7 +272,36 @@
 }
 
 .fu-thread-author { font-size: 0.82rem; font-weight: 600; color: var(--color-text); }
+
+.fu-thread-meta-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .fu-thread-date { font-size: 0.7rem; color: var(--color-text-muted); white-space: nowrap; }
+
+.fu-thread-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  opacity: 0.65;
+  transition: color var(--transition-fast), background var(--transition-fast), opacity var(--transition-fast);
+}
+
+.fu-thread-delete:hover {
+  color: var(--color-danger);
+  background: rgba(220, 38, 38, 0.08);
+  opacity: 1;
+  box-shadow: none;
+  transform: none;
+}
 
 .fu-thread-text {
   margin: 0;

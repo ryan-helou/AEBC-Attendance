@@ -153,5 +153,16 @@ alter publication supabase_realtime add table followup_status;
 alter publication supabase_realtime add table followup_notes;
 alter publication supabase_realtime add table followup_members;
 
+-- Follow-up committee ideas / to-do list (separate from the attendance ideas)
+create table followup_ideas (
+  id uuid default gen_random_uuid() primary key,
+  text text not null,
+  done boolean not null default false,
+  created_at timestamptz default now()
+);
+
+alter table followup_ideas enable row level security;
+create policy "Allow all on followup_ideas" on followup_ideas for all using (true) with check (true);
+
 -- Follow-up dashboard password. Set this manually with your chosen key:
 -- insert into app_config (key, value) values ('followup_access_key', '<choose-a-password>');
