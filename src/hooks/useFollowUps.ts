@@ -171,6 +171,18 @@ export function useFollowUps(cutoffWeeks: number) {
     await loadFollowupTables();
   }, [loadFollowupTables]);
 
+  // Manually pin someone to the watch list (and flag them for follow-up).
+  // Also clears any prior "removed" state so re-adding a dismissed person restores them.
+  const addToWatchList = useCallback(async (personId: string) => {
+    await supabase
+      .from('followup_status')
+      .upsert(
+        { person_id: personId, needs_followup: true, dismissed: false, updated_at: new Date().toISOString() },
+        { onConflict: 'person_id' },
+      );
+    await loadFollowupTables();
+  }, [loadFollowupTables]);
+
   const setDismissed = useCallback(async (personId: string, value: boolean) => {
     await supabase
       .from('followup_status')
@@ -211,6 +223,7 @@ export function useFollowUps(cutoffWeeks: number) {
     toggleNeedsFollowup,
     setAssignee,
     setDismissed,
+    addToWatchList,
     addNote,
     deleteNote,
     addMember,

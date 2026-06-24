@@ -4,13 +4,14 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useAccentColor } from '../hooks/useAccentColor';
 import { useFollowUps } from '../hooks/useFollowUps';
+import { usePeople } from '../hooks/usePeople';
 import FollowUpDetailModal from '../components/FollowUpDetailModal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Dropdown from '../components/Dropdown';
 import AccentColorPicker from '../components/AccentColorPicker';
 import FollowupIdeasPanel from '../components/FollowupIdeasPanel';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
-import type { FollowupMember, WatchListEntry } from '../types';
+import type { FollowupMember, WatchListEntry, Person } from '../types';
 import './FollowUpDashboardPage.css';
 
 const CUTOFF_OPTIONS = [2, 3, 4, 6, 8];
@@ -25,18 +26,22 @@ export default function FollowUpDashboardPage() {
   const [cutoffWeeks, setCutoffWeeks] = useState(3);
   const {
     loading, watchList, members, memberById, notesByPerson,
-    toggleNeedsFollowup, setAssignee, setDismissed, addNote, deleteNote, addMember, removeMember,
+    toggleNeedsFollowup, setAssignee, setDismissed, addToWatchList, addNote, deleteNote, addMember, removeMember,
   } = useFollowUps(cutoffWeeks);
+  const { searchPeople } = usePeople();
 
   const [filterMode, setFilterMode] = useState<'all' | 'needs' | 'removed'>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('away');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
 
-  const [activePanel, setActivePanel] = useState<'members' | 'ideas' | null>(null);
+  const [activePanel, setActivePanel] = useState<'members' | 'ideas' | 'add' | null>(null);
   const [newMemberName, setNewMemberName] = useState('');
   const [memberToRemove, setMemberToRemove] = useState<FollowupMember | null>(null);
   const [personToRemove, setPersonToRemove] = useState<WatchListEntry | null>(null);
+
+  const [addQuery, setAddQuery] = useState('');
+  const [justAddedName, setJustAddedName] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     // "Removed" shows dismissed people; the others hide them.
@@ -62,6 +67,19 @@ export default function FollowUpDashboardPage() {
     [members],
   );
 
+  // People already actively on the watch list — shown as "On the list" in the
+  // add panel so they can't be added twice. Dismissed people are omitted so
+  // re-adding restores them.
+  const onWatchListIds = useMemo(
+    () => new Set(watchList.filter(e => !e.dismissed).map(e => e.person_id)),
+    [watchList],
+  );
+
+  const addResults = useMemo(
+    () => (addQuery.trim() ? searchPeople(addQuery, onWatchListIds) : []),
+    [addQuery, onWatchListIds, searchPeople],
+  );
+
   const stats = useMemo(() => {
     const active = watchList.filter(e => !e.dismissed);
     const flagged = active.filter(e => e.needs_followup);
@@ -83,6 +101,11 @@ export default function FollowUpDashboardPage() {
     if (!name) return;
     await addMember(name);
     setNewMemberName('');
+  }
+
+  async function handleAddToWatchList(person: Person) {
+    await addToWatchList(person.id);
+    setJustAddedName(person.full_name);
   }
 
   return (
@@ -189,6 +212,12 @@ export default function FollowUpDashboardPage() {
             onChange={v => setSortKey(v as SortKey)}
           />
           <button
+            className={`followup-ghost-btn followup-ghost-btn--dark${activePanel === 'add' ? ' is-active' : ''}`}
+            onClick={() => setActivePanel(p => (p === 'add' ? null : 'add'))}
+          >
+            Add to list
+          </button>
+          <button
             className={`followup-ghost-btn followup-ghost-btn--dark${activePanel === 'ideas' ? ' is-active' : ''}`}
             onClick={() => setActivePanel(p => (p === 'ideas' ? null : 'ideas'))}
           >
@@ -201,6 +230,62 @@ export default function FollowUpDashboardPage() {
             Members
           </button>
         </div>
+
+        {activePanel === 'add' && (
+          <div className="followup-members-panel followup-add-panel">
+            <div className="members-head">
+              <h2>Add someone to the watch list</h2>
+              <p>Search the directory to start keeping an eye on someone — they'll be flagged for follow-up.</p>
+            </div>
+            <div className="addp-search-wrap">
+              <svg className="addp-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                className="addp-search"
+                type="search"
+                placeholder="Search by name…"
+                value={addQuery}
+                autoFocus
+                onChange={e => { setAddQuery(e.target.value); setJustAddedName(null); }}
+              />
+            </div>
+
+            {justAddedName && (
+              <p className="addp-confirm">Added <strong>{justAddedName}</strong> to the watch list.</p>
+            )}
+
+            {addQuery.trim() === '' ? (
+              <p className="followup-members-empty">Start typing a name to find them in the directory.</p>
+            ) : addResults.length === 0 ? (
+              <p className="followup-members-empty">No one matches “{addQuery.trim()}”.</p>
+            ) : (
+              <ul className="addp-results">
+                {addResults.map(({ person, alreadyMarked }) => (
+                  <li
+                    key={person.id}
+                    className="addp-result"
+                    style={{ '--mono-h': hueFromName(person.full_name) } as React.CSSProperties}
+                  >
+                    <span className="member-mono">{initials(person.full_name)}</span>
+                    <span className="addp-info">
+                      <span className="addp-name">{person.full_name}</span>
+                      {person.notes && <span className="addp-notes">{person.notes}</span>}
+                    </span>
+                    {alreadyMarked ? (
+                      <span className="addp-on">On the list</span>
+                    ) : (
+                      <button className="btn-primary addp-add-btn" onClick={() => handleAddToWatchList(person)}>
+                        Add
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {activePanel === 'members' && (
           <div className="followup-members-panel">
