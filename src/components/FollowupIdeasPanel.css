@@ -1,0 +1,75 @@
+/* Reuses .followup-members-panel surface + .members-head + .followup-members-add
+   from the dashboard CSS; only the checklist needs its own styles. */
+
+.fi-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fi-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius);
+  background: var(--color-bg);
+}
+
+.fi-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.fi-check:hover { border-color: var(--color-primary); }
+
+.fi-check-done {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.fi-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.fi-item-done .fi-text {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+.fi-remove {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fi-remove:hover {
+  background: none;
+  color: var(--color-danger);
+  box-shadow: none;
+  transform: none;
+}

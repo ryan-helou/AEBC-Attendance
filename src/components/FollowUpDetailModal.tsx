@@ -3,6 +3,7 @@ import type { FollowupMember, FollowupNote, WatchListEntry } from '../types';
 import { formatDate, formatTimeET } from '../lib/dateUtils';
 import { initials, hueFromName, awaySeverity, AWAY_CAP_WEEKS } from '../lib/followupVisuals';
 import Dropdown from './Dropdown';
+import ConfirmDialog from './ConfirmDialog';
 import './AddPersonModal.css'; // shared .modal-overlay / .modal-card / .modal-save base
 import './FollowUpDetailModal.css';
 
@@ -15,6 +16,7 @@ interface FollowUpDetailModalProps {
   onToggleNeedsFollowup: (value: boolean) => void;
   onSetAssignee: (memberId: string | null) => void;
   onAddNote: (authorId: string | null, body: string) => Promise<void>;
+  onDeleteNote: (noteId: string) => void;
 }
 
 function authorLabel(authorId: string | null, memberById: Map<string, string>): string {
@@ -31,11 +33,13 @@ export default function FollowUpDetailModal({
   onToggleNeedsFollowup,
   onSetAssignee,
   onAddNote,
+  onDeleteNote,
 }: FollowUpDetailModalProps) {
   // Default the comment author to whoever this person is assigned to, if anyone.
   const [authorId, setAuthorId] = useState<string>(entry.assigned_to ?? '');
   const [body, setBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -60,6 +64,7 @@ export default function FollowUpDetailModal({
   const assigneeOptions = [{ value: '', label: 'Unassigned' }, ...memberOptions];
 
   return (
+    <>
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal-card followup-modal" onMouseDown={e => e.stopPropagation()}>
         <div className="fu-modal-head">
@@ -150,9 +155,24 @@ export default function FollowUpDetailModal({
                     <div className="fu-thread-body">
                       <div className="fu-thread-meta">
                         <span className="fu-thread-author">{author}</span>
-                        <span className="fu-thread-date">
-                          {formatDate(note.created_at.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {' · '}{formatTimeET(note.created_at)}
+                        <span className="fu-thread-meta-right">
+                          <span className="fu-thread-date">
+                            {formatDate(note.created_at.slice(0, 10), { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {' · '}{formatTimeET(note.created_at)}
+                          </span>
+                          <button
+                            type="button"
+                            className="fu-thread-delete"
+                            onClick={() => setNoteToDelete(note.id)}
+                            title="Delete comment"
+                            aria-label="Delete comment"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                              <path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" />
+                            </svg>
+                          </button>
                         </span>
                       </div>
                       <p className="fu-thread-text">{note.body}</p>
@@ -165,5 +185,14 @@ export default function FollowUpDetailModal({
         </div>
       </div>
     </div>
+    {noteToDelete && (
+      <ConfirmDialog
+        confirmLabel="Delete"
+        message="Delete this comment? This cannot be undone."
+        onConfirm={() => { onDeleteNote(noteToDelete); setNoteToDelete(null); }}
+        onCancel={() => setNoteToDelete(null)}
+      />
+    )}
+    </>
   );
 }
