@@ -454,6 +454,82 @@
   padding-right: 0.3rem;
 }
 
+/* ── Add-a-new-person ───────────────────────────────────── */
+.addp-noresult {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.addp-create-cta { font-size: 0.85rem; padding: 0.5em 1.1em; }
+
+.addp-create-link {
+  margin-top: 0.7rem;
+  background: none;
+  border: none;
+  padding: 0.3rem 0;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.addp-create-link:hover { text-decoration: underline; }
+
+.addp-create {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.addp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.addp-field-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.addp-optional { font-weight: 400; opacity: 0.8; }
+
+.addp-field-input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.6em 0.8em;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.addp-field-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.addp-field-textarea { resize: vertical; min-height: 3.4rem; line-height: 1.4; }
+
+.addp-error {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-danger, #c0392b);
+}
+
+.addp-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
 /* ── Roster ─────────────────────────────────────────────── */
 .followup-roster {
   list-style: none;

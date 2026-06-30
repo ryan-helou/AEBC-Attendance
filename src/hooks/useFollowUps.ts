@@ -173,13 +173,23 @@ export function useFollowUps(cutoffWeeks: number) {
 
   // Manually pin someone to the watch list (and flag them for follow-up).
   // Also clears any prior "removed" state so re-adding a dismissed person restores them.
-  const addToWatchList = useCallback(async (personId: string) => {
+  // `personName` seeds the local name map so a just-created person shows their
+  // name immediately instead of "Unknown" (this hook's people map is fetched once).
+  const addToWatchList = useCallback(async (personId: string, personName?: string) => {
     await supabase
       .from('followup_status')
       .upsert(
         { person_id: personId, needs_followup: true, dismissed: false, updated_at: new Date().toISOString() },
         { onConflict: 'person_id' },
       );
+    if (personName) {
+      setPeopleById(prev => {
+        if (prev.get(personId) === personName) return prev;
+        const next = new Map(prev);
+        next.set(personId, personName);
+        return next;
+      });
+    }
     await loadFollowupTables();
   }, [loadFollowupTables]);
 
