@@ -28,7 +28,7 @@ export default function FollowUpDashboardPage() {
     loading, watchList, members, memberById, notesByPerson,
     toggleNeedsFollowup, setAssignee, setDismissed, addToWatchList, addNote, deleteNote, addMember, removeMember,
   } = useFollowUps(cutoffWeeks);
-  const { searchPeople } = usePeople();
+  const { searchPeople, addPerson } = usePeople();
 
   const [filterMode, setFilterMode] = useState<'all' | 'needs' | 'removed'>('all');
   const [search, setSearch] = useState('');
@@ -42,6 +42,12 @@ export default function FollowUpDashboardPage() {
 
   const [addQuery, setAddQuery] = useState('');
   const [justAddedName, setJustAddedName] = useState<string | null>(null);
+
+  // "Add a brand-new person" sub-form inside the add panel.
+  const [creating, setCreating] = useState(false);
+  const [newPersonName, setNewPersonName] = useState('');
+  const [newPersonNotes, setNewPersonNotes] = useState('');
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const rows = useMemo(() => {
     // "Removed" shows dismissed people; the others hide them.
@@ -104,8 +110,39 @@ export default function FollowUpDashboardPage() {
   }
 
   async function handleAddToWatchList(person: Person) {
-    await addToWatchList(person.id);
+    await addToWatchList(person.id, person.full_name);
     setJustAddedName(person.full_name);
+  }
+
+  // Open the create form, pre-filling whatever was typed in the search box.
+  function openCreate() {
+    setNewPersonName(addQuery.trim());
+    setNewPersonNotes('');
+    setCreateError(null);
+    setJustAddedName(null);
+    setCreating(true);
+  }
+
+  function cancelCreate() {
+    setCreating(false);
+    setNewPersonName('');
+    setNewPersonNotes('');
+    setCreateError(null);
+  }
+
+  // Create a brand-new person, then put them straight on the watch list.
+  async function handleCreateAndAdd() {
+    const name = newPersonName.trim();
+    if (!name) return;
+    const person = await addPerson(name, newPersonNotes.trim() || undefined);
+    if (!person) {
+      setCreateError(`"${name}" already exists in the directory — search for them above instead.`);
+      return;
+    }
+    await addToWatchList(person.id, person.full_name);
+    setJustAddedName(person.full_name);
+    setAddQuery('');
+    cancelCreate();
   }
 
   return (
@@ -213,7 +250,7 @@ export default function FollowUpDashboardPage() {
           />
           <button
             className={`followup-ghost-btn followup-ghost-btn--dark${activePanel === 'add' ? ' is-active' : ''}`}
-            onClick={() => setActivePanel(p => (p === 'add' ? null : 'add'))}
+            onClick={() => { cancelCreate(); setActivePanel(p => (p === 'add' ? null : 'add')); }}
           >
             Add to list
           </button>
@@ -235,53 +272,100 @@ export default function FollowUpDashboardPage() {
           <div className="followup-members-panel followup-add-panel">
             <div className="members-head">
               <h2>Add someone to the watch list</h2>
-              <p>Search the directory to start keeping an eye on someone — they'll be flagged for follow-up.</p>
-            </div>
-            <div className="addp-search-wrap">
-              <svg className="addp-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7" />
-                <path d="M21 21l-4.3-4.3" />
-              </svg>
-              <input
-                className="addp-search"
-                type="search"
-                placeholder="Search by name…"
-                value={addQuery}
-                autoFocus
-                onChange={e => { setAddQuery(e.target.value); setJustAddedName(null); }}
-              />
+              <p>Search the directory to start keeping an eye on someone — they'll be flagged for follow-up. Not in the directory yet? Add them as a new person.</p>
             </div>
 
-            {justAddedName && (
-              <p className="addp-confirm">Added <strong>{justAddedName}</strong> to the watch list.</p>
-            )}
-
-            {addQuery.trim() === '' ? (
-              <p className="followup-members-empty">Start typing a name to find them in the directory.</p>
-            ) : addResults.length === 0 ? (
-              <p className="followup-members-empty">No one matches “{addQuery.trim()}”.</p>
+            {creating ? (
+              <div className="addp-create">
+                <label className="addp-field">
+                  <span className="addp-field-label">Name</span>
+                  <input
+                    className="addp-field-input"
+                    type="text"
+                    placeholder="Full name"
+                    value={newPersonName}
+                    autoFocus
+                    onChange={e => { setNewPersonName(e.target.value); setCreateError(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleCreateAndAdd(); }}
+                  />
+                </label>
+                <label className="addp-field">
+                  <span className="addp-field-label">Notes <span className="addp-optional">(optional)</span></span>
+                  <textarea
+                    className="addp-field-input addp-field-textarea"
+                    placeholder="Anything helpful for following up — how you know them, context, etc."
+                    rows={3}
+                    value={newPersonNotes}
+                    onChange={e => setNewPersonNotes(e.target.value)}
+                  />
+                </label>
+                {createError && <p className="addp-error">{createError}</p>}
+                <div className="addp-create-actions">
+                  <button className="followup-ghost-btn" onClick={cancelCreate}>Cancel</button>
+                  <button className="btn-primary" onClick={handleCreateAndAdd} disabled={!newPersonName.trim()}>
+                    Add to list
+                  </button>
+                </div>
+              </div>
             ) : (
-              <ul className="addp-results">
-                {addResults.map(({ person, alreadyMarked }) => (
-                  <li
-                    key={person.id}
-                    className="addp-result"
-                    style={{ '--mono-h': hueFromName(person.full_name) } as React.CSSProperties}
-                  >
-                    <span className="member-mono">{initials(person.full_name)}</span>
-                    <span className="addp-info">
-                      <span className="addp-name">{person.full_name}</span>
-                    </span>
-                    {alreadyMarked ? (
-                      <span className="addp-on">On the list</span>
-                    ) : (
-                      <button className="btn-primary addp-add-btn" onClick={() => handleAddToWatchList(person)}>
-                        Add
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <>
+                <div className="addp-search-wrap">
+                  <svg className="addp-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.3-4.3" />
+                  </svg>
+                  <input
+                    className="addp-search"
+                    type="search"
+                    placeholder="Search by name…"
+                    value={addQuery}
+                    autoFocus
+                    onChange={e => { setAddQuery(e.target.value); setJustAddedName(null); }}
+                  />
+                </div>
+
+                {justAddedName && (
+                  <p className="addp-confirm">Added <strong>{justAddedName}</strong> to the watch list.</p>
+                )}
+
+                {addQuery.trim() === '' ? (
+                  <p className="followup-members-empty">Start typing a name to find them in the directory.</p>
+                ) : addResults.length === 0 ? (
+                  <div className="addp-noresult">
+                    <p className="followup-members-empty">No one matches “{addQuery.trim()}”.</p>
+                    <button className="btn-primary addp-create-cta" onClick={openCreate}>
+                      + Add “{addQuery.trim()}” as a new person
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <ul className="addp-results">
+                      {addResults.map(({ person, alreadyMarked }) => (
+                        <li
+                          key={person.id}
+                          className="addp-result"
+                          style={{ '--mono-h': hueFromName(person.full_name) } as React.CSSProperties}
+                        >
+                          <span className="member-mono">{initials(person.full_name)}</span>
+                          <span className="addp-info">
+                            <span className="addp-name">{person.full_name}</span>
+                          </span>
+                          {alreadyMarked ? (
+                            <span className="addp-on">On the list</span>
+                          ) : (
+                            <button className="btn-primary addp-add-btn" onClick={() => handleAddToWatchList(person)}>
+                              Add
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    <button className="addp-create-link" onClick={openCreate}>
+                      Not who you're looking for? Add a new person
+                    </button>
+                  </>
+                )}
+              </>
             )}
           </div>
         )}
