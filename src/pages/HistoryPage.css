@@ -451,6 +451,37 @@
   color: #fff;
 }
 
+.meeting-filter-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.875rem;
+}
+
+.meeting-filter-option {
+  padding: 0.4em 0.95em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.meeting-filter-option:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.meeting-filter-option-active,
+.meeting-filter-option-active:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 /* Leaderboard */
 .leaderboard-section {
   min-width: 0;
