@@ -1,6 +1,8 @@
-# AEBC Attendance
+# 🙋 AEBC Attendance
 
 *A check-in app for a church that runs two weekly gatherings — the English Sunday Service and the Saturday-evening Shabibeh (youth) service.*
+
+![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
 Whoever's on the door opens the service for today's date and starts typing names. The app autocompletes against a shared directory of people, and a tap marks someone present. Walk-ins nobody recognizes get added as numbered guests and can be converted to named people once you learn who they are. The running tally shows how many are present, how many are first-timers, the male/female split, and what share arrived on time — before 10:30 AM for the Sunday service, before 7:30 PM for Shabibeh — with every check-in time pinned to Eastern Time so the math holds regardless of the volunteer's device. Cross 25, 50, 75, or 100 present and confetti fires.
 
