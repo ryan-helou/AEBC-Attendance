@@ -7,6 +7,7 @@ import { MUSICIAN_ROLES } from '../hooks/useMusicianRoles';
 import type { MusicianRole } from '../hooks/useMusicianRoles';
 import SuggestionList from './SuggestionList';
 import { formatTimeET, toTimeInputValueET, etWallClockToISO } from '../lib/dateUtils';
+import { isBaby } from '../lib/babies';
 import './AttendanceTable.css';
 
 const SHABIBEH_LEADERS = [
@@ -291,7 +292,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                     <div className="name-cell-wrapper">
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
                         {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
-                        {item.entry.person.baby && <span className="baby-emoji">👶 </span>}
+                        {isBaby(item.entry.person.full_name) && <span className="baby-emoji">👶 </span>}
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
