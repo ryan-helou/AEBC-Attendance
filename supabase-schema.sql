@@ -19,6 +19,7 @@ create table people (
   full_name text not null,
   notes text,
   gender text check (gender in ('male', 'female')),
+  baby boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -26,6 +27,9 @@ create index idx_people_full_name on people (full_name);
 
 -- Migration for existing databases: add gender column if missing
 alter table people add column if not exists gender text check (gender in ('male', 'female'));
+
+-- Migration for existing databases: add baby flag if missing
+alter table people add column if not exists baby boolean not null default false;
 
 -- 3. Attendance records table
 create table attendance_records (

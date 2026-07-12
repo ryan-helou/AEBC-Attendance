@@ -297,6 +297,9 @@ export default function HistoryPage() {
   const [compareData, setCompareData] = useState<ComparePoint[]>([]);
   const [topAttendees, setTopAttendees] = useState<TopAttendee[]>([]);
   const [maxCount, setMaxCount] = useState(1);
+  const [topBabies, setTopBabies] = useState<TopAttendee[]>([]);
+  const [babyMaxCount, setBabyMaxCount] = useState(1);
+  const [babyLoading, setBabyLoading] = useState(true);
   const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('12w');
   // 'all' shows every series; otherwise a meeting id or 'firsttimers' isolates one line.
   const [chartMeeting, setChartMeeting] = useState<string>('all');
@@ -697,6 +700,47 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Baby leaderboard: everyone flagged `baby`, ranked by distinct days attended.
+  async function loadTopBabies() {
+    setBabyLoading(true);
+    const { data: babies } = await supabase
+      .from('people')
+      .select('id, full_name')
+      .eq('baby', true);
+    if (!babies || babies.length === 0) {
+      setTopBabies([]);
+      setBabyMaxCount(1);
+      setBabyLoading(false);
+      return;
+    }
+    const ids = babies.map(b => b.id as string);
+    const records = await fetchAllRows((from, to) =>
+      supabase
+        .from('attendance_records')
+        .select('person_id, date')
+        .in('person_id', ids)
+        .order('id', { ascending: true })
+        .range(from, to)
+    );
+    const datesByPerson = new Map<string, Set<string>>();
+    for (const r of records) {
+      const pid = r.person_id as string;
+      if (!datesByPerson.has(pid)) datesByPerson.set(pid, new Set());
+      datesByPerson.get(pid)!.add(r.date as string);
+    }
+    const sorted = babies
+      .map(b => ({
+        person_id: b.id as string,
+        person_name: (b.full_name as string) || 'Unknown',
+        count: datesByPerson.get(b.id as string)?.size ?? 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
+    setTopBabies(sorted);
+    setBabyMaxCount(sorted[0]?.count || 1);
+    setBabyLoading(false);
+  }
+
   async function loadConsistencyLeaders(meetingId?: string) {
     const targetId = meetingId ?? consistencyMeetingId;
     if (!targetId) return;
@@ -976,6 +1020,7 @@ export default function HistoryPage() {
       if (data) loadRecords(data);
       loadPeopleInsights();
       loadRoleLeaderboards();
+      loadTopBabies();
       loadAvgTimeData();
       setLoading(false);
     }
@@ -1609,6 +1654,61 @@ export default function HistoryPage() {
                         <div
                           className="lb-bar-fill"
                           style={{ width: `${(person.count / maxCount) * 100}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="lb-col-count"><AnimatedNumber value={person.count} /></td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          )}
+        </section>
+
+        {/* Baby Rankings */}
+        <section className="history-section leaderboard-section">
+          <h2>👶 Baby Rankings</h2>
+          {babyLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topBabies.length === 0 ? (
+            <p className="history-empty">No babies labeled yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th className="lb-col-rank">#</th>
+                  <th>Name</th>
+                  <th className="lb-col-bar">Progress</th>
+                  <th className="lb-col-count">Times</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topBabies.map((person, _i, arr) => {
+                  const rank = arr.findIndex(p => p.count === person.count) + 1;
+                  return (
+                  <tr
+                    key={person.person_id}
+                    className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                    onClick={() => navigate(`/person/${person.person_id}`)}
+                  >
+                    <td className="lb-col-rank">
+                      {rank <= 3 ? (
+                        <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                      ) : (
+                        <span className="lb-rank-num">{rank}</span>
+                      )}
+                    </td>
+                    <td className="lb-col-name">
+                      <span className="person-link">{person.person_name}</span>
+                    </td>
+                    <td className="lb-col-bar">
+                      <div className="lb-bar-bg">
+                        <div
+                          className="lb-bar-fill"
+                          style={{ width: `${(person.count / babyMaxCount) * 100}%` }}
                         />
                       </div>
                     </td>

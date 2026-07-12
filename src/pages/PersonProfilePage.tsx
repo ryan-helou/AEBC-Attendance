@@ -328,6 +328,11 @@ export default function PersonProfilePage() {
     await supabase.from('people').update({ gender: next }).eq('id', personId!);
   }
 
+  async function setBaby(next: boolean) {
+    setPerson(prev => prev ? { ...prev, baby: next } : prev);
+    await supabase.from('people').update({ baby: next }).eq('id', personId!);
+  }
+
   function startEditName() {
     setNameValue(person?.full_name ?? '');
     setEditingName(true);
@@ -501,6 +506,19 @@ export default function PersonProfilePage() {
             onClick={() => setGender(person.gender === 'female' ? null : 'female')}
           >
             Female
+          </button>
+        </div>
+      </div>
+
+      <div className="profile-gender-row">
+        <span className="profile-gender-label">Baby</span>
+        <div className="profile-gender-options">
+          <button
+            type="button"
+            className={`profile-gender-option${person.baby ? ' profile-gender-option-active' : ''}`}
+            onClick={() => setBaby(!person.baby)}
+          >
+            👶 Baby
           </button>
         </div>
       </div>
