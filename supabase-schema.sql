@@ -31,6 +31,10 @@ alter table people add column if not exists gender text check (gender in ('male'
 -- Migration for existing databases: add baby flag if missing
 alter table people add column if not exists baby boolean not null default false;
 
+-- Seed the babies that used to be hardcoded in the attendance UI
+update people set baby = true
+where full_name in ('William Sarnouk', 'Ella Alabras', 'Alba Martins', 'Ella Jaine Pullan');
+
 -- 3. Attendance records table
 create table attendance_records (
   id uuid default gen_random_uuid() primary key,

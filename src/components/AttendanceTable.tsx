@@ -27,19 +27,8 @@ const ATTENDANCE_MINISTRY = [
   'Jona Safadi',
 ];
 
-const BABIES = [
-  'William Sarnouk',
-  'Ella Alabras',
-  'Alba',
-  'Ella Jaine Pullan',
-];
-
 function isAttendanceMinistryName(fullName: string) {
   return ATTENDANCE_MINISTRY.includes(fullName);
-}
-
-function isBaby(fullName: string) {
-  return BABIES.includes(fullName);
 }
 
 interface AttendanceTableProps {
@@ -293,7 +282,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                     <div className="name-cell-wrapper">
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
                         {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
-                        {isBaby(item.entry.person.full_name) && <span className="baby-emoji">👶 </span>}
+                        {item.entry.person.baby && <span className="baby-emoji">👶 </span>}
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
