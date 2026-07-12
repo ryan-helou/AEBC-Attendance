@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
-import { computeInactivePeople } from '../lib/inactivity';
 import { BABIES } from '../lib/babies';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
@@ -147,14 +146,6 @@ function recordTheme(label: string): { variant: RecordVariant; icon: ReactNode }
       </svg>
     ),
   };
-}
-
-interface InactivePerson {
-  person_id: string;
-  person_name: string;
-  totalAttendances: number;
-  lastSeenDate: string;
-  weeksSinceLast: number;
 }
 
 interface RisingStar {
@@ -328,9 +319,6 @@ export default function HistoryPage() {
   const [consistencyMeetingId, setConsistencyMeetingId] = useState('');
   const [records, setRecords] = useState<RecordEntry[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(true);
-  const [inactiveList, setInactiveList] = useState<InactivePerson[]>([]);
-  const [inactiveLoading, setInactiveLoading] = useState(true);
-  const [inactiveMeetingId, setInactiveMeetingId] = useState<string>('');
   const insightsRowsRef = useRef<Array<{ pid: string; name: string; date: string; meetingId: string }>>([]);
   const [risingStars, setRisingStars] = useState<RisingStar[]>([]);
   const [risingStarsLoading, setRisingStarsLoading] = useState(true);
@@ -917,20 +905,7 @@ export default function HistoryPage() {
     setRecordsLoading(false);
   }
 
-  // Build the inactive watchlist from the already-fetched rows, optionally scoped
-  // to a single ministry. Empty meetingId = combined across both ministries.
-  // Shared rule lives in lib/inactivity (also used by the follow-up dashboard).
-  function computeInactive(meetingId: string): InactivePerson[] {
-    return computeInactivePeople(insightsRowsRef.current, 3, meetingId).slice(0, 15);
-  }
-
-  // Recompute the watchlist instantly when the ministry filter changes (no refetch).
-  useEffect(() => {
-    if (insightsRowsRef.current.length > 0) setInactiveList(computeInactive(inactiveMeetingId));
-  }, [inactiveMeetingId]);
-
   async function loadPeopleInsights() {
-    setInactiveLoading(true);
     setRisingStarsLoading(true);
     const data = await fetchAllRows((from, to) =>
       supabase
@@ -947,9 +922,6 @@ export default function HistoryPage() {
         date: r.date as string,
         meetingId: r.meeting_id as string,
       }));
-
-      // Inactive: attended 3+ times, last seen 3+ weeks ago (scoped to selected ministry)
-      setInactiveList(computeInactive(inactiveMeetingId));
 
       const personMap = new Map<string, { name: string; dates: string[] }>();
       for (const r of insightsRowsRef.current) {
@@ -970,7 +942,6 @@ export default function HistoryPage() {
       rising.sort((a, b) => b.attendanceCount - a.attendanceCount);
       setRisingStars(rising.slice(0, 15));
     }
-    setInactiveLoading(false);
     setRisingStarsLoading(false);
   }
 
@@ -1923,62 +1894,7 @@ export default function HistoryPage() {
         </section>
         </div>
 
-        {/* Inactive Watchlist + Rising Stars */}
-        <div className="leaderboard-pair">
-        <section className="history-section leaderboard-section streak-lb-section">
-          <div className="section-header-row">
-            <h2>Inactive Watchlist</h2>
-            <div className="section-header-controls">
-              <select
-                className="gender-meeting-select"
-                value={inactiveMeetingId}
-                onChange={e => setInactiveMeetingId(e.target.value)}
-              >
-                <option value="">All ministries</option>
-                {meetings.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {inactiveLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : inactiveList.length === 0 ? (
-            <p className="history-empty">Everyone is active!</p>
-          ) : (
-            <div className="leaderboard-scroll">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th className="lb-col-count">Last Seen</th>
-                    <th className="lb-col-count">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inactiveList.map(person => (
-                    <tr
-                      key={person.person_id}
-                      className="lb-row"
-                      onClick={() => navigate(`/person/${person.person_id}`)}
-                    >
-                      <td className="lb-col-name">
-                        <span className="person-link">{person.person_name}</span>
-                      </td>
-                      <td className="lb-col-count">
-                        <span className={`weeks-badge weeks-${person.weeksSinceLast >= 8 ? 'danger' : person.weeksSinceLast >= 5 ? 'warn' : 'info'}`}>
-                          {person.weeksSinceLast}w ago
-                        </span>
-                      </td>
-                      <td className="lb-col-count">{person.totalAttendances}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
+        {/* Rising Stars */}
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Rising Stars</h2>
           {risingStarsLoading ? (
@@ -2016,7 +1932,6 @@ export default function HistoryPage() {
             </div>
           )}
         </section>
-        </div>
 
         {/* Top Preachers + Top Attendance Takers pair */}
         <div className="leaderboard-pair">
