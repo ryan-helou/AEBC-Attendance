@@ -34,8 +34,10 @@
 
 .history-header h1 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   flex: 1;
   color: #fff;
 }
@@ -118,9 +120,10 @@
 }
 
 .history-section h2 {
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   margin: 0 0 1rem;
   color: var(--color-header);
   display: flex;
@@ -246,10 +249,12 @@
 }
 
 .history-table .col-count {
+  font-family: var(--font-display);
   font-weight: 600;
   color: var(--color-primary);
   width: 6rem;
   text-align: center;
+  font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
 
@@ -348,8 +353,10 @@
 
 /* Dashboard */
 .dashboard-subtitle {
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 400;
+  letter-spacing: 0;
   color: var(--color-text-secondary);
 }
 
@@ -554,8 +561,10 @@
 
 .lb-rank-num {
   color: var(--color-text-muted);
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
 
@@ -566,8 +575,10 @@
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: #fff;
   position: relative;
 }
@@ -635,14 +646,30 @@
 .lb-col-count {
   width: 4rem;
   text-align: center !important;
+  font-family: var(--font-display);
   font-weight: 700;
   color: var(--color-primary);
-  font-size: 0.9375rem;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
 
 .lb-top-1 .lb-col-count {
   color: var(--color-gold);
+}
+
+/* Signature: every leaderboard gilds its leader — gold wash + gilded edge. */
+.leaderboard-table tbody tr.lb-top-1 {
+  background: var(--gold-wash);
+  box-shadow: inset 3px 0 0 var(--gold-edge);
+}
+
+.leaderboard-table tbody tr.lb-top-1:hover {
+  background: var(--gold-wash-strong);
+}
+
+.leaderboard-table tbody tr.lb-top-1 .lb-col-name {
+  font-weight: 600;
 }
 
 .streak-lb-section {
@@ -744,14 +771,16 @@
 }
 
 .record-value {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--record-accent), var(--color-text));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  line-height: 1.15;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
 
