@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
 import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
 import { computeInactivePeople } from '../lib/inactivity';
+import { BABIES } from '../lib/babies';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -700,13 +701,14 @@ export default function HistoryPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadTopAttendees(topTimeframe); }, [topTimeframe]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Baby leaderboard: everyone flagged `baby`, ranked by distinct days attended.
+  // Baby leaderboard: everyone in the hardcoded BABIES list, ranked by distinct
+  // days attended.
   async function loadTopBabies() {
     setBabyLoading(true);
     const { data: babies } = await supabase
       .from('people')
       .select('id, full_name')
-      .eq('baby', true);
+      .in('full_name', BABIES);
     if (!babies || babies.length === 0) {
       setTopBabies([]);
       setBabyMaxCount(1);

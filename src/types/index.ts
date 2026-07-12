@@ -11,7 +11,6 @@ export interface Person {
   full_name: string;
   notes: string | null;
   gender: Gender | null;
-  baby: boolean;
   created_at: string;
 }
 
