@@ -1640,101 +1640,6 @@ export default function HistoryPage() {
           )}
         </section>
 
-        {/* Baby Rankings + Rising Stars pair */}
-        <div className="leaderboard-pair">
-        <section className="history-section leaderboard-section streak-lb-section">
-          <h2>👶 Baby Rankings</h2>
-          {babyLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : topBabies.length === 0 ? (
-            <p className="history-empty">No babies labeled yet.</p>
-          ) : (
-            <div className="leaderboard-scroll">
-            <table className="leaderboard-table">
-              <thead>
-                <tr>
-                  <th className="lb-col-rank">#</th>
-                  <th>Name</th>
-                  <th className="lb-col-bar">Progress</th>
-                  <th className="lb-col-count">Times</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topBabies.map((person, _i, arr) => {
-                  const rank = arr.findIndex(p => p.count === person.count) + 1;
-                  return (
-                  <tr
-                    key={person.person_id}
-                    className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
-                    onClick={() => navigate(`/person/${person.person_id}`)}
-                  >
-                    <td className="lb-col-rank">
-                      {rank <= 3 ? (
-                        <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
-                      ) : (
-                        <span className="lb-rank-num">{rank}</span>
-                      )}
-                    </td>
-                    <td className="lb-col-name">
-                      <span className="person-link">{person.person_name}</span>
-                    </td>
-                    <td className="lb-col-bar">
-                      <div className="lb-bar-bg">
-                        <div
-                          className="lb-bar-fill"
-                          style={{ width: `${(person.count / babyMaxCount) * 100}%` }}
-                        />
-                      </div>
-                    </td>
-                    <td className="lb-col-count"><AnimatedNumber value={person.count} /></td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
-          )}
-        </section>
-
-        <section className="history-section leaderboard-section streak-lb-section">
-          <h2>Rising Stars</h2>
-          {risingStarsLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : risingStars.length === 0 ? (
-            <p className="history-empty">No rising stars yet.</p>
-          ) : (
-            <div className="leaderboard-scroll">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th className="lb-col-count">Since</th>
-                    <th className="lb-col-count">Times</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {risingStars.map(star => (
-                    <tr
-                      key={star.person_id}
-                      className="lb-row"
-                      onClick={() => navigate(`/person/${star.person_id}`)}
-                    >
-                      <td className="lb-col-name">
-                        <span className="person-link">{star.person_name}</span>
-                      </td>
-                      <td className="lb-col-count" style={{ fontSize: '0.75rem' }}>
-                        {new Date(star.firstDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="lb-col-count">{star.attendanceCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-        </div>
-
         <div className="leaderboard-pair">
         {/* Most On Time Leaderboard */}
         <section className="history-section leaderboard-section streak-lb-section">
@@ -2221,6 +2126,101 @@ export default function HistoryPage() {
                     </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Baby Rankings + Rising Stars pair */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>👶 Baby Rankings</h2>
+          {babyLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topBabies.length === 0 ? (
+            <p className="history-empty">No babies labeled yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+            <table className="leaderboard-table">
+              <thead>
+                <tr>
+                  <th className="lb-col-rank">#</th>
+                  <th>Name</th>
+                  <th className="lb-col-bar">Progress</th>
+                  <th className="lb-col-count">Times</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topBabies.map((person, _i, arr) => {
+                  const rank = arr.findIndex(p => p.count === person.count) + 1;
+                  return (
+                  <tr
+                    key={person.person_id}
+                    className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                    onClick={() => navigate(`/person/${person.person_id}`)}
+                  >
+                    <td className="lb-col-rank">
+                      {rank <= 3 ? (
+                        <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                      ) : (
+                        <span className="lb-rank-num">{rank}</span>
+                      )}
+                    </td>
+                    <td className="lb-col-name">
+                      <span className="person-link">{person.person_name}</span>
+                    </td>
+                    <td className="lb-col-bar">
+                      <div className="lb-bar-bg">
+                        <div
+                          className="lb-bar-fill"
+                          style={{ width: `${(person.count / babyMaxCount) * 100}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="lb-col-count"><AnimatedNumber value={person.count} /></td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          )}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Rising Stars</h2>
+          {risingStarsLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : risingStars.length === 0 ? (
+            <p className="history-empty">No rising stars yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th className="lb-col-count">Since</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {risingStars.map(star => (
+                    <tr
+                      key={star.person_id}
+                      className="lb-row"
+                      onClick={() => navigate(`/person/${star.person_id}`)}
+                    >
+                      <td className="lb-col-name">
+                        <span className="person-link">{star.person_name}</span>
+                      </td>
+                      <td className="lb-col-count" style={{ fontSize: '0.75rem' }}>
+                        {new Date(star.firstDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="lb-col-count">{star.attendanceCount}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
