@@ -342,6 +342,7 @@ export default function AttendancePage() {
           markedPersonIds={markedPersonIds}
           getMusicianRoles={getRoles}
           onToggleMusicianRole={toggleRole}
+          note={note}
         />
 
         <div className="attendance-footer-fields">
