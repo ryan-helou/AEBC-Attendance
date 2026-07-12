@@ -1640,8 +1640,9 @@ export default function HistoryPage() {
           )}
         </section>
 
-        {/* Baby Rankings */}
-        <section className="history-section leaderboard-section">
+        {/* Baby Rankings + Rising Stars pair */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
           <h2>👶 Baby Rankings</h2>
           {babyLoading ? (
             <p className="history-empty">Loading...</p>
@@ -1694,6 +1695,45 @@ export default function HistoryPage() {
             </div>
           )}
         </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>Rising Stars</h2>
+          {risingStarsLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : risingStars.length === 0 ? (
+            <p className="history-empty">No rising stars yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th className="lb-col-count">Since</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {risingStars.map(star => (
+                    <tr
+                      key={star.person_id}
+                      className="lb-row"
+                      onClick={() => navigate(`/person/${star.person_id}`)}
+                    >
+                      <td className="lb-col-name">
+                        <span className="person-link">{star.person_name}</span>
+                      </td>
+                      <td className="lb-col-count" style={{ fontSize: '0.75rem' }}>
+                        {new Date(star.firstDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </td>
+                      <td className="lb-col-count">{star.attendanceCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
 
         <div className="leaderboard-pair">
         {/* Most On Time Leaderboard */}
@@ -1893,45 +1933,6 @@ export default function HistoryPage() {
           )}
         </section>
         </div>
-
-        {/* Rising Stars */}
-        <section className="history-section leaderboard-section streak-lb-section">
-          <h2>Rising Stars</h2>
-          {risingStarsLoading ? (
-            <p className="history-empty">Loading...</p>
-          ) : risingStars.length === 0 ? (
-            <p className="history-empty">No rising stars yet.</p>
-          ) : (
-            <div className="leaderboard-scroll">
-              <table className="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th className="lb-col-count">Since</th>
-                    <th className="lb-col-count">Times</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {risingStars.map(star => (
-                    <tr
-                      key={star.person_id}
-                      className="lb-row"
-                      onClick={() => navigate(`/person/${star.person_id}`)}
-                    >
-                      <td className="lb-col-name">
-                        <span className="person-link">{star.person_name}</span>
-                      </td>
-                      <td className="lb-col-count" style={{ fontSize: '0.75rem' }}>
-                        {new Date(star.firstDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </td>
-                      <td className="lb-col-count">{star.attendanceCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
 
         {/* Top Preachers + Top Attendance Takers pair */}
         <div className="leaderboard-pair">
