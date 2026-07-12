@@ -6,6 +6,7 @@ import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET } from '../lib/dateUtils';
+import { getCancellation } from '../lib/cancelledMeetings';
 import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
@@ -54,6 +55,10 @@ export default function AttendancePage() {
   } = useGuestAttendance(meetingId!, date!);
 
   const { getRoles, toggleRole } = useMusicianRoles(meetingId!, date!);
+
+  // Hardcoded cancellation for this meeting/date (shows a fixed cancelled state
+  // instead of relying on the freeform service note).
+  const cancellation = getCancellation(meeting?.name, date);
 
   // Merge person entries and guest entries into a single sorted list
   const displayEntries: DisplayEntry[] = useMemo(() => {
@@ -342,7 +347,8 @@ export default function AttendancePage() {
           markedPersonIds={markedPersonIds}
           getMusicianRoles={getRoles}
           onToggleMusicianRole={toggleRole}
-          note={note}
+          cancelled={!!cancellation}
+          cancelledReason={cancellation?.reason}
         />
 
         <div className="attendance-footer-fields">
