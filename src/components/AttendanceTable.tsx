@@ -43,10 +43,11 @@ interface AttendanceTableProps {
   markedPersonIds?: Set<string>;
   getMusicianRoles?: (personId: string) => MusicianRole[];
   onToggleMusicianRole?: (personId: string, role: MusicianRole) => void;
-  note?: string;
+  cancelled?: boolean;
+  cancelledReason?: string;
 }
 
-export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole, note }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole, cancelled, cancelledReason }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -180,13 +181,21 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
     await onConvertGuest?.(item.entry.id, item.entry, trimmedName);
   }
 
+  if (cancelled) {
+    return (
+      <div className="empty-state">
+        <span className="empty-state-icon">🚫</span>
+        <p className="empty-state-title">Meeting cancelled</p>
+        {cancelledReason && <p className="empty-state-note">{cancelledReason}</p>}
+      </div>
+    );
+  }
+
   if (entries.length === 0) {
-    const trimmedNote = note?.trim();
     return (
       <div className="empty-state">
         <span className="empty-state-icon">📋</span>
         <p className="empty-state-title">No one marked yet</p>
-        {trimmedNote && <p className="empty-state-note">{trimmedNote}</p>}
         <p className="empty-state-desc">Start typing a name above to mark attendance</p>
       </div>
     );
