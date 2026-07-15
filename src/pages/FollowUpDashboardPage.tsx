@@ -491,7 +491,7 @@ export default function FollowUpDashboardPage() {
                   </div>
 
                   <div className="care-away">
-                    {entry.isInactiveByCutoff ? (
+                    {entry.lastSeenDate && entry.weeksSinceLast >= cutoffWeeks ? (
                       <>
                         <div className="away-track">
                           <span className={`away-fill away-${sev}`} style={{ width: `${fillPct}%` }} />
