@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
@@ -31,6 +31,7 @@ export default function FollowUpDashboardPage() {
   const { searchPeople, addPerson } = usePeople();
 
   const [filterMode, setFilterMode] = useState<'all' | 'needs' | 'removed'>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('away');
   const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
@@ -54,6 +55,8 @@ export default function FollowUpDashboardPage() {
     let list = filterMode === 'removed'
       ? watchList.filter(e => e.dismissed)
       : watchList.filter(e => !e.dismissed && (filterMode !== 'needs' || e.needs_followup));
+    if (assigneeFilter === 'unassigned') list = list.filter(e => !e.assigned_to);
+    else if (assigneeFilter !== 'all') list = list.filter(e => e.assigned_to === assigneeFilter);
     const q = search.trim().toLowerCase();
     if (q) list = list.filter(e => e.person_name.toLowerCase().includes(q));
 
@@ -64,7 +67,7 @@ export default function FollowUpDashboardPage() {
         default: return b.weeksSinceLast - a.weeksSinceLast; // longest away first
       }
     });
-  }, [watchList, filterMode, search, sortKey]);
+  }, [watchList, filterMode, assigneeFilter, search, sortKey]);
 
   const selected = selectedPersonId ? watchList.find(e => e.person_id === selectedPersonId) ?? null : null;
 
@@ -72,6 +75,28 @@ export default function FollowUpDashboardPage() {
     () => [{ value: '', label: 'Unassigned' }, ...members.map(m => ({ value: m.id, label: m.name }))],
     [members],
   );
+
+  const assigneeFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All assignees' },
+      { value: 'unassigned', label: 'Unassigned' },
+      ...members.map(m => ({ value: m.id, label: m.name })),
+    ],
+    [members],
+  );
+
+  const assigneeFilterActive = assigneeFilter !== 'all';
+  const assigneeFilterLabel =
+    assigneeFilter === 'unassigned'
+      ? 'unassigned'
+      : `assigned to ${members.find(m => m.id === assigneeFilter)?.name ?? 'them'}`;
+
+  // If the member being filtered on gets removed, fall back to showing everyone.
+  useEffect(() => {
+    if (assigneeFilter !== 'all' && assigneeFilter !== 'unassigned' && !members.some(m => m.id === assigneeFilter)) {
+      setAssigneeFilter('all');
+    }
+  }, [members, assigneeFilter]);
 
   // People already actively on the watch list — shown as "On the list" in the
   // add panel so they can't be added twice. Dismissed people are omitted so
@@ -236,6 +261,14 @@ export default function FollowUpDashboardPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          <Dropdown
+            className="assignee-filter-dd"
+            ariaLabel="Filter by assignee"
+            align="right"
+            value={assigneeFilter}
+            options={assigneeFilterOptions}
+            onChange={setAssigneeFilter}
+          />
           <Dropdown
             className="sort-dd"
             ariaLabel="Sort"
@@ -446,18 +479,22 @@ export default function FollowUpDashboardPage() {
               </svg>
             </span>
             <p className="followup-empty-title">
-              {filterMode === 'needs'
-                ? 'Nobody is flagged right now'
-                : filterMode === 'removed'
-                  ? 'Nothing removed'
-                  : 'Everyone has been around'}
+              {assigneeFilterActive
+                ? 'No one matches this assignee'
+                : filterMode === 'needs'
+                  ? 'Nobody is flagged right now'
+                  : filterMode === 'removed'
+                    ? 'Nothing removed'
+                    : 'Everyone has been around'}
             </p>
             <p className="followup-empty-desc">
-              {filterMode === 'needs'
-                ? 'Flag someone from the Everyone tab to start keeping track of them.'
-                : filterMode === 'removed'
-                  ? 'People you remove from the watch list appear here, ready to restore.'
-                  : `No one has been away for ${cutoffWeeks} or more weeks. Try a shorter window above.`}
+              {assigneeFilterActive
+                ? `No one on this tab is ${assigneeFilterLabel}. Try “All assignees” above.`
+                : filterMode === 'needs'
+                  ? 'Flag someone from the Everyone tab to start keeping track of them.'
+                  : filterMode === 'removed'
+                    ? 'People you remove from the watch list appear here, ready to restore.'
+                    : `No one has been away for ${cutoffWeeks} or more weeks. Try a shorter window above.`}
             </p>
           </div>
         ) : (
