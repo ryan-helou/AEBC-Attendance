@@ -265,8 +265,9 @@
 .followup-search:focus + .followup-search-icon,
 .followup-search-wrap:focus-within .followup-search-icon { color: var(--color-primary); }
 
-/* Sort dropdown trigger sizing */
-.sort-dd .dd-trigger { font-size: 0.82rem; padding: 0.5em 0.8em; }
+/* Sort & assignee-filter dropdown trigger sizing */
+.sort-dd .dd-trigger,
+.assignee-filter-dd .dd-trigger { font-size: 0.82rem; padding: 0.5em 0.8em; }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
