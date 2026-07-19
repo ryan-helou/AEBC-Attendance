@@ -196,8 +196,7 @@ function simpleRoleLeaderboard(rows: RoleRow[], role: string, meetingId: string)
   }
   return Array.from(map.entries())
     .map(([pid, s]) => ({ person_id: pid, person_name: s.name, totalAppearances: s.dates.size }))
-    .sort((a, b) => b.totalAppearances - a.totalAppearances)
-    .slice(0, 15);
+    .sort((a, b) => b.totalAppearances - a.totalAppearances);
 }
 
 /**
@@ -222,8 +221,7 @@ function roleGroupLeaderboard(rows: RoleRow[], group: Set<string>, meetingId: st
       totalAppearances: s.dates.size,
       topRoles: Array.from(s.roleCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([role]) => role),
     }))
-    .sort((a, b) => b.totalAppearances - a.totalAppearances)
-    .slice(0, 15);
+    .sort((a, b) => b.totalAppearances - a.totalAppearances);
 }
 
 function AvgTimeTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
@@ -574,7 +572,7 @@ export default function HistoryPage() {
         if (streak >= 2) leaders.push({ person_id: g.person_id, person_name: g.person_name, meeting_name: g.meeting_name, streak });
       }
       leaders.sort((a, b) => b.streak - a.streak);
-      setStreakLeaders(leaders.slice(0, 15));
+      setStreakLeaders(leaders);
     }
     setStreakLoading(false);
   }
@@ -690,8 +688,7 @@ export default function HistoryPage() {
     }
     const sorted = Array.from(personData.entries())
       .map(([pid, r]) => ({ person_id: pid, person_name: r.name, count: r.dates.size }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
+      .sort((a, b) => b.count - a.count);
     setTopAttendees(sorted);
     setMaxCount(sorted[0]?.count || 1);
     setTopLoading(false);
@@ -735,8 +732,7 @@ export default function HistoryPage() {
         person_name: (b.full_name as string) || 'Unknown',
         count: datesByPerson.get(b.id as string)?.size ?? 0,
       }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
+      .sort((a, b) => b.count - a.count);
     setTopBabies(sorted);
     setBabyMaxCount(sorted[0]?.count || 1);
     setBabyLoading(false);
@@ -783,7 +779,7 @@ export default function HistoryPage() {
         }
       }
       leaders.sort((a, b) => b.rate - a.rate || b.attended - a.attended);
-      setConsistencyLeaders(leaders.slice(0, 15));
+      setConsistencyLeaders(leaders);
     }
     setConsistencyLoading(false);
   }
@@ -951,7 +947,7 @@ export default function HistoryPage() {
         }
       }
       rising.sort((a, b) => b.attendanceCount - a.attendanceCount);
-      setRisingStars(rising.slice(0, 15));
+      setRisingStars(rising);
     }
     setRisingStarsLoading(false);
   }
