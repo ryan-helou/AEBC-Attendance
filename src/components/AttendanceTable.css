@@ -192,6 +192,12 @@
   font-feature-settings: 'tnum';
 }
 
+/* Placeholder for records with no check-in time (e.g. after Remove times). */
+.time-none {
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
 .time-tap {
   cursor: pointer;
   border-radius: 4px;

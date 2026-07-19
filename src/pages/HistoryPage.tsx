@@ -176,11 +176,14 @@ interface RoleRow {
   meeting_id: string;
 }
 
-// Sound is an assignable role with its own Top Sound board, but it is not a
-// musician — keep it out of the Top Musicians leaderboard.
+// Instrument-playing roles only. Sound, Usher and the vocal roles are assignable
+// and have their own boards, but none of them count toward Top Musicians —
+// Singer/Backup Singer are ranked on Top Singers instead.
 const PLAYING_ROLES = new Set([
-  'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin', 'Singer', 'Backup Singer',
+  'Piano', 'Guitar', 'Bass', 'Drums', 'Keyboard', 'Violin',
 ]);
+
+const SINGING_ROLES = new Set(['Singer', 'Backup Singer']);
 
 /** Leaderboard for a single role, optionally filtered to one meeting ('' = all meetings). */
 function simpleRoleLeaderboard(rows: RoleRow[], role: string, meetingId: string): RoleCount[] {
@@ -197,11 +200,15 @@ function simpleRoleLeaderboard(rows: RoleRow[], role: string, meetingId: string)
     .slice(0, 15);
 }
 
-/** Top musicians (any playing role), optionally filtered to one meeting ('' = all). */
-function musicianLeaderboard(rows: RoleRow[], meetingId: string): MusicianCount[] {
+/**
+ * Leaderboard across a group of related roles, with the person's most-used roles
+ * shown as pills. Counts distinct dates, so someone filling two roles on the same
+ * day is credited once. Optionally filtered to one meeting ('' = all).
+ */
+function roleGroupLeaderboard(rows: RoleRow[], group: Set<string>, meetingId: string): MusicianCount[] {
   const map = new Map<string, { name: string; dates: Set<string>; roleCounts: Map<string, number> }>();
   for (const r of rows) {
-    if (!PLAYING_ROLES.has(r.role)) continue;
+    if (!group.has(r.role)) continue;
     if (meetingId && r.meeting_id !== meetingId) continue;
     if (!map.has(r.person_id)) map.set(r.person_id, { name: r.name, dates: new Set(), roleCounts: new Map() });
     const s = map.get(r.person_id)!;
@@ -332,8 +339,12 @@ export default function HistoryPage() {
   const [soundMeetingId, setSoundMeetingId] = useState('');
   const [liveStreamMeetingId, setLiveStreamMeetingId] = useState('');
   const [powerPointMeetingId, setPowerPointMeetingId] = useState('');
+  const [singersMeetingId, setSingersMeetingId] = useState('');
+  const [ushersMeetingId, setUshersMeetingId] = useState('');
 
-  const topMusicians = useMemo(() => musicianLeaderboard(roleRows, musiciansMeetingId), [roleRows, musiciansMeetingId]);
+  const topMusicians = useMemo(() => roleGroupLeaderboard(roleRows, PLAYING_ROLES, musiciansMeetingId), [roleRows, musiciansMeetingId]);
+  const topSingers = useMemo(() => roleGroupLeaderboard(roleRows, SINGING_ROLES, singersMeetingId), [roleRows, singersMeetingId]);
+  const topUshers = useMemo(() => simpleRoleLeaderboard(roleRows, 'Usher', ushersMeetingId), [roleRows, ushersMeetingId]);
   const topPreachers = useMemo(() => simpleRoleLeaderboard(roleRows, 'Preacher', preachersMeetingId), [roleRows, preachersMeetingId]);
   const topAttendanceTakers = useMemo(() => simpleRoleLeaderboard(roleRows, 'Attendance', attendanceTakersMeetingId), [roleRows, attendanceTakersMeetingId]);
   const topSound = useMemo(() => simpleRoleLeaderboard(roleRows, 'Sound', soundMeetingId), [roleRows, soundMeetingId]);
@@ -2123,6 +2134,109 @@ export default function HistoryPage() {
                         </div>
                       </td>
                       <td className="lb-col-count"><AnimatedNumber value={musician.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+        </div>
+
+        {/* Top Singers + Top Ushers pair */}
+        <div className="leaderboard-pair">
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🎤 Top Singers</h2>
+          <RoleMeetingSelect value={singersMeetingId} onChange={setSingersMeetingId} meetings={meetings} />
+          {rolesLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topSingers.length === 0 ? (
+            <p className="history-empty">No singer data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th>Roles</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topSingers.map((singer, _i, arr) => {
+                    const rank = arr.findIndex(s => s.totalAppearances === singer.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={singer.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${singer.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{singer.person_name}</span>
+                      </td>
+                      <td>
+                        <div className="musician-role-pills">
+                          {singer.topRoles.map(role => (
+                            <span key={role} className="musician-role-pill">{role}</span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={singer.totalAppearances} /></td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="history-section leaderboard-section streak-lb-section">
+          <h2>🧍 Top Ushers</h2>
+          <RoleMeetingSelect value={ushersMeetingId} onChange={setUshersMeetingId} meetings={meetings} />
+          {rolesLoading ? (
+            <p className="history-empty">Loading...</p>
+          ) : topUshers.length === 0 ? (
+            <p className="history-empty">No usher data yet.</p>
+          ) : (
+            <div className="leaderboard-scroll">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th className="lb-col-rank">#</th>
+                    <th>Name</th>
+                    <th className="lb-col-count">Times</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topUshers.map((p, _i, arr) => {
+                    const rank = arr.findIndex(x => x.totalAppearances === p.totalAppearances) + 1;
+                    return (
+                    <tr
+                      key={p.person_id}
+                      className={`lb-row ${rank <= 3 ? `lb-top-${rank}` : ''}`}
+                      onClick={() => navigate(`/person/${p.person_id}`)}
+                    >
+                      <td className="lb-col-rank">
+                        {rank <= 3 ? (
+                          <span className={`lb-medal lb-medal-${rank}`}>{rank}</span>
+                        ) : (
+                          <span className="lb-rank-num">{rank}</span>
+                        )}
+                      </td>
+                      <td className="lb-col-name">
+                        <span className="person-link">{p.person_name}</span>
+                      </td>
+                      <td className="lb-col-count"><AnimatedNumber value={p.totalAppearances} /></td>
                     </tr>
                     );
                   })}
