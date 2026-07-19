@@ -228,6 +228,30 @@ export function useAttendance(meetingId: string, date: string) {
     return true;
   }, [meetingId, date, fetchAttendance]);
 
+  // Nudge every check-in time on this service by a number of minutes — for when
+  // a service was marked late or the device clock was off. Records with no time
+  // are skipped, and attendance itself is never touched.
+  const shiftAllTimes = useCallback(
+    async (deltaMinutes: number) => {
+      const timed = entries.filter(e => e.marked_at);
+      if (timed.length === 0 || deltaMinutes === 0) return true;
+
+      const results = await Promise.all(
+        timed.map(e =>
+          supabase
+            .from('attendance_records')
+            .update({
+              marked_at: new Date(new Date(e.marked_at).getTime() + deltaMinutes * 60_000).toISOString(),
+            })
+            .eq('id', e.id),
+        ),
+      );
+      await fetchAttendance();
+      return results.every(r => !r.error);
+    },
+    [entries, fetchAttendance],
+  );
+
   const toggleFirstTime = useCallback(
     async (recordId: string) => {
       const entry = entries.find(e => e.id === recordId);
@@ -242,5 +266,5 @@ export function useAttendance(meetingId: string, date: string) {
     [entries]
   );
 
-  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, clearAllTimes, toggleFirstTime, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
+  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, clearAllTimes, shiftAllTimes, toggleFirstTime, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
 }

@@ -132,6 +132,28 @@ export function useGuestAttendance(meetingId: string, date: string) {
     return true;
   }, [meetingId, date, fetchGuests]);
 
+  // Companion to useAttendance's shiftAllTimes.
+  const shiftAllGuestTimes = useCallback(
+    async (deltaMinutes: number) => {
+      const timed = guests.filter(g => g.marked_at);
+      if (timed.length === 0 || deltaMinutes === 0) return true;
+
+      const results = await Promise.all(
+        timed.map(g =>
+          supabase
+            .from('guest_attendance')
+            .update({
+              marked_at: new Date(new Date(g.marked_at).getTime() + deltaMinutes * 60_000).toISOString(),
+            })
+            .eq('id', g.id),
+        ),
+      );
+      await fetchGuests();
+      return results.every(r => !r.error);
+    },
+    [guests, fetchGuests],
+  );
+
   const toggleGuestFirstTime = useCallback(
     async (guestId: string) => {
       const guest = guests.find(g => g.id === guestId);
@@ -146,5 +168,5 @@ export function useGuestAttendance(meetingId: string, date: string) {
     [guests]
   );
 
-  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, clearAllGuestTimes, toggleGuestFirstTime };
+  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, clearAllGuestTimes, shiftAllGuestTimes, toggleGuestFirstTime };
 }

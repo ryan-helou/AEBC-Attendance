@@ -2,6 +2,19 @@ export interface Meeting {
   id: string;
   name: string;
   display_order: number;
+  /**
+   * On-time cutoff in minutes since midnight (ET). Null/undefined falls back to
+   * name-based defaults. Undefined when the DB column isn't there yet.
+   */
+  on_time_cutoff_minutes?: number | null;
+}
+
+/** A cancelled service occurrence (no meeting held that date). */
+export interface MeetingCancellation {
+  id: string;
+  meeting_id: string;
+  date: string;
+  reason: string | null;
 }
 
 export type Gender = 'male' | 'female';

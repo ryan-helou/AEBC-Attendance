@@ -5,8 +5,8 @@ import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
-import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET } from '../lib/dateUtils';
-import { getCancellation } from '../lib/cancelledMeetings';
+import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET, meetingCutoffMinutes } from '../lib/dateUtils';
+import { useMeetingCancellation } from '../hooks/useMeetingCancellation';
 import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
@@ -36,6 +36,11 @@ export default function AttendancePage() {
   const [confirmClearTimes, setConfirmClearTimes] = useState(false);
   const [clearingTimes, setClearingTimes] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [confirmRestore, setConfirmRestore] = useState(false);
+  const [shiftMinutes, setShiftMinutes] = useState('');
+  const [cutoffValue, setCutoffValue] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const { people, searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
@@ -46,6 +51,7 @@ export default function AttendancePage() {
     removeAttendance,
     updateMarkedAt,
     clearAllTimes,
+    shiftAllTimes,
     toggleFirstTime,
     pendingUndo,
     undoRemove,
@@ -59,14 +65,14 @@ export default function AttendancePage() {
     removeGuest,
     updateGuestMarkedAt,
     clearAllGuestTimes,
+    shiftAllGuestTimes,
     toggleGuestFirstTime,
   } = useGuestAttendance(meetingId!, date!);
 
   const { getRoles, toggleRole } = useMusicianRoles(meetingId!, date!);
 
-  // Hardcoded cancellation for this meeting/date (shows a fixed cancelled state
-  // instead of relying on the freeform service note).
-  const cancellation = getCancellation(meeting?.name, date);
+  // Cancellation for this meeting/date, from the DB (settable in Service settings).
+  const { cancellation, cancelService, restoreService } = useMeetingCancellation(meetingId!, date!);
 
   // Merge person entries and guest entries into a single sorted list
   const displayEntries: DisplayEntry[] = useMemo(() => {
@@ -110,10 +116,7 @@ export default function AttendancePage() {
 
   const onTimePercent = useMemo(() => {
     if (!meeting) return null;
-    const lower = meeting.name.toLowerCase();
-    let cutoffMinutes: number | null = null;
-    if (lower.includes('english') || lower.includes('sunday')) cutoffMinutes = 10 * 60 + 30; // 10:30 AM
-    else if (lower.includes('saturday') || lower.includes('shabibeh')) cutoffMinutes = 19 * 60 + 30; // 7:30 PM
+    const cutoffMinutes = meetingCutoffMinutes(meeting);
     if (cutoffMinutes === null) return null;
 
     // Only records that actually carry a check-in time count toward the on-time
@@ -148,7 +151,15 @@ export default function AttendancePage() {
         .eq('id', meetingId!)
         .single();
 
-      if (data) setMeeting(data);
+      if (data) {
+        setMeeting(data);
+        const mins = (data as Meeting).on_time_cutoff_minutes;
+        setCutoffValue(
+          mins == null
+            ? ''
+            : `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`,
+        );
+      }
     }
     load();
   }, [meetingId]);
@@ -306,6 +317,58 @@ export default function AttendancePage() {
     );
   }
 
+  async function handleShiftTimes() {
+    const delta = parseInt(shiftMinutes, 10);
+    if (!Number.isFinite(delta) || delta === 0) return;
+    setBusy(true);
+    const [okPeople, okGuests] = await Promise.all([shiftAllTimes(delta), shiftAllGuestTimes(delta)]);
+    setBusy(false);
+    setShiftMinutes('');
+    setSettingsMessage(
+      okPeople && okGuests
+        ? `Check-in times shifted by ${delta > 0 ? '+' : ''}${delta} minutes.`
+        : 'Something went wrong shifting the times. Please try again.',
+    );
+  }
+
+  async function handleToggleCancelled() {
+    setBusy(true);
+    const ok = cancellation ? await restoreService() : await cancelService(cancelReason);
+    setBusy(false);
+    setConfirmRestore(false);
+    setCancelReason('');
+    setSettingsMessage(
+      ok
+        ? cancellation
+          ? 'Service restored — it no longer shows as cancelled.'
+          : 'Service marked cancelled.'
+        : "Couldn't update the cancellation. If this is the first time, run the service-settings SQL migration.",
+    );
+  }
+
+  async function handleSaveCutoff() {
+    if (!meeting) return;
+    const mins = cutoffValue
+      ? parseInt(cutoffValue.slice(0, 2), 10) * 60 + parseInt(cutoffValue.slice(3, 5), 10)
+      : null;
+    setBusy(true);
+    const { error } = await supabase
+      .from('meetings')
+      .update({ on_time_cutoff_minutes: mins })
+      .eq('id', meeting.id);
+    setBusy(false);
+    if (error) {
+      setSettingsMessage("Couldn't save the cutoff. If this is the first time, run the service-settings SQL migration.");
+      return;
+    }
+    setMeeting({ ...meeting, on_time_cutoff_minutes: mins });
+    setSettingsMessage(
+      mins === null
+        ? 'On-time cutoff cleared — the on-time stat is now hidden for this meeting.'
+        : `On-time cutoff saved for ${meeting.name}.`,
+    );
+  }
+
   if (peopleLoading || attendanceLoading || guestsLoading || !meeting) return <AttendanceSkeleton />;
 
   return (
@@ -350,6 +413,79 @@ export default function AttendancePage() {
           <div className="settings-head">
             <h2>Service settings</h2>
             <p>Applies to {meeting.name} on {formatDate(date!)}.</p>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-title">
+                {cancellation ? 'Service is cancelled' : 'Mark service cancelled'}
+              </span>
+              <span className="settings-row-desc">
+                {cancellation
+                  ? `Showing as cancelled${cancellation.reason ? ` — "${cancellation.reason}"` : ''}. Restore it if the service did happen.`
+                  : 'Marks this date as no service held. Existing attendance is kept, not deleted.'}
+              </span>
+              {!cancellation && (
+                <input
+                  className="settings-text-input"
+                  type="text"
+                  placeholder="Reason (optional) — e.g. Renewed"
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                />
+              )}
+            </div>
+            <button
+              className={cancellation ? 'settings-plain-btn' : 'settings-danger-btn'}
+              onClick={() => (cancellation ? setConfirmRestore(true) : handleToggleCancelled())}
+              disabled={busy}
+            >
+              {cancellation ? 'Restore service' : 'Mark cancelled'}
+            </button>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-title">On-time cutoff</span>
+              <span className="settings-row-desc">
+                Arrivals at or before this time count as on time for {meeting.name}. Leave
+                blank to hide the on-time stat. Applies to this meeting on every date.
+              </span>
+              <input
+                className="settings-text-input settings-time-input"
+                type="time"
+                value={cutoffValue}
+                onChange={e => setCutoffValue(e.target.value)}
+              />
+            </div>
+            <button className="settings-plain-btn" onClick={handleSaveCutoff} disabled={busy}>
+              Save cutoff
+            </button>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-title">Shift check-in times</span>
+              <span className="settings-row-desc">
+                Moves every check-in time on this service by a number of minutes — use a
+                negative number to go earlier. For when the service was marked late or the
+                device clock was off.
+              </span>
+              <input
+                className="settings-text-input settings-number-input"
+                type="number"
+                placeholder="e.g. -30"
+                value={shiftMinutes}
+                onChange={e => setShiftMinutes(e.target.value)}
+              />
+            </div>
+            <button
+              className="settings-plain-btn"
+              onClick={handleShiftTimes}
+              disabled={busy || timedCount === 0 || !shiftMinutes || parseInt(shiftMinutes, 10) === 0}
+            >
+              Shift times
+            </button>
           </div>
 
           <div className="settings-row">
@@ -417,7 +553,7 @@ export default function AttendancePage() {
           getMusicianRoles={getRoles}
           onToggleMusicianRole={toggleRole}
           cancelled={!!cancellation}
-          cancelledReason={cancellation?.reason}
+          cancelledReason={cancellation?.reason ?? undefined}
         />
 
         <div className="attendance-footer-fields">
@@ -464,6 +600,15 @@ export default function AttendancePage() {
           message={`Remove the check-in time from all ${timedCount} ${timedCount === 1 ? 'record' : 'records'} on ${meeting.name} for ${formatDate(date!)}? Everyone stays marked present — only the times are cleared. This can't be undone.`}
           onConfirm={handleClearTimes}
           onCancel={() => setConfirmClearTimes(false)}
+        />
+      )}
+
+      {confirmRestore && (
+        <ConfirmDialog
+          confirmLabel="Restore"
+          message={`Restore ${meeting.name} on ${formatDate(date!)}? It will no longer show as cancelled.`}
+          onConfirm={handleToggleCancelled}
+          onCancel={() => setConfirmRestore(false)}
         />
       )}
 

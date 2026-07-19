@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
+import { getMeetingDay, parseDate, snapToValidDate, getTodayDate, shiftDate, minutesSinceMidnightET, minutesToClock, meetingCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
 import { BABIES } from '../lib/babies';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
@@ -356,7 +356,7 @@ export default function HistoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [avgSeries, avgChartMeeting, avgTimeframe]);
 
-  const avgChartCutoff = avgChartMeeting ? onTimeCutoffMinutes(avgChartMeeting.name) : null;
+  const avgChartCutoff = meetingCutoffMinutes(avgChartMeeting);
   const [avgYDomain, avgYTicks] = useMemo<[[number, number], number[]]>(() => {
     if (avgChartData.length === 0) return [[0, 1440], []];
     const refs = avgChartCutoff !== null ? [avgChartCutoff] : [];

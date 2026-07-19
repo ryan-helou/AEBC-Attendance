@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { formatTimeET, minutesSinceMidnightET, minutesToClock, onTimeCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
+import { formatTimeET, minutesSinceMidnightET, minutesToClock, meetingCutoffMinutes, niceTimeTicks, computeLongestStreak, computeCurrentStreak } from '../lib/dateUtils';
 import type { Person, Meeting, Gender } from '../types';
 import { ProfileSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
@@ -273,7 +273,7 @@ export default function PersonProfilePage() {
       }));
   }, [history, selectedMeeting]);
 
-  const cutoff = selectedMeeting ? onTimeCutoffMinutes(selectedMeeting.name) : null;
+  const cutoff = meetingCutoffMinutes(selectedMeeting);
   const meetingAvg = selectedMeeting ? meetingAvgMinutes.get(selectedMeeting.id) ?? null : null;
 
   // Y-axis domain hugging the data (plus the cutoff/average lines), padded
