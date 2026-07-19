@@ -13,6 +13,7 @@ import { AttendanceSkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
 import AttendanceTable from '../components/AttendanceTable';
 import AddPersonModal from '../components/AddPersonModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 
 import Confetti from '../components/Confetti';
@@ -31,6 +32,11 @@ export default function AttendancePage() {
   const [filterQuery, setFilterQuery] = useState('');
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [confirmClearTimes, setConfirmClearTimes] = useState(false);
+  const [clearingTimes, setClearingTimes] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+
   const { people, searchPeople, addPerson, isDuplicate, loading: peopleLoading } = usePeople();
   const {
     entries,
@@ -39,6 +45,7 @@ export default function AttendancePage() {
     markAttendance,
     removeAttendance,
     updateMarkedAt,
+    clearAllTimes,
     toggleFirstTime,
     pendingUndo,
     undoRemove,
@@ -51,6 +58,7 @@ export default function AttendancePage() {
     addGuest,
     removeGuest,
     updateGuestMarkedAt,
+    clearAllGuestTimes,
     toggleGuestFirstTime,
   } = useGuestAttendance(meetingId!, date!);
 
@@ -281,6 +289,23 @@ export default function AttendancePage() {
     navigate(`/attendance/${meetingId}/${todayDate}`, { replace: true });
   }
 
+  // How many check-ins on this service still carry a time — drives the
+  // settings copy and disables the action when there's nothing to clear.
+  const timedCount =
+    entries.filter(e => e.marked_at).length + guests.filter(g => g.marked_at).length;
+
+  async function handleClearTimes() {
+    setConfirmClearTimes(false);
+    setClearingTimes(true);
+    const [okPeople, okGuests] = await Promise.all([clearAllTimes(), clearAllGuestTimes()]);
+    setClearingTimes(false);
+    setSettingsMessage(
+      okPeople && okGuests
+        ? 'Check-in times removed. Attendance itself is unchanged.'
+        : 'Something went wrong removing the times. Please try again.',
+    );
+  }
+
   if (peopleLoading || attendanceLoading || guestsLoading || !meeting) return <AttendanceSkeleton />;
 
   return (
@@ -305,8 +330,52 @@ export default function AttendancePage() {
             <button className="today-btn" onClick={goToday}>Today</button>
           )}
           <button className="date-nav-btn" onClick={() => goWeek(1)}>&rsaquo;</button>
+          <button
+            className={`settings-btn${showSettings ? ' is-active' : ''}`}
+            onClick={() => { setShowSettings(s => !s); setSettingsMessage(null); }}
+            aria-pressed={showSettings}
+            aria-label="Service settings"
+            title="Service settings"
+          >
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
         </div>
       </div>
+
+      {showSettings && (
+        <div className="attendance-settings">
+          <div className="settings-head">
+            <h2>Service settings</h2>
+            <p>Applies to {meeting.name} on {formatDate(date!)}.</p>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-row-info">
+              <span className="settings-row-title">Remove check-in times</span>
+              <span className="settings-row-desc">
+                Clears the arrival time from every check-in on this service. Everyone stays
+                marked present — only the times are removed, and they'll show blank in History.
+              </span>
+            </div>
+            <button
+              className="settings-danger-btn"
+              onClick={() => setConfirmClearTimes(true)}
+              disabled={timedCount === 0 || clearingTimes}
+            >
+              {clearingTimes
+                ? 'Removing…'
+                : timedCount === 0
+                  ? 'No times to remove'
+                  : `Remove ${timedCount} ${timedCount === 1 ? 'time' : 'times'}`}
+            </button>
+          </div>
+
+          {settingsMessage && <p className="settings-message">{settingsMessage}</p>}
+        </div>
+      )}
 
       <div className="attendance-body">
         <div className="attendance-input-row">
@@ -387,6 +456,15 @@ export default function AttendancePage() {
           <button className="undo-btn" onClick={undoRemove}>Undo</button>
           <button className="undo-dismiss" onClick={dismissUndo}>&times;</button>
         </div>
+      )}
+
+      {confirmClearTimes && (
+        <ConfirmDialog
+          confirmLabel="Remove times"
+          message={`Remove the check-in time from all ${timedCount} ${timedCount === 1 ? 'record' : 'records'} on ${meeting.name} for ${formatDate(date!)}? Everyone stays marked present — only the times are cleared. This can't be undone.`}
+          onConfirm={handleClearTimes}
+          onCancel={() => setConfirmClearTimes(false)}
+        />
       )}
 
       {milestone && (

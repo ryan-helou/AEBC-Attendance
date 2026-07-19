@@ -215,6 +215,19 @@ export function useAttendance(meetingId: string, date: string) {
     [fetchAttendance]
   );
 
+  // Strip every check-in time for this service, keeping the attendance itself.
+  // Records with no time render blank rather than a bogus midnight/epoch clock.
+  const clearAllTimes = useCallback(async () => {
+    const { error } = await supabase
+      .from('attendance_records')
+      .update({ marked_at: null })
+      .eq('meeting_id', meetingId)
+      .eq('date', date);
+    if (error) return false;
+    await fetchAttendance();
+    return true;
+  }, [meetingId, date, fetchAttendance]);
+
   const toggleFirstTime = useCallback(
     async (recordId: string) => {
       const entry = entries.find(e => e.id === recordId);
@@ -229,5 +242,5 @@ export function useAttendance(meetingId: string, date: string) {
     [entries]
   );
 
-  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, toggleFirstTime, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
+  return { entries, markedPersonIds, loading, markAttendance, removeAttendance, updateMarkedAt, clearAllTimes, toggleFirstTime, pendingUndo: pendingUndo?.entry ?? null, undoRemove, dismissUndo };
 }
