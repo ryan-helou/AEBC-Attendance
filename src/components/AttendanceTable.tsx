@@ -32,6 +32,16 @@ function isAttendanceMinistryName(fullName: string) {
   return ATTENDANCE_MINISTRY.includes(fullName);
 }
 
+// Guests of honour (🏆). Shown only while taking attendance — the profile page
+// uses 🏆 for the Champion streak badge, so keep this out of there.
+const GUESTS_OF_HONOUR = [
+  'Daniel Kaso-Jito',
+];
+
+function isGuestOfHonour(fullName: string) {
+  return GUESTS_OF_HONOUR.includes(fullName);
+}
+
 interface AttendanceTableProps {
   entries: DisplayEntry[];
   meetingName?: string;
@@ -293,6 +303,7 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                       <span className="name-tap" onClick={() => navigate(`/person/${item.entry.person_id}`)}>
                         {isAttendanceMinistryName(item.entry.person.full_name) && <span className="attendance-ministry-emoji">⭐ </span>}
                         {isBaby(item.entry.person.full_name) && <span className="baby-emoji">👶 </span>}
+                        {isGuestOfHonour(item.entry.person.full_name) && <span className="guest-of-honour-emoji" title="Guest of Honour">🏆 </span>}
                         {item.entry.person.full_name}
                       </span>
                       {SHABIBEH_LEADERS.includes(item.entry.person.full_name) && !meetingName?.toLowerCase().includes('english') && (
