@@ -5,7 +5,7 @@ import { usePeople } from '../hooks/usePeople';
 import { useAttendance } from '../hooks/useAttendance';
 import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
-import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET, meetingCutoffMinutes } from '../lib/dateUtils';
+import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET, meetingCutoffMinutes, formatTimeET } from '../lib/dateUtils';
 import { useMeetingCancellation } from '../hooks/useMeetingCancellation';
 import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
@@ -35,7 +35,7 @@ export default function AttendancePage() {
   const [showSettings, setShowSettings] = useState(false);
   const [confirmClearTimes, setConfirmClearTimes] = useState(false);
   const [clearingTimes, setClearingTimes] = useState(false);
-  const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+  const [settingsMessage, setSettingsMessage] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [shiftMinutes, setShiftMinutes] = useState('');
@@ -302,8 +302,31 @@ export default function AttendancePage() {
 
   // How many check-ins on this service still carry a time — drives the
   // settings copy and disables the action when there's nothing to clear.
-  const timedCount =
-    entries.filter(e => e.marked_at).length + guests.filter(g => g.marked_at).length;
+  const timedTimes = [
+    ...entries.filter(e => e.marked_at).map(e => e.marked_at),
+    ...guests.filter(g => g.marked_at).map(g => g.marked_at),
+  ];
+  const timedCount = timedTimes.length;
+
+  // Earliest check-in, used to preview what a shift actually does so nobody has
+  // to guess what "-30" means before committing to it.
+  const earliestTime = timedCount > 0
+    ? timedTimes.reduce((a, b) => (new Date(a).getTime() <= new Date(b).getTime() ? a : b))
+    : null;
+  const shiftDelta = parseInt(shiftMinutes, 10);
+  const shiftValid = Number.isFinite(shiftDelta) && shiftDelta !== 0;
+  const shiftPreview = earliestTime && shiftValid
+    ? `${formatTimeET(earliestTime)} → ${formatTimeET(new Date(new Date(earliestTime).getTime() + shiftDelta * 60_000).toISOString())}`
+    : null;
+
+  // Is the cutoff explicitly stored, or still inheriting the name-based default?
+  const storedCutoff = meeting?.on_time_cutoff_minutes ?? null;
+  const effectiveCutoff = meetingCutoffMinutes(meeting);
+  const cutoffInherited = storedCutoff === null && effectiveCutoff !== null;
+  const cutoffAsInput = storedCutoff === null
+    ? ''
+    : `${String(Math.floor(storedCutoff / 60)).padStart(2, '0')}:${String(storedCutoff % 60).padStart(2, '0')}`;
+  const cutoffDirty = cutoffValue !== cutoffAsInput;
 
   async function handleClearTimes() {
     setConfirmClearTimes(false);
@@ -312,37 +335,35 @@ export default function AttendancePage() {
     setClearingTimes(false);
     setSettingsMessage(
       okPeople && okGuests
-        ? 'Check-in times removed. Attendance itself is unchanged.'
-        : 'Something went wrong removing the times. Please try again.',
+        ? { text: `Removed ${timedCount} check-in ${timedCount === 1 ? 'time' : 'times'}. Everyone is still marked present.`, tone: 'ok' }
+        : { text: "Couldn't remove the times. Check your connection and try again.", tone: 'error' },
     );
   }
 
   async function handleShiftTimes() {
-    const delta = parseInt(shiftMinutes, 10);
-    if (!Number.isFinite(delta) || delta === 0) return;
+    if (!shiftValid) return;
     setBusy(true);
-    const [okPeople, okGuests] = await Promise.all([shiftAllTimes(delta), shiftAllGuestTimes(delta)]);
+    const [okPeople, okGuests] = await Promise.all([shiftAllTimes(shiftDelta), shiftAllGuestTimes(shiftDelta)]);
     setBusy(false);
     setShiftMinutes('');
     setSettingsMessage(
       okPeople && okGuests
-        ? `Check-in times shifted by ${delta > 0 ? '+' : ''}${delta} minutes.`
-        : 'Something went wrong shifting the times. Please try again.',
+        ? { text: `Shifted ${timedCount} check-in ${timedCount === 1 ? 'time' : 'times'} by ${shiftDelta > 0 ? '+' : ''}${shiftDelta} minutes.`, tone: 'ok' }
+        : { text: "Couldn't shift the times. Check your connection and try again.", tone: 'error' },
     );
   }
 
   async function handleToggleCancelled() {
+    const wasCancelled = !!cancellation;
     setBusy(true);
-    const ok = cancellation ? await restoreService() : await cancelService(cancelReason);
+    const ok = wasCancelled ? await restoreService() : await cancelService(cancelReason);
     setBusy(false);
     setConfirmRestore(false);
     setCancelReason('');
     setSettingsMessage(
       ok
-        ? cancellation
-          ? 'Service restored — it no longer shows as cancelled.'
-          : 'Service marked cancelled.'
-        : "Couldn't update the cancellation. If this is the first time, run the service-settings SQL migration.",
+        ? { text: wasCancelled ? 'Service restored. It no longer shows as cancelled.' : 'Service marked cancelled. Attendance was kept.', tone: 'ok' }
+        : { text: "Couldn't save that. If this is the first time, run the service-settings SQL migration.", tone: 'error' },
     );
   }
 
@@ -358,14 +379,14 @@ export default function AttendancePage() {
       .eq('id', meeting.id);
     setBusy(false);
     if (error) {
-      setSettingsMessage("Couldn't save the cutoff. If this is the first time, run the service-settings SQL migration.");
+      setSettingsMessage({ text: "Couldn't save the cutoff. If this is the first time, run the service-settings SQL migration.", tone: 'error' });
       return;
     }
     setMeeting({ ...meeting, on_time_cutoff_minutes: mins });
     setSettingsMessage(
       mins === null
-        ? 'On-time cutoff cleared — the on-time stat is now hidden for this meeting.'
-        : `On-time cutoff saved for ${meeting.name}.`,
+        ? { text: `Cutoff cleared. ${meeting.name} falls back to the default for its name.`, tone: 'ok' }
+        : { text: `On-time cutoff saved for ${meeting.name}, on every date.`, tone: 'ok' },
     );
   }
 
@@ -409,107 +430,181 @@ export default function AttendancePage() {
       </div>
 
       {showSettings && (
-        <div className="attendance-settings">
+        <div className="attendance-settings" role="region" aria-label="Service settings">
           <div className="settings-head">
-            <h2>Service settings</h2>
-            <p>Applies to {meeting.name} on {formatDate(date!)}.</p>
+            <div>
+              <h2>Service settings</h2>
+              <p>Changes here are grouped by what they affect.</p>
+            </div>
+            <button
+              className="settings-close"
+              onClick={() => { setShowSettings(false); setSettingsMessage(null); }}
+              aria-label="Close settings"
+            >
+              &times;
+            </button>
           </div>
 
-          <div className="settings-row">
-            <div className="settings-row-info">
-              <span className="settings-row-title">
-                {cancellation ? 'Service is cancelled' : 'Mark service cancelled'}
-              </span>
-              <span className="settings-row-desc">
-                {cancellation
-                  ? `Showing as cancelled${cancellation.reason ? ` — "${cancellation.reason}"` : ''}. Restore it if the service did happen.`
-                  : 'Marks this date as no service held. Existing attendance is kept, not deleted.'}
-              </span>
-              {!cancellation && (
+          {settingsMessage && (
+            <p className={`settings-message is-${settingsMessage.tone}`} role="status">
+              {settingsMessage.text}
+            </p>
+          )}
+
+          {/* Scope 1 — this one date only */}
+          <section className="settings-scope settings-scope--service">
+            <header className="scope-head">
+              <span className="scope-eyebrow">This service</span>
+              <span className="scope-target">{formatDate(date!)}</span>
+              <span className="scope-note">Only this date</span>
+            </header>
+
+            <div className="settings-card">
+              <div className="settings-field">
+                <span className="field-label">Service status</span>
+                <div className="status-toggle" role="group" aria-label="Service status">
+                  <button
+                    className={`status-option${!cancellation ? ' is-active' : ''}`}
+                    onClick={() => cancellation && setConfirmRestore(true)}
+                    disabled={busy}
+                    aria-pressed={!cancellation}
+                  >
+                    Held
+                  </button>
+                  <button
+                    className={`status-option status-option--off${cancellation ? ' is-active' : ''}`}
+                    onClick={() => !cancellation && handleToggleCancelled()}
+                    disabled={busy}
+                    aria-pressed={!!cancellation}
+                  >
+                    Cancelled
+                  </button>
+                </div>
+              </div>
+
+              {cancellation ? (
+                <p className="field-hint">
+                  Showing as cancelled{cancellation.reason ? ` — “${cancellation.reason}”` : ''}. Attendance was kept.
+                </p>
+              ) : (
                 <input
-                  className="settings-text-input"
+                  className="settings-input"
                   type="text"
-                  placeholder="Reason (optional) — e.g. Renewed"
+                  placeholder="Reason, if you cancel it (optional)"
                   value={cancelReason}
                   onChange={e => setCancelReason(e.target.value)}
                 />
               )}
             </div>
-            <button
-              className={cancellation ? 'settings-plain-btn' : 'settings-danger-btn'}
-              onClick={() => (cancellation ? setConfirmRestore(true) : handleToggleCancelled())}
-              disabled={busy}
-            >
-              {cancellation ? 'Restore service' : 'Mark cancelled'}
-            </button>
-          </div>
 
-          <div className="settings-row">
-            <div className="settings-row-info">
-              <span className="settings-row-title">On-time cutoff</span>
-              <span className="settings-row-desc">
-                Arrivals at or before this time count as on time for {meeting.name}. Leave
-                blank to hide the on-time stat. Applies to this meeting on every date.
-              </span>
-              <input
-                className="settings-text-input settings-time-input"
-                type="time"
-                value={cutoffValue}
-                onChange={e => setCutoffValue(e.target.value)}
-              />
+            <div className="settings-card">
+              <div className="settings-field">
+                <span className="field-label">Check-in times</span>
+                <span className={`field-stat${timedCount === 0 ? ' is-empty' : ''}`}>
+                  {timedCount === 0 ? 'None recorded' : `${timedCount} recorded`}
+                </span>
+              </div>
+
+              {timedCount === 0 ? (
+                <p className="field-hint">
+                  No check-ins on this service carry a time, so there's nothing to adjust.
+                </p>
+              ) : (
+                <>
+                  <div className="shift-row">
+                    <div className="shift-presets" role="group" aria-label="Shift by">
+                      {[-60, -30, -15, 15, 30, 60].map(m => (
+                        <button
+                          key={m}
+                          className={`shift-preset${parseInt(shiftMinutes, 10) === m ? ' is-active' : ''}`}
+                          onClick={() => setShiftMinutes(String(m))}
+                          disabled={busy}
+                        >
+                          {m > 0 ? `+${m}` : m}
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      className="settings-input settings-input--tight"
+                      type="number"
+                      placeholder="Custom"
+                      aria-label="Shift by minutes"
+                      value={shiftMinutes}
+                      onChange={e => setShiftMinutes(e.target.value)}
+                    />
+                    <button
+                      className="settings-btn-plain"
+                      onClick={handleShiftTimes}
+                      disabled={busy || !shiftValid}
+                    >
+                      Shift times
+                    </button>
+                  </div>
+
+                  <p className="field-hint">
+                    {shiftPreview
+                      ? <>Earliest check-in moves <strong>{shiftPreview}</strong>. Minutes, negative to go earlier.</>
+                      : <>Moves every time on this service. Use a negative number to go earlier.</>}
+                  </p>
+
+                  <div className="settings-danger-row">
+                    <div>
+                      <span className="field-label">Remove all times</span>
+                      <p className="field-hint">
+                        Clears every arrival time here. Everyone stays present; times show blank. Can't be undone.
+                      </p>
+                    </div>
+                    <button
+                      className="settings-btn-danger"
+                      onClick={() => setConfirmClearTimes(true)}
+                      disabled={clearingTimes}
+                    >
+                      {clearingTimes ? 'Removing…' : 'Remove times'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-            <button className="settings-plain-btn" onClick={handleSaveCutoff} disabled={busy}>
-              Save cutoff
-            </button>
-          </div>
+          </section>
 
-          <div className="settings-row">
-            <div className="settings-row-info">
-              <span className="settings-row-title">Shift check-in times</span>
-              <span className="settings-row-desc">
-                Moves every check-in time on this service by a number of minutes — use a
-                negative number to go earlier. For when the service was marked late or the
-                device clock was off.
-              </span>
-              <input
-                className="settings-text-input settings-number-input"
-                type="number"
-                placeholder="e.g. -30"
-                value={shiftMinutes}
-                onChange={e => setShiftMinutes(e.target.value)}
-              />
+          {/* Scope 2 — the whole meeting, every date */}
+          <section className="settings-scope settings-scope--meeting">
+            <header className="scope-head">
+              <span className="scope-eyebrow">This meeting</span>
+              <span className="scope-target">{meeting.name}</span>
+              <span className="scope-note scope-note--wide">Every date</span>
+            </header>
+
+            <div className="settings-card">
+              <div className="settings-field">
+                <span className="field-label">On-time cutoff</span>
+                <div className="cutoff-controls">
+                  <input
+                    className="settings-input settings-input--tight"
+                    type="time"
+                    aria-label="On-time cutoff"
+                    value={cutoffValue}
+                    onChange={e => setCutoffValue(e.target.value)}
+                  />
+                  <button
+                    className="settings-btn-plain"
+                    onClick={handleSaveCutoff}
+                    disabled={busy || !cutoffDirty}
+                  >
+                    {cutoffDirty ? 'Save cutoff' : 'Saved'}
+                  </button>
+                </div>
+              </div>
+              <p className="field-hint">
+                Arrivals at or before this time count as on time.{' '}
+                {cutoffInherited
+                  ? <>Currently using the default for this meeting's name. Save a time to set it explicitly.</>
+                  : storedCutoff === null
+                    ? <>Not set, so the on-time stat is hidden.</>
+                    : <>Leave blank and save to hide the on-time stat.</>}
+              </p>
             </div>
-            <button
-              className="settings-plain-btn"
-              onClick={handleShiftTimes}
-              disabled={busy || timedCount === 0 || !shiftMinutes || parseInt(shiftMinutes, 10) === 0}
-            >
-              Shift times
-            </button>
-          </div>
-
-          <div className="settings-row">
-            <div className="settings-row-info">
-              <span className="settings-row-title">Remove check-in times</span>
-              <span className="settings-row-desc">
-                Clears the arrival time from every check-in on this service. Everyone stays
-                marked present — only the times are removed, and they'll show blank in History.
-              </span>
-            </div>
-            <button
-              className="settings-danger-btn"
-              onClick={() => setConfirmClearTimes(true)}
-              disabled={timedCount === 0 || clearingTimes}
-            >
-              {clearingTimes
-                ? 'Removing…'
-                : timedCount === 0
-                  ? 'No times to remove'
-                  : `Remove ${timedCount} ${timedCount === 1 ? 'time' : 'times'}`}
-            </button>
-          </div>
-
-          {settingsMessage && <p className="settings-message">{settingsMessage}</p>}
+          </section>
         </div>
       )}
 

@@ -111,7 +111,9 @@
   border-color: rgba(147, 197, 253, 0.5);
 }
 
-/* ── Service settings ───────────────────────────────────── */
+/* ── Service settings ─────────────────────────────────────
+   Organised by blast radius: actions that touch a single service date are
+   visually separated from ones that change the meeting on every date. */
 .settings-btn {
   background: none;
   border: none;
@@ -125,13 +127,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease, transform 0.2s ease;
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-normal);
 }
 
-.settings-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.15);
-}
+.settings-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.15); }
 
 .settings-btn.is-active {
   color: #fff;
@@ -143,134 +142,326 @@
   max-width: 700px;
   width: 100%;
   margin: 1.25rem auto 0;
-  padding: 1.1rem 1.15rem;
+  padding: 1.15rem 1.25rem 1.35rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .settings-head h2 {
   margin: 0;
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .settings-head p {
   margin: 0.15rem 0 0;
   font-size: 0.82rem;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
-.settings-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-border);
-}
-
-.settings-row-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.settings-row-title { font-size: 0.9rem; font-weight: 600; }
-
-.settings-row-desc {
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: var(--color-text-muted);
-}
-
-.settings-danger-btn {
+.settings-close {
   flex-shrink: 0;
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0.5em 1em;
-  border-radius: var(--radius);
-  color: var(--color-danger);
-  background: transparent;
-  border: 1px solid var(--color-danger);
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  color: var(--color-text-muted);
   cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
+  border-radius: var(--radius);
+  transition: color var(--transition-fast);
 }
 
-.settings-danger-btn:hover:not(:disabled) {
-  background: var(--color-danger);
+.settings-close:hover { color: var(--color-text); }
+
+/* Scope groups ------------------------------------------------------- */
+.settings-scope {
+  margin-top: 1.15rem;
+  padding-left: 0.85rem;
+  border-left: 2px solid var(--color-border);
+}
+
+/* The service scope keeps the neutral rail; the meeting scope gets the accent,
+   because it's the one whose changes reach beyond the date you're looking at. */
+.settings-scope--service { border-left-color: var(--color-border); }
+.settings-scope--meeting { border-left-color: var(--color-primary); }
+
+.scope-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.scope-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.settings-scope--meeting .scope-eyebrow { color: var(--color-primary); }
+
+.scope-target {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.scope-note {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.scope-note--wide {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-color: transparent;
+}
+
+/* Cards -------------------------------------------------------------- */
+.settings-card {
+  padding: 0.85rem 0.9rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.settings-card + .settings-card { margin-top: 0.6rem; }
+
+.settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.field-label { font-size: 0.88rem; font-weight: 600; }
+
+.field-stat {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-stat.is-empty { color: var(--color-text-muted); font-weight: 500; }
+
+.field-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.field-hint strong { color: var(--color-text); font-variant-numeric: tabular-nums; }
+
+/* Held / Cancelled toggle -------------------------------------------- */
+.status-toggle {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+.status-option {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35em 0.95em;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.status-option:hover:not(:disabled):not(.is-active) { color: var(--color-text); }
+
+.status-option.is-active {
+  background: var(--color-success);
   color: #fff;
 }
 
-.settings-danger-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  color: var(--color-text-muted);
-  border-color: var(--color-border);
+.status-option--off.is-active { background: var(--color-danger); }
+
+.status-option:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Shift controls ------------------------------------------------------ */
+.shift-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
 }
 
-.settings-plain-btn {
-  flex-shrink: 0;
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0.5em 1em;
-  border-radius: var(--radius);
-  color: var(--color-text);
-  background: var(--color-bg);
+.shift-presets {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.shift-preset {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 0.32em 0.55em;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-secondary);
   cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.settings-plain-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+.shift-preset:hover:not(:disabled) { background: var(--color-bg); color: var(--color-text); }
+
+.shift-preset.is-active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
-.settings-plain-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.shift-preset:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.settings-text-input {
-  margin-top: 0.45rem;
+/* Inputs & buttons ---------------------------------------------------- */
+.settings-input {
+  margin-top: 0.6rem;
   width: 100%;
-  max-width: 320px;
   font-family: inherit;
   font-size: 0.85rem;
   padding: 0.45em 0.7em;
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
-.settings-text-input:focus {
+.settings-input--tight { margin-top: 0; width: auto; max-width: 118px; }
+
+.settings-input:focus-visible {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.settings-time-input,
-.settings-number-input { max-width: 150px; }
+.settings-btn-plain,
+.settings-btn-danger {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5em 0.95em;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
 
-.settings-message {
-  margin: 0.85rem 0 0;
-  font-size: 0.82rem;
+.settings-btn-plain {
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.settings-btn-plain:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+
+.settings-btn-danger {
+  color: var(--color-danger);
+  background: transparent;
+  border: 1px solid var(--color-danger);
+}
+
+.settings-btn-danger:hover:not(:disabled) { background: var(--color-danger); color: #fff; }
+
+.settings-btn-plain:disabled,
+.settings-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
   color: var(--color-text-muted);
+  border-color: var(--color-border);
+  background: transparent;
 }
 
-@media (max-width: 520px) {
-  .settings-row { flex-direction: column; gap: 0.7rem; }
-  .settings-danger-btn { width: 100%; }
+.cutoff-controls { display: flex; align-items: center; gap: 0.5rem; }
+
+/* Destructive action, set apart inside its card ----------------------- */
+.settings-danger-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--color-border);
 }
 
+.settings-danger-row .field-hint { margin-top: 0.2rem; max-width: 42ch; }
+
+/* Status message ------------------------------------------------------ */
+.settings-message {
+  margin: 0.9rem 0 0;
+  padding: 0.55em 0.8em;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
+.settings-message.is-ok {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.settings-message.is-error {
+  color: var(--color-danger);
+  background: var(--color-primary-light);
+  border-color: var(--color-danger);
+}
+
+@media (max-width: 560px) {
+  .settings-field { align-items: flex-start; }
+  .scope-note { margin-left: 0; }
+  .shift-row { gap: 0.45rem; }
+  .shift-presets { width: 100%; justify-content: space-between; }
+  .settings-input--tight { flex: 1; max-width: none; }
+  .settings-danger-row { flex-direction: column; gap: 0.6rem; }
+  .settings-btn-danger { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-btn,
+  .settings-btn.is-active { transition: none; transform: none; }
+}
 .attendance-body {
   max-width: 700px;
   width: 100%;
