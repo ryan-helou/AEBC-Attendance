@@ -213,6 +213,53 @@
   border-color: var(--color-border);
 }
 
+.settings-plain-btn {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5em 1em;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.settings-plain-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.settings-plain-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-text-input {
+  margin-top: 0.45rem;
+  width: 100%;
+  max-width: 320px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45em 0.7em;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.settings-text-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.settings-time-input,
+.settings-number-input { max-width: 150px; }
+
 .settings-message {
   margin: 0.85rem 0 0;
   font-size: 0.82rem;

@@ -166,3 +166,19 @@ create policy "Allow all on followup_ideas" on followup_ideas for all using (tru
 
 -- Follow-up dashboard password. Set this manually with your chosen key:
 -- insert into app_config (key, value) values ('followup_access_key', '<choose-a-password>');
+
+-- 9. Cancelled service occurrences (settable from Service settings in the app)
+create table meeting_cancellations (
+  id uuid default gen_random_uuid() primary key,
+  meeting_id uuid not null references meetings(id) on delete cascade,
+  date date not null,
+  reason text,
+  created_at timestamptz default now(),
+  constraint unique_meeting_cancellation unique (meeting_id, date)
+);
+create index idx_meeting_cancellations_meeting_date on meeting_cancellations (meeting_id, date);
+alter table meeting_cancellations enable row level security;
+create policy "Allow all on meeting_cancellations" on meeting_cancellations for all using (true) with check (true);
+
+-- 10. Per-meeting on-time cutoff (minutes since midnight, ET; null hides the stat)
+alter table meetings add column on_time_cutoff_minutes integer;

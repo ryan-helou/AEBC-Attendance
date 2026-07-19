@@ -1,0 +1,24 @@
+[
+  {
+    "id": "6a681aa8-4683-4354-8fbc-e224ec9b1da0",
+    "meeting_id": "72602b8c-0a03-4c14-b81e-add7db92abf9",
+    "person_id": "da047e02-0cbc-4744-9738-523b821f0768",
+    "date": "2026-07-12",
+    "marked_at": "2026-07-14T23:25:15.287+00:00",
+    "first_time": false,
+    "person": {
+      "full_name": "Harish"
+    }
+  },
+  {
+    "id": "c068abcf-613e-4c0e-a053-b09787806909",
+    "meeting_id": "72602b8c-0a03-4c14-b81e-add7db92abf9",
+    "person_id": "9d02cbe3-6161-4ad5-8be9-5d4933cc1950",
+    "date": "2026-07-12",
+    "marked_at": "2026-07-14T23:23:26.875+00:00",
+    "first_time": false,
+    "person": {
+      "full_name": "Christa Sfeir"
+    }
+  }
+]

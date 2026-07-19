@@ -103,12 +103,28 @@ export function niceTimeTicks(lo: number, hi: number): number[] {
   return ticks;
 }
 
-/** On-time cutoff (minutes since midnight, ET) for a meeting, or null if unknown. */
+/**
+ * Legacy name-based on-time cutoff (minutes since midnight, ET), or null.
+ * Only a fallback now — prefer meetingCutoffMinutes, which reads the per-meeting
+ * setting. Matching on the name silently breaks if a meeting is ever renamed.
+ */
 export function onTimeCutoffMinutes(meetingName: string): number | null {
   const l = meetingName.toLowerCase();
   if (l.includes('english') || l.includes('sunday')) return 10 * 60 + 30; // 10:30 AM
   if (l.includes('saturday') || l.includes('shabibeh')) return 19 * 60 + 30; // 7:30 PM
   return null;
+}
+
+/**
+ * On-time cutoff for a meeting: the configured per-meeting value when set,
+ * otherwise the legacy name-based default (so behaviour is unchanged until the
+ * column is populated).
+ */
+export function meetingCutoffMinutes(
+  meeting: { name: string; on_time_cutoff_minutes?: number | null } | null | undefined,
+): number | null {
+  if (!meeting) return null;
+  return meeting.on_time_cutoff_minutes ?? onTimeCutoffMinutes(meeting.name);
 }
 
 /** Eastern-Time "HH:mm" value for an <input type="time">. Empty string when there's no time. */
