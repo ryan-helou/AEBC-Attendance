@@ -119,6 +119,19 @@ export function useGuestAttendance(meetingId: string, date: string) {
     [fetchGuests]
   );
 
+  // Companion to useAttendance's clearAllTimes — guests are cleared alongside
+  // people so a service doesn't end up half-timed.
+  const clearAllGuestTimes = useCallback(async () => {
+    const { error } = await supabase
+      .from('guest_attendance')
+      .update({ marked_at: null })
+      .eq('meeting_id', meetingId)
+      .eq('date', date);
+    if (error) return false;
+    await fetchGuests();
+    return true;
+  }, [meetingId, date, fetchGuests]);
+
   const toggleGuestFirstTime = useCallback(
     async (guestId: string) => {
       const guest = guests.find(g => g.id === guestId);
@@ -133,5 +146,5 @@ export function useGuestAttendance(meetingId: string, date: string) {
     [guests]
   );
 
-  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, toggleGuestFirstTime };
+  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, clearAllGuestTimes, toggleGuestFirstTime };
 }
