@@ -368,6 +368,34 @@
 
 .settings-input--tight { margin-top: 0; width: auto; max-width: 118px; }
 
+.settings-textarea {
+  margin-top: 0.3rem;
+  resize: vertical;
+  min-height: 2.9rem;
+  line-height: 1.45;
+}
+
+.cancel-note { display: block; margin-top: 0.75rem; }
+
+.field-sublabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.field-optional { font-weight: 400; color: var(--color-text-muted); }
+
+.cancel-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.cancel-note-actions .field-hint { margin-top: 0; }
+
 .settings-input:focus-visible {
   outline: none;
   border-color: var(--color-primary);

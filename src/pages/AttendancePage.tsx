@@ -36,7 +36,9 @@ export default function AttendancePage() {
   const [confirmClearTimes, setConfirmClearTimes] = useState(false);
   const [clearingTimes, setClearingTimes] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
-  const [cancelReason, setCancelReason] = useState('');
+  // Note draft carries the date it was typed for, so moving to another service
+  // falls back to that date's saved note instead of leaking the previous one.
+  const [noteDraft, setNoteDraft] = useState<{ date: string; value: string } | null>(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [shiftMinutes, setShiftMinutes] = useState('');
   const [cutoffValue, setCutoffValue] = useState('');
@@ -319,6 +321,11 @@ export default function AttendancePage() {
     ? `${formatTimeET(earliestTime)} → ${formatTimeET(new Date(new Date(earliestTime).getTime() + shiftDelta * 60_000).toISOString())}`
     : null;
 
+  // The note is editable while cancelled, so track it against what's saved.
+  const savedNote = cancellation?.reason ?? '';
+  const cancelReason = noteDraft && noteDraft.date === date ? noteDraft.value : savedNote;
+  const noteDirty = cancelReason !== savedNote;
+
   // Is the cutoff explicitly stored, or still inheriting the name-based default?
   const storedCutoff = meeting?.on_time_cutoff_minutes ?? null;
   const effectiveCutoff = meetingCutoffMinutes(meeting);
@@ -353,13 +360,25 @@ export default function AttendancePage() {
     );
   }
 
+  // Update just the note on an already-cancelled service, without un-cancelling.
+  async function handleSaveNote() {
+    setBusy(true);
+    const ok = await cancelService(cancelReason);
+    setBusy(false);
+    setSettingsMessage(
+      ok
+        ? { text: cancelReason.trim() ? 'Note saved.' : 'Note cleared.', tone: 'ok' }
+        : { text: "Couldn't save the note. Check your connection and try again.", tone: 'error' },
+    );
+  }
+
   async function handleToggleCancelled() {
     const wasCancelled = !!cancellation;
     setBusy(true);
     const ok = wasCancelled ? await restoreService() : await cancelService(cancelReason);
     setBusy(false);
     setConfirmRestore(false);
-    setCancelReason('');
+    setNoteDraft(null);
     setSettingsMessage(
       ok
         ? { text: wasCancelled ? 'Service restored. It no longer shows as cancelled.' : 'Service marked cancelled. Attendance was kept.', tone: 'ok' }
@@ -482,18 +501,37 @@ export default function AttendancePage() {
                 </div>
               </div>
 
-              {cancellation ? (
-                <p className="field-hint">
-                  Showing as cancelled{cancellation.reason ? ` — “${cancellation.reason}”` : ''}. Attendance was kept.
-                </p>
-              ) : (
-                <input
-                  className="settings-input"
-                  type="text"
-                  placeholder="Reason, if you cancel it (optional)"
+              <label className="cancel-note">
+                <span className="field-sublabel">
+                  {cancellation ? 'Note' : 'Note, if you cancel it'}
+                  <span className="field-optional"> (optional)</span>
+                </span>
+                <textarea
+                  className="settings-input settings-textarea"
+                  rows={2}
+                  placeholder={
+                    cancellation
+                      ? 'Why was it cancelled? Anything worth remembering later.'
+                      : 'e.g. Renewed, snowstorm, hall unavailable'
+                  }
                   value={cancelReason}
-                  onChange={e => setCancelReason(e.target.value)}
+                  onChange={e => setNoteDraft({ date: date!, value: e.target.value })}
                 />
+              </label>
+
+              {cancellation && (
+                <div className="cancel-note-actions">
+                  <span className="field-hint">
+                    Showing as cancelled. Attendance was kept.
+                  </span>
+                  <button
+                    className="settings-btn-plain"
+                    onClick={handleSaveNote}
+                    disabled={busy || !noteDirty}
+                  >
+                    {noteDirty ? 'Save note' : 'Saved'}
+                  </button>
+                </div>
               )}
             </div>
 
