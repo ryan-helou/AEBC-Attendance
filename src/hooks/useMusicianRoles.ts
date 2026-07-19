@@ -15,9 +15,12 @@ export const MUSICIAN_ROLES = [
   'Preacher',
   'Live Stream',
   'PowerPoint',
+  'Usher',
 ] as const;
 
-// Sound is a valid role (see MUSICIAN_ROLES) but is not counted as a musician.
+// Instrument-playing roles only. Sound, Usher and the vocal roles are valid
+// assignable roles with their own leaderboards, but none of them count toward
+// Top Musicians — Singer/Backup Singer are ranked on Top Singers instead.
 export const PLAYING_MUSICIAN_ROLES = [
   'Piano',
   'Guitar',
@@ -25,9 +28,9 @@ export const PLAYING_MUSICIAN_ROLES = [
   'Drums',
   'Keyboard',
   'Violin',
-  'Singer',
-  'Backup Singer',
 ] as const;
+
+export const SINGING_ROLES = ['Singer', 'Backup Singer'] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
 

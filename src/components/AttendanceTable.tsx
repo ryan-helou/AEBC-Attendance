@@ -358,8 +358,18 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                     <span
                       className={canEditTime(item) ? 'time-tap' : ''}
                       onClick={() => startEdit(item)}
+                      title={
+                        formatTimeET(item.entry.marked_at)
+                          ? undefined
+                          : canEditTime(item)
+                            ? 'No check-in time — tap to set one'
+                            : 'No check-in time'
+                      }
                     >
-                      {formatTimeET(item.entry.marked_at)}
+                      {/* A dash reads as "deliberately empty" where a blank cell
+                          reads as broken — and gives the tap target something
+                          to actually aim at. */}
+                      {formatTimeET(item.entry.marked_at) || <span className="time-none">&mdash;</span>}
                     </span>
                   )}
                 </td>
