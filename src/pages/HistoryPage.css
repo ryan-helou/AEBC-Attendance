@@ -954,3 +954,9 @@
     display: none;
   }
 }
+
+/* A meeting picker sitting inline in a section header shouldn't carry the
+   stacked-layout bottom margin that misaligns it against the pills. */
+.section-header-controls .history-controls {
+  margin-bottom: 0;
+}
