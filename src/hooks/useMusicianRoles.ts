@@ -16,6 +16,7 @@ export const MUSICIAN_ROLES = [
   'Live Stream',
   'PowerPoint',
   'Usher',
+  'Announcements',
 ] as const;
 
 // Instrument-playing roles only. Sound, Usher and the vocal roles are valid
