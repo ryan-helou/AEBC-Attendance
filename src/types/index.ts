@@ -47,6 +47,12 @@ export interface GuestEntry {
   guest_number: number;
   marked_at: string;
   first_time: boolean;
+  /**
+   * Guests are anonymous, so gender is recorded on the check-in itself rather
+   * than on a person row. Null when it wasn't recorded; undefined when the DB
+   * column isn't there yet (pre-migration).
+   */
+  gender?: Gender | null;
 }
 
 export type DisplayEntry =

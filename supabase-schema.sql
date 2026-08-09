@@ -52,6 +52,10 @@ create table guest_attendance (
 
 create index idx_guest_attendance_meeting_date on guest_attendance (meeting_id, date);
 
+-- Guests are anonymous, so gender lives on the check-in rather than on people.
+-- NULL = not recorded. See supabase-migration-guest-gender.sql.
+alter table guest_attendance add column if not exists gender text check (gender in ('male', 'female'));
+
 -- 5. Meeting notes (one short note per service date)
 create table meeting_notes (
   id uuid default gen_random_uuid() primary key,
