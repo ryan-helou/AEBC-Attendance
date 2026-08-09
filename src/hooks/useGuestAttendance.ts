@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import type { GuestEntry } from '../types';
+import type { Gender, GuestEntry } from '../types';
 
 export function useGuestAttendance(meetingId: string, date: string) {
   const [guests, setGuests] = useState<GuestEntry[]>([]);
@@ -154,6 +154,29 @@ export function useGuestAttendance(meetingId: string, date: string) {
     [guests, fetchGuests],
   );
 
+  /**
+   * Set (or clear, by picking the value already on the row) a guest's gender.
+   * Optimistic, and rolled back if the write fails — which it will until the
+   * guest-gender migration has been run against the database.
+   */
+  const setGuestGender = useCallback(
+    async (guestId: string, gender: Gender) => {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest) return;
+      const previous = guest.gender ?? null;
+      const next = previous === gender ? null : gender;
+      setGuests(prev => prev.map(g => (g.id === guestId ? { ...g, gender: next } : g)));
+      const { error } = await supabase
+        .from('guest_attendance')
+        .update({ gender: next })
+        .eq('id', guestId);
+      if (error) {
+        setGuests(prev => prev.map(g => (g.id === guestId ? { ...g, gender: previous } : g)));
+      }
+    },
+    [guests]
+  );
+
   const toggleGuestFirstTime = useCallback(
     async (guestId: string) => {
       const guest = guests.find(g => g.id === guestId);
@@ -168,5 +191,5 @@ export function useGuestAttendance(meetingId: string, date: string) {
     [guests]
   );
 
-  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, clearAllGuestTimes, shiftAllGuestTimes, toggleGuestFirstTime };
+  return { guests, loading, addGuest, removeGuest, updateGuestMarkedAt, clearAllGuestTimes, shiftAllGuestTimes, toggleGuestFirstTime, setGuestGender };
 }

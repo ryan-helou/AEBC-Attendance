@@ -58,6 +58,19 @@ interface GenderPoint {
 
 type Timeframe = '4w' | '12w' | '6m' | '1y' | 'all';
 
+/**
+ * The page is split in two so the leaderboards stop burying the charts —
+ * 'data' holds the graphs, 'leaderboard' holds every ranking board.
+ */
+type HistoryTab = 'data' | 'leaderboard';
+
+interface OnTimePoint {
+  date: string;
+  pct: number;
+  onTime: number;
+  total: number;
+}
+
 interface StreakLeader {
   person_id: string;
   person_name: string;
@@ -221,6 +234,20 @@ function AvgTimeTooltip({ active, payload, label }: { active?: boolean; payload?
   );
 }
 
+function OnTimeTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ payload: OnTimePoint }>; label?: string }) {
+  if (!active || !payload?.length || label === undefined) return null;
+  const p = payload[0].payload;
+  const fullDate = new Date(label + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
+  return (
+    <div className="profile-chart-tooltip">
+      <span className="profile-chart-tooltip-date">{fullDate}</span>
+      <span className="profile-chart-tooltip-time">{p.pct}% on time ({p.onTime} of {p.total})</span>
+    </div>
+  );
+}
+
 /** Per-leaderboard meeting picker: All Meetings + one option per ministry. */
 function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onChange: (v: string) => void; meetings: Meeting[] }) {
   return (
@@ -256,6 +283,7 @@ export default function HistoryPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [tab, setTab] = useState<HistoryTab>('data');
 
 
   // Dashboard state
@@ -275,11 +303,14 @@ export default function HistoryPage() {
   const [chartLoading, setChartLoading] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
   const [topLoading, setTopLoading] = useState(false);
-  // Average-arrival-time chart: per-meeting, per-service averages (ET).
-  const [avgSeries, setAvgSeries] = useState<Map<string, { date: string; minutes: number }[]>>(new Map());
+  // Every recorded arrival time (ET minutes since midnight), meeting → date →
+  // times. Both arrival-time charts below are derived from this single fetch.
+  const [timesByMeeting, setTimesByMeeting] = useState<Map<string, Map<string, number[]>>>(new Map());
   const [avgTimeLoading, setAvgTimeLoading] = useState(true);
   const [avgTimeframe, setAvgTimeframe] = useState<Timeframe>('6m');
   const [avgChartMeetingId, setAvgChartMeetingId] = useState('');
+  const [onTimeChartTimeframe, setOnTimeChartTimeframe] = useState<Timeframe>('6m');
+  const [onTimeChartMeetingId, setOnTimeChartMeetingId] = useState('');
   const [genderData, setGenderData] = useState<GenderPoint[]>([]);
   const [genderTimeframe, setGenderTimeframe] = useState<Timeframe>('12w');
   const [genderMeetingId, setGenderMeetingId] = useState<string>('');
@@ -324,6 +355,17 @@ export default function HistoryPage() {
     return shiftDate(getTodayDate(), -daysMap[tf]);
   }
 
+  // Per-meeting, per-service average arrival (ET), derived from the raw times.
+  const avgSeries = useMemo(() => {
+    const series = new Map<string, { date: string; minutes: number }[]>();
+    for (const [mid, byDate] of timesByMeeting) {
+      series.set(mid, Array.from(byDate.entries())
+        .map(([date, mins]) => ({ date, minutes: Math.round(mins.reduce((a, b) => a + b, 0) / mins.length) }))
+        .sort((x, y) => x.date.localeCompare(y.date)));
+    }
+    return series;
+  }, [timesByMeeting]);
+
   // Average-arrival-time chart: selected meeting's per-service points within the timeframe.
   const avgChartMeeting = meetings.find(m => m.id === avgChartMeetingId) ?? meetings[0] ?? null;
   const avgChartData = useMemo(() => {
@@ -344,6 +386,34 @@ export default function HistoryPage() {
     const hi = Math.min(1440, Math.ceil((Math.max(...vals) + 10) / 5) * 5);
     return [[lo, hi], niceTimeTicks(lo, hi)];
   }, [avgChartData, avgChartCutoff]);
+
+  // On-time-rate chart: share of that service's timed check-ins that landed at
+  // or before the meeting's cutoff. Records with the time removed sit out of
+  // both sides of the ratio, exactly like the live count on the attendance page.
+  const onTimeChartMeeting = meetings.find(m => m.id === onTimeChartMeetingId) ?? meetings[0] ?? null;
+  const onTimeChartCutoff = meetingCutoffMinutes(onTimeChartMeeting);
+  const onTimeChartData = useMemo<OnTimePoint[]>(() => {
+    if (!onTimeChartMeeting || onTimeChartCutoff === null) return [];
+    const cutoff = timeframeCutoff(onTimeChartTimeframe);
+    const byDate = timesByMeeting.get(onTimeChartMeeting.id);
+    if (!byDate) return [];
+    return Array.from(byDate.entries())
+      .filter(([date]) => !cutoff || date >= cutoff)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, mins]) => {
+        const onTime = mins.filter(m => m <= onTimeChartCutoff).length;
+        return { date, pct: Math.round((onTime / mins.length) * 100), onTime, total: mins.length };
+      });
+  }, [timesByMeeting, onTimeChartMeeting, onTimeChartCutoff, onTimeChartTimeframe]);
+
+  // Period average, drawn as a reference line so a single bad week reads as an
+  // outlier rather than the norm.
+  const onTimeChartAverage = useMemo(() => {
+    if (onTimeChartData.length === 0) return null;
+    const onTime = onTimeChartData.reduce((sum, p) => sum + p.onTime, 0);
+    const total = onTimeChartData.reduce((sum, p) => sum + p.total, 0);
+    return total > 0 ? Math.round((onTime / total) * 100) : null;
+  }, [onTimeChartData]);
 
   async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
     setChartLoading(true);
@@ -419,26 +489,18 @@ export default function HistoryPage() {
         .range(from, to)
     );
     const records = data as unknown as Array<{ meeting_id: string; date: string; marked_at: string }>;
-    // meeting_id -> date -> { sum, count } of arrival minutes (ET)
-    const acc = new Map<string, Map<string, { sum: number; count: number }>>();
+    // meeting_id -> date -> every arrival time on that service, in ET minutes.
+    // Kept raw so both the average and the on-time rate come off one fetch.
+    const acc = new Map<string, Map<string, number[]>>();
     for (const r of records) {
       const mins = minutesSinceMidnightET(r.marked_at);
       if (mins === null) continue;
       if (!acc.has(r.meeting_id)) acc.set(r.meeting_id, new Map());
       const byDate = acc.get(r.meeting_id)!;
-      if (!byDate.has(r.date)) byDate.set(r.date, { sum: 0, count: 0 });
-      const a = byDate.get(r.date)!;
-      a.sum += mins;
-      a.count++;
+      if (!byDate.has(r.date)) byDate.set(r.date, []);
+      byDate.get(r.date)!.push(mins);
     }
-    const series = new Map<string, { date: string; minutes: number }[]>();
-    for (const [mid, byDate] of acc) {
-      const pts = Array.from(byDate.entries())
-        .map(([date, a]) => ({ date, minutes: Math.round(a.sum / a.count) }))
-        .sort((x, y) => x.date.localeCompare(y.date));
-      series.set(mid, pts);
-    }
-    setAvgSeries(series);
+    setTimesByMeeting(acc);
     setAvgTimeLoading(false);
   }
 
@@ -462,14 +524,28 @@ export default function HistoryPage() {
   async function loadGenderData(tf: Timeframe, meetingId: string) {
     setGenderLoading(true);
     const cutoff = timeframeCutoff(tf);
-    const data = await fetchAllRows((from, to) => {
-      let query = supabase.from('attendance_records').select('date, person:people(gender)');
-      if (cutoff) query = query.gte('date', cutoff);
-      if (meetingId) query = query.eq('meeting_id', meetingId);
-      return query.order('id', { ascending: true }).range(from, to);
-    });
+    // Guests keep their gender on the check-in row rather than on a person, so
+    // they're pulled in separately and folded into the same weekly buckets.
+    const [data, guestData] = await Promise.all([
+      fetchAllRows((from, to) => {
+        let query = supabase.from('attendance_records').select('date, person:people(gender)');
+        if (cutoff) query = query.gte('date', cutoff);
+        if (meetingId) query = query.eq('meeting_id', meetingId);
+        return query.order('id', { ascending: true }).range(from, to);
+      }),
+      fetchAllRows((from, to) => {
+        let query = supabase.from('guest_attendance').select('date, gender');
+        if (cutoff) query = query.gte('date', cutoff);
+        if (meetingId) query = query.eq('meeting_id', meetingId);
+        return query.order('id', { ascending: true }).range(from, to);
+      }),
+    ]);
     {
-      const records = data as unknown as Array<{ date: string; person: { gender: string | null } | null }>;
+      const records = [
+        ...(data as unknown as Array<{ date: string; person: { gender: string | null } | null }>),
+        ...(guestData as unknown as Array<{ date: string; gender: string | null }>)
+          .map(g => ({ date: g.date, person: { gender: g.gender } })),
+      ];
       function weekOf(dateStr: string): string {
         const d = new Date(dateStr + 'T00:00:00');
         const daysBack = d.getDay() === 0 ? 6 : d.getDay() - 1;
@@ -954,6 +1030,7 @@ export default function HistoryPage() {
           setOnTimeMeetingId(shabibeh.id);
           setConsistencyMeetingId(shabibeh.id);
           setAvgChartMeetingId(shabibeh.id);
+          setOnTimeChartMeetingId(shabibeh.id);
         }
 
         loadChartData(chartTimeframe, data);
@@ -1021,6 +1098,22 @@ export default function HistoryPage() {
       </div>
 
       <div className="history-body">
+      <div className="history-tabs" role="tablist" aria-label="History view">
+        {([['data', 'Data'], ['leaderboard', 'Leaderboard']] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className={`history-tab${tab === key ? ' history-tab-active' : ''}`}
+            onClick={() => setTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'data' && (<>
       {/* Attendance Over Time — full width */}
       <section className="history-section">
         <div className="section-header-row">
@@ -1229,6 +1322,99 @@ export default function HistoryPage() {
         )}
       </section>
 
+      {/* On-Time Rate — full width, per meeting */}
+      <section className="history-section">
+        <div className="section-header-row">
+          <h2>On-Time Rate</h2>
+          <div className="timeframe-pills">
+            {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
+              <button
+                key={tf}
+                className={`timeframe-pill${onTimeChartTimeframe === tf ? ' timeframe-pill-active' : ''}`}
+                onClick={() => setOnTimeChartTimeframe(tf)}
+              >
+                {tf === 'all' ? 'All' : tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="history-controls">
+          <select value={onTimeChartMeetingId} onChange={e => setOnTimeChartMeetingId(e.target.value)}>
+            {meetings.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+        {avgTimeLoading ? (
+          <p className="history-empty">Loading...</p>
+        ) : onTimeChartCutoff === null ? (
+          <p className="history-empty">
+            No on-time cutoff set for this meeting. Set one in Service settings on the attendance page.
+          </p>
+        ) : onTimeChartData.length === 0 ? (
+          <p className="history-empty">No check-in times recorded for this period.</p>
+        ) : (
+          <>
+            <p className="chart-caption">
+              Share of check-ins at or before {minutesToClock(onTimeChartCutoff)}
+              {onTimeChartAverage !== null && <> · averaging <strong>{onTimeChartAverage}%</strong> over this period</>}
+            </p>
+            <div className="dashboard-chart-wrapper">
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={onTimeChartData} margin={{ top: 12, right: 20, bottom: 5, left: 0 }}>
+                  <defs>
+                    <linearGradient id="grad-ontime" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#16a34a" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                    tickLine={false}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    minTickGap={28}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    ticks={[0, 25, 50, 75, 100]}
+                    tickFormatter={(v: number) => `${v}%`}
+                    tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={44}
+                  />
+                  {onTimeChartAverage !== null && (
+                    <ReferenceLine
+                      y={onTimeChartAverage}
+                      stroke="var(--color-text-muted)"
+                      strokeDasharray="5 4"
+                      strokeOpacity={0.7}
+                      label={{ value: `Avg ${onTimeChartAverage}%`, position: 'insideTopRight', fontSize: 10, fill: 'var(--color-text-muted)' }}
+                    />
+                  )}
+                  <Tooltip content={<OnTimeTooltip />} cursor={{ stroke: 'var(--color-border)', strokeWidth: 1 }} />
+                  <Area
+                    type="monotone"
+                    dataKey="pct"
+                    name="On time"
+                    stroke="#16a34a"
+                    strokeWidth={2.5}
+                    fill="url(#grad-ontime)"
+                    dot={{ r: 3.5, strokeWidth: 2, stroke: '#16a34a', fill: 'var(--color-surface)' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    animationDuration={800}
+                    animationEasing="ease-out"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </section>
+
       {/* Gender Breakdown — full width */}
       <section className="history-section">
         <div className="section-header-row">
@@ -1264,7 +1450,7 @@ export default function HistoryPage() {
         ) : (
           <div className="dashboard-chart-wrapper">
             <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={genderData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }}>
+              <AreaChart data={genderData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <defs>
                   <linearGradient id="grad-gender-male" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.25} />
@@ -1288,7 +1474,7 @@ export default function HistoryPage() {
                   tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
                   tickLine={false}
                   axisLine={false}
-                  width={38}
+                  width={44}
                 />
                 <Tooltip
                   contentStyle={{
@@ -1336,10 +1522,8 @@ export default function HistoryPage() {
         )}
       </section>
 
-      {/* 2x2 grid for remaining panels */}
-      <div className="history-grid">
-        {/* Ministry Comparison */}
-        <section className="history-section">
+      {/* Ministry Comparison — full width */}
+      <section className="history-section">
           <div className="section-header-row">
             <h2>Ministry Comparison</h2>
             <div className="timeframe-pills">
@@ -1360,7 +1544,7 @@ export default function HistoryPage() {
             <p className="history-empty">No attendance data yet.</p>
           ) : (
             <div className="dashboard-chart-wrapper">
-              <ResponsiveContainer width="100%" height={230}>
+              <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={compareData} margin={{ top: 24, right: 16, bottom: 4, left: -10 }} barCategoryGap="38%">
                   <defs>
                     {COMPARE_COLORS.map((c, i) => (
@@ -1412,10 +1596,13 @@ export default function HistoryPage() {
               </ResponsiveContainer>
             </div>
           )}
-        </section>
+      </section>
+      </>)}
 
+      {tab === 'leaderboard' && (
+      <div className="history-grid">
         {/* Top Attendees */}
-        <section className="history-section leaderboard-section">
+        <section className="history-section leaderboard-section streak-lb-section">
           <div className="section-header-row">
             <h2>Top Attendees</h2>
             <div className="section-header-controls">
@@ -2177,6 +2364,7 @@ export default function HistoryPage() {
         </div>
 
       </div>
+      )}
       </div>
     </div>
   );

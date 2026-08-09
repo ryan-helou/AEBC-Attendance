@@ -71,6 +71,51 @@
   padding: 1.5rem 1rem;
 }
 
+/* Data | Leaderboard switcher — the leaderboards used to bury the charts. */
+.history-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+[data-theme="dark"] .history-tabs {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-tab {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45em 1.4em;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.history-tab:hover {
+  color: var(--color-text);
+}
+
+.history-tab-active,
+.history-tab-active:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* One-line explainer under a chart heading (what the series actually measures). */
+.chart-caption {
+  margin: -0.35rem 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
 .history-section {
   margin-bottom: 2.5rem;
   background: rgba(255, 255, 255, 0.6);

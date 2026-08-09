@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import type { DisplayEntry } from '../types';
+import type { DisplayEntry, Gender } from '../types';
 import type { SearchResult } from '../hooks/usePeople';
 import { MUSICIAN_ROLES } from '../hooks/useMusicianRoles';
 import type { MusicianRole } from '../hooks/useMusicianRoles';
@@ -49,6 +49,7 @@ interface AttendanceTableProps {
   onUpdateTime?: (recordId: string, newMarkedAt: string) => void;
   onUpdateGuestTime?: (guestId: string, newMarkedAt: string) => void;
   onToggleFirstTime?: (id: string, isGuest: boolean) => void;
+  onSetGuestGender?: (guestId: string, gender: Gender) => void;
   onConvertGuest?: (guestId: string, guestEntry: any, name: string) => Promise<void>;
   searchPeople?: (query: string, markedIds: Set<string>) => SearchResult[];
   markedPersonIds?: Set<string>;
@@ -58,7 +59,7 @@ interface AttendanceTableProps {
   cancelledReason?: string;
 }
 
-export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole, cancelled, cancelledReason }: AttendanceTableProps) {
+export default function AttendanceTable({ entries, meetingName, onRemove, onUpdateTime, onUpdateGuestTime, onToggleFirstTime, onSetGuestGender, onConvertGuest, searchPeople, markedPersonIds, getMusicianRoles, onToggleMusicianRole, cancelled, cancelledReason }: AttendanceTableProps) {
   const navigate = useNavigate();
   const prevIdsRef = useRef<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -296,7 +297,27 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
                         )}
                       </div>
                     ) : (
-                      <span className="guest-name-tap" onClick={() => startEditGuestName(item.entry.id)}>Guest {item.entry.guest_number}</span>
+                      <div className="guest-name-cell">
+                        <span className="guest-name-tap" onClick={() => startEditGuestName(item.entry.id)}>Guest {item.entry.guest_number}</span>
+                        {/* A guest has no person row to carry their gender, so it's
+                            set right here — otherwise guests never reach the M/F split. */}
+                        {onSetGuestGender && (
+                          <span className="guest-gender" role="group" aria-label={`Guest ${item.entry.guest_number} gender`}>
+                            {(['male', 'female'] as const).map(g => (
+                              <button
+                                key={g}
+                                type="button"
+                                className={`guest-gender-btn${item.entry.gender === g ? ` is-${g}` : ''}`}
+                                onClick={() => onSetGuestGender(item.entry.id, g)}
+                                aria-pressed={item.entry.gender === g}
+                                title={item.entry.gender === g ? 'Clear gender' : `Mark ${g}`}
+                              >
+                                {g === 'male' ? 'M' : 'F'}
+                              </button>
+                            ))}
+                          </span>
+                        )}
+                      </div>
                     )
                   ) : (
                     <div className="name-cell-wrapper">

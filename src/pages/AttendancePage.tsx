@@ -33,6 +33,7 @@ export default function AttendancePage() {
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
 
   const [showSettings, setShowSettings] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
   const [confirmClearTimes, setConfirmClearTimes] = useState(false);
   const [clearingTimes, setClearingTimes] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
@@ -69,6 +70,7 @@ export default function AttendancePage() {
     clearAllGuestTimes,
     shiftAllGuestTimes,
     toggleGuestFirstTime,
+    setGuestGender,
   } = useGuestAttendance(meetingId!, date!);
 
   const { getRoles, toggleRole } = useMusicianRoles(meetingId!, date!);
@@ -104,17 +106,19 @@ export default function AttendancePage() {
     [displayEntries]
   );
 
+  // Guests carry their own gender (there's no person row to read it off), so
+  // they count toward the split exactly like everyone else once it's set.
   const genderPercents = useMemo(() => {
     let male = 0, female = 0;
-    for (const e of entries) {
-      if (e.person.gender === 'male') male++;
-      else if (e.person.gender === 'female') female++;
+    for (const g of [...entries.map(e => e.person.gender), ...guests.map(g => g.gender)]) {
+      if (g === 'male') male++;
+      else if (g === 'female') female++;
     }
     const known = male + female;
     if (known === 0) return null;
     const malePct = Math.round((male / known) * 100);
     return { malePct, femalePct: 100 - malePct };
-  }, [entries]);
+  }, [entries, guests]);
 
   const onTimePercent = useMemo(() => {
     if (!meeting) return null;
@@ -144,6 +148,18 @@ export default function AttendancePage() {
       milestoneRef.current = setTimeout(() => setMilestone(null), 5000);
     }
   }, []);
+
+  // The panel opens directly under the header, at the very top of the page. Once
+  // a service has a screenful of names, the gear is the only thing still on
+  // screen — so opening it looked like nothing happened. Bring it into view.
+  useEffect(() => {
+    if (!showSettings) return;
+    const panel = settingsRef.current;
+    if (!panel) return;
+    const headerHeight = document.querySelector('.attendance-header')?.getBoundingClientRect().height ?? 0;
+    const top = window.scrollY + panel.getBoundingClientRect().top - headerHeight - 12;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }, [showSettings]);
 
   useEffect(() => {
     async function load() {
@@ -449,7 +465,7 @@ export default function AttendancePage() {
       </div>
 
       {showSettings && (
-        <div className="attendance-settings" role="region" aria-label="Service settings">
+        <div className="attendance-settings" role="region" aria-label="Service settings" ref={settingsRef}>
           <div className="settings-head">
             <div>
               <h2>Service settings</h2>
@@ -680,6 +696,7 @@ export default function AttendancePage() {
           onUpdateTime={updateMarkedAt}
           onUpdateGuestTime={updateGuestMarkedAt}
           onToggleFirstTime={handleToggleFirstTime}
+          onSetGuestGender={setGuestGender}
           onConvertGuest={handleConvertGuest}
           searchPeople={searchPeople}
           markedPersonIds={markedPersonIds}
