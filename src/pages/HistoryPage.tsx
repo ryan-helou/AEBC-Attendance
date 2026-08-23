@@ -33,7 +33,9 @@ import './HistoryPage.css';
 interface WeekPoint {
   date: string;
   label: string;
-  [meetingName: string]: string | number;
+  // null = that ministry held no service that week, which is not the same as
+  // "nobody came" — the chart leaves a gap instead of diving to the axis.
+  [meetingName: string]: string | number | null;
 }
 
 interface TopAttendee {
@@ -415,6 +417,17 @@ export default function HistoryPage() {
     return total > 0 ? Math.round((onTime / total) * 100) : null;
   }, [onTimeChartData]);
 
+  // With one ministry in focus, the weeks it didn't meet carry no information —
+  // drop them entirely so the axis isn't padded with gaps. Showing every
+  // ministry keeps those weeks (another ministry's line needs them) and the
+  // lines bridge across instead.
+  const visibleChartData = useMemo(() => {
+    if (chartMeeting === 'all' || chartMeeting === 'firsttimers') return chartData;
+    const name = meetings.find(m => m.id === chartMeeting)?.name;
+    if (!name) return chartData;
+    return chartData.filter(p => p[name] != null);
+  }, [chartData, chartMeeting, meetings]);
+
   async function loadChartData(tf: Timeframe, meetingsList: Meeting[]) {
     setChartLoading(true);
     const cutoff = timeframeCutoff(tf);
@@ -470,7 +483,7 @@ export default function HistoryPage() {
           : `${satLabel}–${sun.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
         const point: WeekPoint = { date: week, label };
         const mc = weekCounts.get(week)!;
-        for (const m of meetingsList) point[m.name] = mc.get(m.id) || 0;
+        for (const m of meetingsList) point[m.name] = mc.get(m.id) ?? null;
         point['First Timers'] = weekFirstTimers.get(week) || 0;
         return point;
       });
@@ -1164,12 +1177,12 @@ export default function HistoryPage() {
         </div>
         {chartLoading ? (
           <p className="history-empty">Loading...</p>
-        ) : chartData.length === 0 ? (
+        ) : visibleChartData.length === 0 ? (
           <p className="history-empty">No attendance data for this period.</p>
         ) : (
           <div className="dashboard-chart-wrapper">
             <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: -10 }}>
+              <AreaChart data={visibleChartData} margin={{ top: 5, right: 20, bottom: 5, left: -4 }}>
                 <defs>
                   {meetings.map((m, i) => (
                     <linearGradient key={m.id} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
@@ -1189,12 +1202,14 @@ export default function HistoryPage() {
                   tickLine={false}
                   axisLine={{ stroke: 'var(--color-border)' }}
                 />
+                {/* 38px, not 30 — the narrower gutter clipped three-digit
+                    counts, rendering "120" as "20". */}
                 <YAxis
                   allowDecimals={false}
                   tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
                   tickLine={false}
                   axisLine={false}
-                  width={30}
+                  width={38}
                 />
                 <Tooltip
                   contentStyle={{
@@ -1213,6 +1228,7 @@ export default function HistoryPage() {
                       key={m.id}
                       type="monotone"
                       dataKey={m.name}
+                      connectNulls
                       stroke={LINE_COLORS[i % LINE_COLORS.length]}
                       strokeWidth={2.5}
                       fill={`url(#grad-${i})`}
