@@ -297,10 +297,10 @@ export default function HistoryPage() {
   const [topBabies, setTopBabies] = useState<TopAttendee[]>([]);
   const [babyMaxCount, setBabyMaxCount] = useState(1);
   const [babyLoading, setBabyLoading] = useState(true);
-  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('12w');
+  const [chartTimeframe, setChartTimeframe] = useState<Timeframe>('all');
   // 'all' shows every series; otherwise a meeting id or 'firsttimers' isolates one line.
   const [chartMeeting, setChartMeeting] = useState<string>('all');
-  const [compareTimeframe, setCompareTimeframe] = useState<Timeframe>('12w');
+  const [compareTimeframe, setCompareTimeframe] = useState<Timeframe>('all');
   const [topTimeframe, setTopTimeframe] = useState<Timeframe>('all');
   const [chartLoading, setChartLoading] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
@@ -309,12 +309,12 @@ export default function HistoryPage() {
   // times. Both arrival-time charts below are derived from this single fetch.
   const [timesByMeeting, setTimesByMeeting] = useState<Map<string, Map<string, number[]>>>(new Map());
   const [avgTimeLoading, setAvgTimeLoading] = useState(true);
-  const [avgTimeframe, setAvgTimeframe] = useState<Timeframe>('6m');
+  const [avgTimeframe, setAvgTimeframe] = useState<Timeframe>('all');
   const [avgChartMeetingId, setAvgChartMeetingId] = useState('');
-  const [onTimeChartTimeframe, setOnTimeChartTimeframe] = useState<Timeframe>('6m');
+  const [onTimeChartTimeframe, setOnTimeChartTimeframe] = useState<Timeframe>('all');
   const [onTimeChartMeetingId, setOnTimeChartMeetingId] = useState('');
   const [genderData, setGenderData] = useState<GenderPoint[]>([]);
-  const [genderTimeframe, setGenderTimeframe] = useState<Timeframe>('12w');
+  const [genderTimeframe, setGenderTimeframe] = useState<Timeframe>('all');
   const [genderMeetingId, setGenderMeetingId] = useState<string>('');
   const [genderLoading, setGenderLoading] = useState(false);
   const [streakLeaders, setStreakLeaders] = useState<StreakLeader[]>([]);
