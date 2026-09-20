@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { getTodayDate, formatDate } from '../lib/dateUtils';
+import { supabase, fetchAllRows } from '../lib/supabase';
+import { getTodayDate, formatDate, latestMeetingDate } from '../lib/dateUtils';
 import { useAuth } from '../hooks/useAuth';
 import { LandingSkeleton } from '../components/Skeleton';
 import { useTheme } from '../hooks/useTheme';
@@ -48,9 +48,9 @@ export default function LandingPage() {
       } else if (e.key === 'i' || e.key === 'I') {
         navigate('/ideas');
       } else if (e.key === '1' && meetings[0]) {
-        navigate(`/attendance/${meetings[0].id}/${getTodayDate()}`);
+        navigate(`/attendance/${meetings[0].id}/${latestMeetingDate(meetings[0].name)}`);
       } else if (e.key === '2' && meetings[1]) {
-        navigate(`/attendance/${meetings[1].id}/${getTodayDate()}`);
+        navigate(`/attendance/${meetings[1].id}/${latestMeetingDate(meetings[1].name)}`);
       }
     }
     window.addEventListener('keydown', handleKey);
@@ -78,18 +78,35 @@ export default function LandingPage() {
       if (meetingsData) {
         setMeetings(meetingsData);
 
-        const today = getTodayDate();
-        const [{ data: records }, { data: guestRecords }] = await Promise.all([
-          supabase.from('attendance_records').select('meeting_id').eq('date', today),
-          supabase.from('guest_attendance').select('meeting_id').eq('date', today),
+        // Each meeting is counted on its own latest service date, not blindly on
+        // today: on a Sunday, Shabibeh's number is Saturday's, and the card says so.
+        const dates = Array.from(new Set(meetingsData.map(m => latestMeetingDate(m.name))));
+        const [records, guestRecords] = await Promise.all([
+          fetchAllRows((from, to) =>
+            supabase.from('attendance_records')
+              .select('meeting_id, date')
+              .in('date', dates)
+              .order('id', { ascending: true })
+              .range(from, to)
+          ),
+          fetchAllRows((from, to) =>
+            supabase.from('guest_attendance')
+              .select('meeting_id, date')
+              .in('date', dates)
+              .order('id', { ascending: true })
+              .range(from, to)
+          ),
         ]);
 
-        const countMap: Record<string, number> = {};
-        for (const r of records ?? []) {
-          countMap[r.meeting_id] = (countMap[r.meeting_id] || 0) + 1;
+        const tally: Record<string, number> = {};
+        for (const r of [...records, ...guestRecords]) {
+          const key = `${r.meeting_id}|${r.date}`;
+          tally[key] = (tally[key] || 0) + 1;
         }
-        for (const r of guestRecords ?? []) {
-          countMap[r.meeting_id] = (countMap[r.meeting_id] || 0) + 1;
+
+        const countMap: Record<string, number> = {};
+        for (const m of meetingsData) {
+          countMap[m.id] = tally[`${m.id}|${latestMeetingDate(m.name)}`] || 0;
         }
         setCounts(countMap);
       }

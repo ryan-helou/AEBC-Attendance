@@ -145,6 +145,17 @@ export function etWallClockToISO(dateStr: string, hours: number, minutes: number
   return new Date(asIfUTC - offset * 60000).toISOString();
 }
 
+/**
+ * How to refer to a date relative to today: "today", "yesterday", or "on Sat,
+ * Sep 13" once it's further back than that. Used so a card can say which day
+ * its number actually belongs to.
+ */
+export function relativeDayLabel(dateStr: string, today = getTodayDate()): string {
+  if (dateStr === today) return 'today';
+  if (dateStr === shiftDate(today, -1)) return 'yesterday';
+  return `on ${formatDate(dateStr, { weekday: 'short', month: 'short', day: 'numeric' })}`;
+}
+
 /** Snap a date to the most recent valid meeting day */
 export function snapToValidDate(dateStr: string, meetingDay: number | null): string {
   if (meetingDay === null) return dateStr;
@@ -156,6 +167,15 @@ export function snapToValidDate(dateStr: string, meetingDay: number | null): str
     d.setDate(d.getDate() - diff);
   }
   return toDateStr(d);
+}
+
+/**
+ * The most recent date a meeting could have been held: today when it meets
+ * today (or has no fixed weekday), otherwise the last occurrence of its
+ * weekday. Shabibeh on a Sunday resolves to Saturday.
+ */
+export function latestMeetingDate(name: string, today = getTodayDate()): string {
+  return snapToValidDate(today, getMeetingDay(name));
 }
 
 /**
