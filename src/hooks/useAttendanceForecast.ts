@@ -38,11 +38,10 @@ const MIN_TIMED_SHARE = 0.9;
  * services that preceded each one: median error is ~5% at any threshold, but
  * the tail is what hurts — the 90th-percentile error falls from 23% at 0.15 to
  * 18% here, while the projection still shows for roughly half the door time.
- * In practice it appears around the service's start time and firms up after.
+ * In practice it appears just after the service's start time and firms up from
+ * there, converging on the live count once everyone is in.
  */
 const MIN_FRACTION = 0.4;
-/** Past this the doors are effectively shut and the projection is just the count. */
-const DONE_FRACTION = 0.98;
 /** Projecting off a handful of early birds is noise, not a forecast. */
 const MIN_PRESENT = 5;
 
@@ -52,7 +51,11 @@ export interface Forecast {
   /** 10th–90th percentile band — about 4 in 5 services land inside it. */
   low: number;
   high: number;
-  /** Share of a typical service that has arrived by now (0–1). */
+  /**
+   * Share of a typical service that has arrived by now (0–1). Late in the
+   * service this approaches 1 and the projection converges on the live count —
+   * which is the answer, not a reason to hide it.
+   */
   fraction: number;
   /** How many past services the estimate is built from. */
   services: number;
@@ -161,7 +164,7 @@ export function useAttendanceForecast(
       .map(c => c.times.filter(t => t <= nowMinute).length / c.final)
       .sort((a, b) => a - b);
     const mid = quantile(fractions, 0.5);
-    if (mid < MIN_FRACTION || mid >= DONE_FRACTION) return null;
+    if (mid < MIN_FRACTION) return null;
 
     // A bigger share already in the room means a smaller final total, so the
     // percentiles cross over: the busy-by-now services give the LOW estimate.
