@@ -35,6 +35,30 @@ export const SINGING_ROLES = ['Singer', 'Backup Singer'] as const;
 
 export type MusicianRole = (typeof MUSICIAN_ROLES)[number];
 
+/**
+ * The same 15 roles, grouped for the assign-role picker. Fifteen identical pills
+ * in one wrapped cloud means reading every label to find one; four labelled
+ * clusters means looking in one place. Order within a group is deliberate —
+ * whatever gets assigned most often sits first.
+ *
+ * MUSICIAN_ROLES stays the flat source of truth; the dev-only check below fails
+ * loudly if a role is ever added there and forgotten here.
+ */
+export const ROLE_GROUPS: ReadonlyArray<{ label: string; roles: readonly MusicianRole[] }> = [
+  { label: 'Music', roles: ['Piano', 'Guitar', 'Drums', 'Bass', 'Keyboard', 'Violin'] },
+  { label: 'Vocals', roles: ['Singer', 'Backup Singer'] },
+  { label: 'Tech', roles: ['Sound', 'Live Stream', 'PowerPoint'] },
+  { label: 'Serving', roles: ['Preacher', 'Attendance', 'Usher', 'Announcements'] },
+];
+
+if (import.meta.env.DEV) {
+  const grouped = ROLE_GROUPS.flatMap(g => g.roles);
+  const missing = MUSICIAN_ROLES.filter(r => !grouped.includes(r));
+  if (missing.length || grouped.length !== MUSICIAN_ROLES.length) {
+    console.error('ROLE_GROUPS is out of sync with MUSICIAN_ROLES; ungrouped:', missing);
+  }
+}
+
 interface MusicianRoleEntry {
   id: string;
   person_id: string;

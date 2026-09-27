@@ -400,12 +400,35 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.15));
-  padding: 0.25rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 12rem;
+  /* max-width and max-height are both set inline, from the room actually
+     available around the trigger, so the picker always lands on-screen. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.role-picker-group-label {
+  margin: 0 0 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.role-picker-group + .role-picker-group {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+.role-picker-group-items {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-  min-width: 12rem;
-  max-width: 18rem;
 }
 
 .role-picker-item {
@@ -456,9 +479,16 @@
 
   /* Larger, easier-to-tap role picker on mobile */
   .role-picker {
+    gap: 0.6rem;
+    padding: 0.6rem;
+  }
+
+  .role-picker-group-items {
     gap: 0.4rem;
-    padding: 0.4rem;
-    max-width: calc(100vw - 16px);
+  }
+
+  .role-picker-group + .role-picker-group {
+    padding-top: 0.6rem;
   }
 
   .role-picker-item {
