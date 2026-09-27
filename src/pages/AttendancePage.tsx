@@ -450,7 +450,7 @@ export default function AttendancePage() {
             title={`Projected final count: ${forecast.low}–${forecast.high}. Across the last ${forecast.services} ${meeting.name} services, ${Math.round(forecast.fraction * 100)}% of the night had checked in by this time.`}
           >
             <span className="header-forecast-value">
-              <AnimatedNumber value={forecast.expected} prefix="~" />
+              <AnimatedNumber value={forecast.expected} />
             </span>
             <span className="header-forecast-label">expected</span>
           </div>
