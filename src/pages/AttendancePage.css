@@ -684,11 +684,12 @@
   margin-bottom: 1.5rem;
 }
 
+/* Match the wrapper itself, never ":first-child". AttendanceInput returns a
+   fragment that renders its easter-egg shower overlay BEFORE the input, so
+   typing "lebron" or "amen" made the overlay the row's first child and the
+   search box collapsed to its content width for the seven seconds it ran. */
 .attendance-input-row .attendance-input-wrapper {
   margin-bottom: 0;
-}
-
-.attendance-input-row > :first-child {
   flex: 1;
   min-width: 0;
 }
