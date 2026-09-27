@@ -7,6 +7,7 @@ import { useGuestAttendance } from '../hooks/useGuestAttendance';
 import { useMusicianRoles } from '../hooks/useMusicianRoles';
 import { parseDate, toDateStr, formatDate, getMeetingDay, shiftDate, getTodayDate, snapToValidDate, minutesSinceMidnightET, meetingCutoffMinutes, formatTimeET } from '../lib/dateUtils';
 import { useMeetingCancellation } from '../hooks/useMeetingCancellation';
+import { useAttendanceForecast } from '../hooks/useAttendanceForecast';
 import type { Meeting, Person, DisplayEntry, Gender } from '../types';
 import AttendanceInput from '../components/AttendanceInput';
 import { AttendanceSkeleton } from '../components/Skeleton';
@@ -136,6 +137,15 @@ export default function AttendancePage() {
     const onTimeGuests = timedGuests.filter(g => minutesSinceMidnightET(g.marked_at)! <= cutoffMinutes!);
     return Math.round(((onTimeEntries.length + onTimeGuests.length) / timedCount) * 100);
   }, [meeting, entries, guests]);
+
+  // How many check-ins on this service still carry a time — drives the settings
+  // copy, and is what the forecast counts (its curves are built from timed
+  // check-ins, so the live number has to be measured the same way).
+  const timedTimes = useMemo(() => [
+    ...entries.filter(e => e.marked_at).map(e => e.marked_at),
+    ...guests.filter(g => g.marked_at).map(g => g.marked_at),
+  ], [entries, guests]);
+  const timedCount = timedTimes.length;
 
   const milestoneRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MILESTONES = [25, 50, 75, 100];
@@ -314,17 +324,14 @@ export default function AttendancePage() {
   const todayDate = snapToValidDate(getTodayDate(), meetingDay);
   const isToday = date === todayDate;
 
+  // Only worth forecasting a service that is still filling up: today's, not
+  // cancelled. The history it needs loads in the background, so the door screen
+  // is never waiting on it.
+  const forecast = useAttendanceForecast(meetingId, isToday && !cancellation, timedCount);
+
   function goToday() {
     navigate(`/attendance/${meetingId}/${todayDate}`, { replace: true });
   }
-
-  // How many check-ins on this service still carry a time — drives the
-  // settings copy and disables the action when there's nothing to clear.
-  const timedTimes = [
-    ...entries.filter(e => e.marked_at).map(e => e.marked_at),
-    ...guests.filter(g => g.marked_at).map(g => g.marked_at),
-  ];
-  const timedCount = timedTimes.length;
 
   // Earliest check-in, used to preview what a shift actually does so nobody has
   // to guess what "-30" means before committing to it.
@@ -686,6 +693,14 @@ export default function AttendancePage() {
           )}
           {genderPercents && (
             <span className="gender-count"> · <AnimatedNumber value={genderPercents.malePct} suffix="%" /> M · <AnimatedNumber value={genderPercents.femalePct} suffix="%" /> F</span>
+          )}
+          {forecast && (
+            <span
+              className="forecast-count"
+              title={`Projected final count: ${forecast.low}–${forecast.high}. Across the last ${forecast.services} ${meeting.name} services, ${Math.round(forecast.fraction * 100)}% of the night had checked in by this time.`}
+            >
+              {' '}· <AnimatedNumber value={forecast.expected} prefix="~" /> expected
+            </span>
           )}
         </div>
 
