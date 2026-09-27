@@ -691,15 +691,22 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #fff;
-  margin-bottom: 1rem;
-  display: inline-flex;
+  display: flex;
+  /* The stats have to be able to fall onto a second line: the old
+     margin-left: 50% + translateX(-50%) centring capped the pill at half the
+     screen, so on a phone the later stats spilled outside the rounded
+     background instead of wrapping. fit-content + auto margins centre it
+     without that ceiling. */
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 0.375rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 1rem;
   background: var(--color-primary);
   padding: 0.35em 1em;
   border-radius: 999px;
-  margin-left: 50%;
-  transform: translateX(-50%);
 }
 
 .first-timer-count {
@@ -708,6 +715,13 @@
 
 .on-time-count {
   opacity: 0.85;
+}
+
+.forecast-count {
+  opacity: 0.85;
+  white-space: nowrap;
+  /* It carries a title explaining where the number comes from. */
+  cursor: help;
 }
 
 @media (max-width: 600px) {
