@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import type { DisplayEntry, Gender } from '../types';
 import type { SearchResult } from '../hooks/usePeople';
-import { MUSICIAN_ROLES } from '../hooks/useMusicianRoles';
+import { ROLE_GROUPS } from '../hooks/useMusicianRoles';
 import type { MusicianRole } from '../hooks/useMusicianRoles';
 import SuggestionList from './SuggestionList';
 import { formatTimeET, toTimeInputValueET, etWallClockToISO } from '../lib/dateUtils';
@@ -416,24 +416,49 @@ export default function AttendanceTable({ entries, meetingName, onRemove, onUpda
           const personId = rolePickerPersonId;
           const anchor = rolePickerAnchor;
           const GAP = 6;
-          const PICKER_MAX_W = 288; // matches max-width: 18rem
-          const left = Math.max(8, Math.min(anchor.left, window.innerWidth - PICKER_MAX_W - 8));
-          // Flip above the trigger when there isn't room below (keeps it on-screen on mobile).
-          const openUp = window.innerHeight - anchor.bottom < 220;
-          const style: React.CSSProperties = openUp
-            ? { left, bottom: window.innerHeight - anchor.top + GAP }
-            : { left, top: anchor.bottom + GAP };
+          const MARGIN = 8;
+          // Width is driven from here so the clamp below can't disagree with the
+          // stylesheet and leave the picker flush against a phone's right edge.
+          const PICKER_MAX_W = Math.min(320, window.innerWidth - MARGIN * 2);
+          const left = Math.max(MARGIN, Math.min(anchor.left, window.innerWidth - PICKER_MAX_W - MARGIN));
+          // Grouped, the picker is tall enough to run off a phone. Open on whichever
+          // side of the trigger has more room and cap the height to exactly that, so
+          // it always lands fully on-screen and scrolls instead of being clipped.
+          const roomBelow = window.innerHeight - anchor.bottom - GAP - MARGIN;
+          const roomAbove = anchor.top - GAP - MARGIN;
+          const openUp = roomAbove > roomBelow;
+          const maxHeight = Math.max(160, Math.round(openUp ? roomAbove : roomBelow));
+          const style: React.CSSProperties = {
+            left,
+            maxWidth: PICKER_MAX_W,
+            maxHeight,
+            ...(openUp
+              ? { bottom: window.innerHeight - anchor.top + GAP }
+              : { top: anchor.bottom + GAP }),
+          };
           const activeRoles = getMusicianRoles?.(personId) || [];
           return (
             <div className="role-picker" style={style} onClick={e => e.stopPropagation()}>
-              {MUSICIAN_ROLES.map(role => (
-                <button
-                  key={role}
-                  className={`role-picker-item${activeRoles.includes(role) ? ' active' : ''}`}
-                  onClick={e => { e.stopPropagation(); onToggleMusicianRole?.(personId, role); }}
-                >
-                  {role}
-                </button>
+              {ROLE_GROUPS.map(group => (
+                <div className="role-picker-group" key={group.label} role="group" aria-label={group.label}>
+                  <p className="role-picker-group-label">{group.label}</p>
+                  <div className="role-picker-group-items">
+                    {group.roles.map(role => {
+                      const on = activeRoles.includes(role);
+                      return (
+                        <button
+                          key={role}
+                          type="button"
+                          aria-pressed={on}
+                          className={`role-picker-item${on ? ' active' : ''}`}
+                          onClick={e => { e.stopPropagation(); onToggleMusicianRole?.(personId, role); }}
+                        >
+                          {role}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           );
