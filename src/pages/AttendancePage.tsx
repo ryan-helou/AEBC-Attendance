@@ -444,6 +444,17 @@ export default function AttendancePage() {
           <h1>{meeting.name}</h1>
           <p className="attendance-header-date">{formatDate(date!)}</p>
         </div>
+        {forecast && (
+          <div
+            className="header-forecast"
+            title={`Projected final count: ${forecast.low}–${forecast.high}. Across the last ${forecast.services} ${meeting.name} services, ${Math.round(forecast.fraction * 100)}% of the night had checked in by this time.`}
+          >
+            <span className="header-forecast-value">
+              <AnimatedNumber value={forecast.expected} prefix="~" />
+            </span>
+            <span className="header-forecast-label">expected</span>
+          </div>
+        )}
         <div className="attendance-date-controls">
           <button className="date-nav-btn" onClick={() => goWeek(-1)}>&lsaquo;</button>
           <input
@@ -693,14 +704,6 @@ export default function AttendancePage() {
           )}
           {genderPercents && (
             <span className="gender-count"> · <AnimatedNumber value={genderPercents.malePct} suffix="%" /> M · <AnimatedNumber value={genderPercents.femalePct} suffix="%" /> F</span>
-          )}
-          {forecast && (
-            <span
-              className="forecast-count"
-              title={`Projected final count: ${forecast.low}–${forecast.high}. Across the last ${forecast.services} ${meeting.name} services, ${Math.round(forecast.fraction * 100)}% of the night had checked in by this time.`}
-            >
-              {' '}· <AnimatedNumber value={forecast.expected} prefix="~" /> expected
-            </span>
           )}
         </div>
 

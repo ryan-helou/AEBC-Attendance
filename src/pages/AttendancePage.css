@@ -49,6 +49,37 @@
   margin: 0.2rem 0 0;
 }
 
+/* Projected final headcount, sitting in the header's empty middle rather than
+   lengthening the stats pill. Borrows the date controls' translucent capsule so
+   the two read as one row of header furniture. */
+.header-forecast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+  /* It carries a title explaining where the number comes from. */
+  cursor: help;
+  white-space: nowrap;
+}
+
+.header-forecast-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.header-forecast-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
 .attendance-date-controls {
   display: flex;
   align-items: center;
@@ -715,13 +746,6 @@
 
 .on-time-count {
   opacity: 0.85;
-}
-
-.forecast-count {
-  opacity: 0.85;
-  white-space: nowrap;
-  /* It carries a title explaining where the number comes from. */
-  cursor: help;
 }
 
 @media (max-width: 600px) {
