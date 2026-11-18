@@ -1,6 +1,15 @@
+<div align="center">
+
 # AEBC Attendance
 
-A check-in app that a church uses to take attendance at its weekly services.
+**A check-in app that a church uses to take attendance at its weekly services.**
+
+<a href="https://aebc-attendance.vercel.app"><img alt="Open aebc-attendance.vercel.app" src="https://img.shields.io/badge/Open-aebc--attendance.vercel.app-24292f?style=for-the-badge"></a>
+<br><sub>requires the church's access key</sub>
+
+</div>
+
+<br>
 
 Volunteers at the door open today's service on a phone or laptop and start typing names. The app suggests matching people from a shared list, and one tap marks them as present. It was built for a church that holds two weekly gatherings, a Sunday service and a Saturday-evening youth service, so the team can see who came, who is new, and who hasn't been seen in a while.
 
@@ -14,7 +23,3 @@ Volunteers at the door open today's service on a phone or laptop and start typin
 - Manage the list of people, including adding many names at once and merging duplicates.
 
 The app is private: volunteers need a shared access key to get in. It also includes a few small games (such as Tetris and Wordle) for quiet moments before a service.
-
-## Try it
-
-https://aebc-attendance.vercel.app (requires the church's access key)
