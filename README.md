@@ -1,18 +1,20 @@
-# 🙋 AEBC Attendance
+# AEBC Attendance
 
-*A check-in app for a church that runs two weekly gatherings — the English Sunday Service and the Saturday-evening Shabibeh (youth) service.*
+A check-in app that a church uses to take attendance at its weekly services.
 
-![React](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white) ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white) ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
+Volunteers at the door open today's service on a phone or laptop and start typing names. The app suggests matching people from a shared list, and one tap marks them as present. It was built for a church that holds two weekly gatherings, a Sunday service and a Saturday-evening youth service, so the team can see who came, who is new, and who hasn't been seen in a while.
 
-Whoever's on the door opens the service for today's date and starts typing names. The app autocompletes against a shared directory of people, and a tap marks someone present. Walk-ins nobody recognizes get added as numbered guests and can be converted to named people once you learn who they are. The running tally shows how many are present, how many are first-timers, the male/female split, and what share arrived on time — before 10:30 AM for the Sunday service, before 7:30 PM for Shabibeh — with every check-in time pinned to Eastern Time so the math holds regardless of the volunteer's device. Cross 25, 50, 75, or 100 present and confetti fires.
+## What you can do with it
 
-Everything lives in Supabase (Postgres plus realtime), so two people checking arrivals at the same door stay in sync. The data model is small and legible: `people`, `meetings`, `attendance_records` (one row per person per service date, carrying a first-time flag and a check-in timestamp), `guest_attendance`, per-service `meeting_notes` (a note, who took the count, an optional manual total), and `musician_roles` for who played what on a given Sunday. There are no per-user accounts — a shared access key gets a volunteer in, which is about the right amount of friction for a table by the door.
+- Check people in quickly, and add walk-ins as guests until you learn their names.
+- See a live count of how many people are present, how many are first-timers, and how many arrived on time.
+- Have two volunteers check people in at the same time, with both screens staying in sync.
+- Look back at attendance over past weeks with charts and attendance streaks.
+- Use a separate, password-protected follow-up page that lists regulars who haven't come in a few weeks, so someone can reach out to them.
+- Manage the list of people, including adding many names at once and merging duplicates.
 
-Beyond taking attendance, the app carries:
+The app is private: volunteers need a shared access key to get in. It also includes a few small games (such as Tetris and Wordle) for quiet moments before a service.
 
-- a history view built on Recharts — weekly attendance lines, on-time trends, and longest/current streaks that bridge weeks a service wasn't held
-- a follow-up committee dashboard, behind its own password, that surfaces people who've come at least three times but haven't been seen in 2 to 8 weeks, lets members flag and assign them, and keeps a shared notes log that syncs live across the committee
-- a directory manager with comma-separated bulk import and a duplicate-merge that combines two people's attendance history into one
-- an accent-colour picker (13 hues × 5 shades, saved per browser) and a small arcade — Tetris, Breakout, a chess puzzle rush, Wordle — tucked away for slow moments before a service
+## Try it
 
-Built with React 19, TypeScript and Vite, installable as a PWA, and deployed on Vercel.
+https://aebc-attendance.vercel.app (requires the church's access key)
