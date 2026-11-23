@@ -278,6 +278,23 @@ function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onCha
 // computeLongestStreak now lives in dateUtils (service-date aware, bridges
 // cancelled / no-service weeks).
 
+/**
+ * A chart and the placeholder that stands in for it share a height, so a
+ * section keeps its size while data loads instead of collapsing to a single
+ * line of text and snapping back open.
+ */
+const CHART_HEIGHT = 240;
+const COMPARISON_CHART_HEIGHT = 260;
+
+/** Chart-sized "Loading..." / "nothing to show" message. */
+function ChartPlaceholder({ height = CHART_HEIGHT, children }: { height?: number; children: ReactNode }) {
+  return (
+    <p className="history-empty history-chart-placeholder" style={{ height }}>
+      {children}
+    </p>
+  );
+}
+
 const LINE_COLORS = ['#2563eb', '#16a34a', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const COMPARE_COLORS = [
@@ -1166,12 +1183,12 @@ export default function HistoryPage() {
           onChange={setChartMeeting}
         />
         {chartLoading ? (
-          <p className="history-empty">Loading...</p>
+          <ChartPlaceholder>Loading...</ChartPlaceholder>
         ) : visibleChartData.length === 0 ? (
-          <p className="history-empty">No attendance data for this period.</p>
+          <ChartPlaceholder>No attendance data for this period.</ChartPlaceholder>
         ) : (
           <div className="dashboard-chart-wrapper">
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <AreaChart data={visibleChartData} margin={{ top: 5, right: 20, bottom: 5, left: -4 }}>
                 <defs>
                   {meetings.map((m, i) => (
@@ -1276,12 +1293,12 @@ export default function HistoryPage() {
           />
         </div>
         {avgTimeLoading ? (
-          <p className="history-empty">Loading...</p>
+          <ChartPlaceholder>Loading...</ChartPlaceholder>
         ) : avgChartData.length === 0 ? (
-          <p className="history-empty">No arrival-time data for this period.</p>
+          <ChartPlaceholder>No arrival-time data for this period.</ChartPlaceholder>
         ) : (
           <div className="dashboard-chart-wrapper">
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <LineChart data={avgChartData} margin={{ top: 12, right: 20, bottom: 5, left: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} strokeOpacity={0.5} />
                 <XAxis
@@ -1353,22 +1370,28 @@ export default function HistoryPage() {
             onChange={setOnTimeChartMeetingId}
           />
         </div>
-        {avgTimeLoading ? (
-          <p className="history-empty">Loading...</p>
-        ) : onTimeChartCutoff === null ? (
-          <p className="history-empty">
-            No on-time cutoff set for this meeting. Set one in Service settings on the attendance page.
+        {/* The cutoff comes from the meeting, not from the data, so the caption
+            can be shown straight away — and showing it above the loading
+            placeholder too is what keeps this card from growing a line when the
+            chart arrives. */}
+        {onTimeChartCutoff !== null && (
+          <p className="chart-caption">
+            Share of check-ins at or before {minutesToClock(onTimeChartCutoff)}
+            {onTimeChartAverage !== null && <> · averaging <strong>{onTimeChartAverage}%</strong> over this period</>}
           </p>
+        )}
+        {avgTimeLoading ? (
+          <ChartPlaceholder>Loading...</ChartPlaceholder>
+        ) : onTimeChartCutoff === null ? (
+          <ChartPlaceholder>
+            No on-time cutoff set for this meeting. Set one in Service settings on the attendance page.
+          </ChartPlaceholder>
         ) : onTimeChartData.length === 0 ? (
-          <p className="history-empty">No check-in times recorded for this period.</p>
+          <ChartPlaceholder>No check-in times recorded for this period.</ChartPlaceholder>
         ) : (
           <>
-            <p className="chart-caption">
-              Share of check-ins at or before {minutesToClock(onTimeChartCutoff)}
-              {onTimeChartAverage !== null && <> · averaging <strong>{onTimeChartAverage}%</strong> over this period</>}
-            </p>
             <div className="dashboard-chart-wrapper">
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                 <AreaChart data={onTimeChartData} margin={{ top: 12, right: 20, bottom: 5, left: 0 }}>
                   <defs>
                     <linearGradient id="grad-ontime" x1="0" y1="0" x2="0" y2="1">
@@ -1448,12 +1471,12 @@ export default function HistoryPage() {
           </div>
         </div>
         {genderLoading ? (
-          <p className="history-empty">Loading...</p>
+          <ChartPlaceholder>Loading...</ChartPlaceholder>
         ) : genderData.length === 0 ? (
-          <p className="history-empty">No gender data for this period.</p>
+          <ChartPlaceholder>No gender data for this period.</ChartPlaceholder>
         ) : (
           <div className="dashboard-chart-wrapper">
-            <ResponsiveContainer width="100%" height={240}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <AreaChart data={genderData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <defs>
                   <linearGradient id="grad-gender-male" x1="0" y1="0" x2="0" y2="1">
@@ -1543,12 +1566,12 @@ export default function HistoryPage() {
             </div>
           </div>
           {compareLoading ? (
-            <p className="history-empty">Loading...</p>
+            <ChartPlaceholder height={COMPARISON_CHART_HEIGHT}>Loading...</ChartPlaceholder>
           ) : compareData.length === 0 ? (
-            <p className="history-empty">No attendance data yet.</p>
+            <ChartPlaceholder height={COMPARISON_CHART_HEIGHT}>No attendance data yet.</ChartPlaceholder>
           ) : (
             <div className="dashboard-chart-wrapper">
-              <ResponsiveContainer width="100%" height={260}>
+              <ResponsiveContainer width="100%" height={COMPARISON_CHART_HEIGHT}>
                 <BarChart data={compareData} margin={{ top: 24, right: 16, bottom: 4, left: -10 }} barCategoryGap="38%">
                   <defs>
                     {COMPARE_COLORS.map((c, i) => (

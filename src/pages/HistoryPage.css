@@ -252,6 +252,15 @@
   color: var(--color-text-secondary);
 }
 
+/* Holds a chart's footprint while it loads, so the card doesn't shrink to one
+   line and snap back open. Its height comes from the chart it replaces. */
+.history-chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
 .history-table {
   width: 100%;
   border-collapse: collapse;
@@ -680,6 +689,13 @@
 }
 
 @media (max-width: 768px) {
+  /* Narrow enough that the caption wraps to two lines once the average is
+     computed. Reserve both lines up front so the card doesn't grow one when
+     the chart arrives. */
+  .chart-caption {
+    min-height: 2lh;
+  }
+
   .leaderboard-pair {
     grid-template-columns: 1fr;
   }
