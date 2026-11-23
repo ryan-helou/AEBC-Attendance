@@ -29,7 +29,10 @@ export default function AttendancePage() {
   const [addModalName, setAddModalName] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [takenBy, setTakenBy] = useState('');
-  const [manualCount, setManualCount] = useState('');
+  // The hand-count field is gone, but 19 services recorded one before it was
+  // removed. Remember whether this date has one so clearing the note doesn't
+  // delete the row out from under it.
+  const [hadManualCount, setHadManualCount] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
   const [milestone, setMilestone] = useState<{ count: number } | null>(null);
 
@@ -196,7 +199,7 @@ export default function AttendancePage() {
     async function loadNote() {
       setNote('');
       setTakenBy('');
-      setManualCount('');
+      setHadManualCount(false);
       const { data } = await supabase
         .from('meeting_notes')
         .select('note, taken_by, manual_count')
@@ -205,7 +208,7 @@ export default function AttendancePage() {
         .maybeSingle();
       setNote(data?.note ?? '');
       setTakenBy(data?.taken_by ?? '');
-      setManualCount(data?.manual_count ? String(data.manual_count) : '');
+      setHadManualCount(data?.manual_count != null);
     }
     loadNote();
   }, [meetingId, date]);
@@ -213,13 +216,15 @@ export default function AttendancePage() {
   async function saveNoteFields() {
     const trimmedNote = note.trim();
     const trimmedTakenBy = takenBy.trim();
-    const parsedManualCount = manualCount.trim() ? parseInt(manualCount.trim(), 10) : null;
 
-    if (!trimmedNote && !trimmedTakenBy && !parsedManualCount) {
+    // manual_count is deliberately absent from the payload: the column still
+    // holds the hand counts taken before the field was removed, and leaving it
+    // out of the upsert leaves those values alone.
+    if (!trimmedNote && !trimmedTakenBy && !hadManualCount) {
       await supabase.from('meeting_notes').delete().eq('meeting_id', meetingId!).eq('date', date!);
     } else {
       await supabase.from('meeting_notes').upsert(
-        { meeting_id: meetingId, date, note: trimmedNote || '', taken_by: trimmedTakenBy || null, manual_count: parsedManualCount },
+        { meeting_id: meetingId, date, note: trimmedNote || '', taken_by: trimmedTakenBy || null },
         { onConflict: 'meeting_id,date' }
       );
     }
@@ -725,15 +730,6 @@ export default function AttendancePage() {
         />
 
         <div className="attendance-footer-fields">
-          <input
-            className="manual-count-input"
-            type="number"
-            placeholder="Manual count…"
-            value={manualCount}
-            onChange={e => setManualCount(e.target.value)}
-            onBlur={saveNoteFields}
-            min="0"
-          />
           <textarea
             className="service-notes-input"
             placeholder="Service notes…"
