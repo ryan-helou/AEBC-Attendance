@@ -1,0 +1,31 @@
+/* Lifted from the Attendance Over Time ministry filter, which is the look this
+   control standardises on. Changing it here changes every picker that uses it. */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.segmented-option {
+  padding: 0.4em 0.95em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.segmented-option:hover {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+
+.segmented-option-active,
+.segmented-option-active:hover {
+  background: var(--color-primary);
+  color: #fff;
+}

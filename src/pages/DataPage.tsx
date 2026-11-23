@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { Person, Gender } from '../types';
 import { DataSkeleton } from '../components/Skeleton';
+import SegmentedControl from '../components/SegmentedControl';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import { useScrolledDown } from '../hooks/useScrolledDown';
@@ -313,15 +314,16 @@ export default function DataPage() {
                       />
                     </td>
                     <td>
-                      <select
-                        className="data-edit-input"
+                      <SegmentedControl
+                        ariaLabel="Gender"
                         value={editValues.gender ?? ''}
-                        onChange={e => setEditValues(v => ({ ...v, gender: (e.target.value || null) as Gender | null }))}
-                      >
-                        <option value="">—</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                      </select>
+                        options={[
+                          { value: '', label: '—' },
+                          { value: 'male', label: 'Male' },
+                          { value: 'female', label: 'Female' },
+                        ]}
+                        onChange={v => setEditValues(values => ({ ...values, gender: (v || null) as Gender | null }))}
+                      />
                     </td>
                     <td className="col-action">
                       <button

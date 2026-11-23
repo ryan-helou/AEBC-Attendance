@@ -497,6 +497,12 @@
   text-align: center;
 }
 
+/* The gender picker is a segmented control; keep its three pills on one line so
+   the column widens for the edit row instead of the pills stacking in it. */
+.data-table .segmented {
+  flex-wrap: nowrap;
+}
+
 .data-edit-input {
   width: 100%;
   padding: 0.3em 0.5em;

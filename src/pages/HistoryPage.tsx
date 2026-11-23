@@ -6,6 +6,7 @@ import { BABIES } from '../lib/babies';
 import type { Meeting } from '../types';
 import { HistorySkeleton } from '../components/Skeleton';
 import AnimatedNumber from '../components/AnimatedNumber';
+import SegmentedControl from '../components/SegmentedControl';
 import { useEscapeBack } from '../hooks/useEscapeBack';
 import { useScrolledDown } from '../hooks/useScrolledDown';
 import {
@@ -250,16 +251,26 @@ function OnTimeTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
-/** Per-leaderboard meeting picker: All Meetings + one option per ministry. */
+/** "Shabibeh Service" → "Shabibeh". Pills are narrow; the word adds nothing. */
+function shortMeetingName(name: string): string {
+  return name.replace(/ Service$/, '');
+}
+
+/** One pill per ministry, for a control that must always have one chosen. */
+function meetingOptions(meetings: Meeting[]) {
+  return meetings.map(m => ({ value: m.id, label: shortMeetingName(m.name) }));
+}
+
+/** Per-leaderboard meeting picker: All + one pill per ministry. */
 function RoleMeetingSelect({ value, onChange, meetings }: { value: string; onChange: (v: string) => void; meetings: Meeting[] }) {
   return (
     <div className="history-controls">
-      <select value={value} onChange={e => onChange(e.target.value)}>
-        <option value="">All Meetings</option>
-        {meetings.map(m => (
-          <option key={m.id} value={m.id}>{m.name}</option>
-        ))}
-      </select>
+      <SegmentedControl
+        ariaLabel="Ministry"
+        value={value}
+        options={[{ value: '', label: 'All' }, ...meetingOptions(meetings)]}
+        onChange={onChange}
+      />
     </div>
   );
 }
@@ -1143,38 +1154,17 @@ export default function HistoryPage() {
             ))}
           </div>
         </div>
-        <div className="meeting-filter-toggle" role="tablist" aria-label="Ministry">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={chartMeeting === 'all'}
-            className={`meeting-filter-option${chartMeeting === 'all' ? ' meeting-filter-option-active' : ''}`}
-            onClick={() => setChartMeeting('all')}
-          >
-            All
-          </button>
-          {meetings.map(m => (
-            <button
-              key={m.id}
-              type="button"
-              role="tab"
-              aria-selected={chartMeeting === m.id}
-              className={`meeting-filter-option${chartMeeting === m.id ? ' meeting-filter-option-active' : ''}`}
-              onClick={() => setChartMeeting(m.id)}
-            >
-              {m.name.replace(/ Service$/, '')}
-            </button>
-          ))}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={chartMeeting === 'firsttimers'}
-            className={`meeting-filter-option${chartMeeting === 'firsttimers' ? ' meeting-filter-option-active' : ''}`}
-            onClick={() => setChartMeeting('firsttimers')}
-          >
-            First Timers
-          </button>
-        </div>
+        <SegmentedControl
+          className="meeting-filter-toggle"
+          ariaLabel="Ministry"
+          value={chartMeeting}
+          options={[
+            { value: 'all', label: 'All' },
+            ...meetingOptions(meetings),
+            { value: 'firsttimers', label: 'First Timers' },
+          ]}
+          onChange={setChartMeeting}
+        />
         {chartLoading ? (
           <p className="history-empty">Loading...</p>
         ) : visibleChartData.length === 0 ? (
@@ -1278,11 +1268,12 @@ export default function HistoryPage() {
           </div>
         </div>
         <div className="history-controls">
-          <select value={avgChartMeetingId} onChange={e => setAvgChartMeetingId(e.target.value)}>
-            {meetings.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
+          <SegmentedControl
+            ariaLabel="Ministry"
+            value={avgChartMeetingId}
+            options={meetingOptions(meetings)}
+            onChange={setAvgChartMeetingId}
+          />
         </div>
         {avgTimeLoading ? (
           <p className="history-empty">Loading...</p>
@@ -1355,11 +1346,12 @@ export default function HistoryPage() {
           </div>
         </div>
         <div className="history-controls">
-          <select value={onTimeChartMeetingId} onChange={e => setOnTimeChartMeetingId(e.target.value)}>
-            {meetings.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
+          <SegmentedControl
+            ariaLabel="Ministry"
+            value={onTimeChartMeetingId}
+            options={meetingOptions(meetings)}
+            onChange={setOnTimeChartMeetingId}
+          />
         </div>
         {avgTimeLoading ? (
           <p className="history-empty">Loading...</p>
@@ -1436,16 +1428,12 @@ export default function HistoryPage() {
         <div className="section-header-row">
           <h2>Gender Breakdown</h2>
           <div className="section-header-controls">
-            <select
-              className="gender-meeting-select"
+            <SegmentedControl
+              ariaLabel="Ministry"
               value={genderMeetingId}
-              onChange={e => setGenderMeetingId(e.target.value)}
-            >
-              <option value="">All ministries</option>
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+              options={[{ value: '', label: 'All' }, ...meetingOptions(meetings)]}
+              onChange={setGenderMeetingId}
+            />
             <div className="timeframe-pills">
               {(['4w', '12w', '6m', '1y', 'all'] as const).map(tf => (
                 <button
@@ -1693,17 +1681,15 @@ export default function HistoryPage() {
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>⏰ Most On Time</h2>
           <div className="history-controls">
-            <select
+            <SegmentedControl
+              ariaLabel="Ministry"
               value={onTimeMeetingId}
-              onChange={e => {
-                setOnTimeMeetingId(e.target.value);
-                loadOnTimeLeaders(e.target.value);
+              options={meetingOptions(meetings)}
+              onChange={v => {
+                setOnTimeMeetingId(v);
+                loadOnTimeLeaders(v);
               }}
-            >
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+            />
           </div>
           {onTimeLoading ? (
             <p className="history-empty">Loading...</p>
@@ -1805,17 +1791,15 @@ export default function HistoryPage() {
         <section className="history-section leaderboard-section streak-lb-section">
           <h2>Consistency (12w)</h2>
           <div className="history-controls">
-            <select
+            <SegmentedControl
+              ariaLabel="Ministry"
               value={consistencyMeetingId}
-              onChange={e => {
-                setConsistencyMeetingId(e.target.value);
-                loadConsistencyLeaders(e.target.value);
+              options={meetingOptions(meetings)}
+              onChange={v => {
+                setConsistencyMeetingId(v);
+                loadConsistencyLeaders(v);
               }}
-            >
-              {meetings.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
+            />
           </div>
           {consistencyLoading ? (
             <p className="history-empty">Loading...</p>
