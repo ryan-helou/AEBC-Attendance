@@ -7,6 +7,8 @@
 <a href="https://aebc-attendance.vercel.app"><img alt="Open aebc-attendance.vercel.app" src="https://img.shields.io/badge/Open-aebc--attendance.vercel.app-24292f?style=for-the-badge"></a>
 <br><sub>requires the church's access key</sub>
 
+<!-- facts --><img alt="Used at: 2 weekly services" src="https://img.shields.io/badge/Used_at-2_weekly_services-24292f?style=for-the-badge"> <img alt="Check-in: live on every device" src="https://img.shields.io/badge/Check--in-live_on_every_device-24292f?style=for-the-badge"> <img alt="Extras: 4 mini-games" src="https://img.shields.io/badge/Extras-4_mini--games-24292f?style=for-the-badge">
+
 </div>
 
 <br>
